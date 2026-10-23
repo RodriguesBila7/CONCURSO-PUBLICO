@@ -59,6 +59,7 @@ import {
 import { 
   INITIAL_VAGAS, 
   PROVINCIAS_MOCAMBIQUE,
+  getCandidatePhotoUrl,
   getStoredCandidaturas, 
   saveStoredCandidaturas,
   updateStoredCandidatura,
@@ -500,7 +501,7 @@ export default function GestorPortalModule({
       { label: '1ª Fase: Em Análise Documental', value: stats.analise, color: '#64748b' },
       { label: 'Excluídos do Concurso', value: stats.excluidos, color: '#c32026' },
     ];
-    const r = 68;
+    const r = 84;
     const circumference = 2 * Math.PI * r;
     let accumulated = 0;
 
@@ -1407,28 +1408,28 @@ export default function GestorPortalModule({
               {/* LADO 1: GRÁFICO DONUT GRANDE & PROEMINENTE */}
               <div className="funnel-expanded-donut-col">
                 <div className="gestor-donut-svg-container large">
-                  <svg viewBox="0 0 200 200" className="gestor-donut-svg">
+                  <svg viewBox="0 0 240 240" className="gestor-donut-svg">
                     <circle
-                      cx="100"
-                      cy="100"
-                      r="68"
+                      cx="120"
+                      cy="120"
+                      r="84"
                       fill="none"
                       stroke="rgba(148, 163, 184, 0.2)"
-                      strokeWidth="24"
+                      strokeWidth="26"
                     />
                     {donutSegmentsLarge.map((seg, idx) => (
                       <circle
                         key={idx}
-                        cx="100"
-                        cy="100"
-                        r="68"
+                        cx="120"
+                        cy="120"
+                        r="84"
                         fill="none"
                         stroke={seg.color}
-                        strokeWidth="24"
+                        strokeWidth="26"
                         strokeDasharray={`${seg.dashLength} ${seg.dashGap}`}
                         strokeDashoffset={seg.dashOffset}
                         strokeLinecap="butt"
-                        transform="rotate(-90 100 100)"
+                        transform="rotate(-90 120 120)"
                         className="donut-segment"
                       >
                         <title>{`${seg.label}: ${seg.value} (${seg.percentage}%)`}</title>
@@ -1677,8 +1678,20 @@ export default function GestorPortalModule({
                     <tr key={c.codigoCandidatura}>
                       <td>
                         <div className="candidato-cell">
-                          <div className={`candidato-avatar ${c.genero === 'Feminino' ? 'female' : 'male'}`}>
-                            {c.nomeCompleto.charAt(0)}
+                          <div className="candidato-avatar-wrap" title={`Biometria: ${c.validacaoFacial?.scoreBiometrico || 98}% • ${c.validacaoFacial?.iluminacao || 'Iluminação Ideal'}`}>
+                            <img 
+                              src={c.fotoUrl || getCandidatePhotoUrl(c.genero, c.nomeCompleto.length)} 
+                              alt={c.nomeCompleto}
+                              className="candidato-avatar-round"
+                              loading="lazy"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = getCandidatePhotoUrl(c.genero, 0);
+                              }}
+                            />
+                            <span className="candidato-ai-badge" title="Rosto Identificado & Iluminação Homologada por IA">
+                              <Sparkles size={9} />
+                            </span>
                           </div>
                           <div className="candidato-info">
                             <span className="candidato-nome">{c.nomeCompleto}</span>
@@ -1811,7 +1824,19 @@ export default function GestorPortalModule({
                       }}
                     >
                       <div className="item-top">
-                        <span className="item-name">{c.nomeCompleto}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <img 
+                            src={c.fotoUrl || getCandidatePhotoUrl(c.genero, c.nomeCompleto.length)} 
+                            alt={c.nomeCompleto}
+                            className="candidato-avatar-mini"
+                            loading="lazy"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = getCandidatePhotoUrl(c.genero, 0);
+                            }}
+                          />
+                          <span className="item-name">{c.nomeCompleto}</span>
+                        </div>
                         <span 
                           className="item-status-dot" 
                           style={{ backgroundColor: b.color }} 
@@ -1838,8 +1863,15 @@ export default function GestorPortalModule({
                   {/* CABEÇALHO DO CANDIDATO SELECIONADO */}
                   <div className="deliberacao-candidate-header">
                     <div className="candidate-summary-left">
-                      <div className="candidate-big-avatar">
-                        {deliberandoCandidato.nomeCompleto.charAt(0)}
+                      <div className="candidate-photo-header-wrap">
+                        <img 
+                          src={deliberandoCandidato.fotoUrl || getCandidatePhotoUrl(deliberandoCandidato.genero, deliberandoCandidato.nomeCompleto.length)} 
+                          alt={deliberandoCandidato.nomeCompleto}
+                          className="candidate-header-photo-round"
+                        />
+                        <span className="candidate-header-ai-pill" title="Biometria Facial e Iluminação Verificadas">
+                          <Sparkles size={11} /> IA {deliberandoCandidato.validacaoFacial?.scoreBiometrico || 98}%
+                        </span>
                       </div>
                       <div>
                         <div className="candidate-status-flex">
@@ -3233,8 +3265,15 @@ export default function GestorPortalModule({
             {/* CABEÇALHO DO DOSSIER */}
             <div className="dossier-modal-header">
               <div className="dossier-header-left">
-                <div className="dossier-avatar">
-                  {selectedDossier.nomeCompleto.charAt(0)}
+                <div className="dossier-avatar-wrap">
+                  <img 
+                    src={selectedDossier.fotoUrl || getCandidatePhotoUrl(selectedDossier.genero, selectedDossier.nomeCompleto.length)} 
+                    alt={selectedDossier.nomeCompleto}
+                    className="dossier-avatar-round"
+                  />
+                  <span className="dossier-ai-shield-tag" title="Validação Facial Concluída">
+                    <ShieldCheck size={12} />
+                  </span>
                 </div>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -3376,6 +3415,116 @@ export default function GestorPortalModule({
 
             {/* CONTEÚDO DO DOSSIER */}
             <div className="dossier-modal-body">
+              {/* BLOCO BIOMÉTRICO: AUDITORIA FACIAL INTELIGENTE & ILUMINAÇÃO (SERNIC VisionAI) */}
+              <div className="dossier-section-block biometric-audit-card">
+                <div className="biometric-audit-header">
+                  <div className="biometric-title-group">
+                    <div className="biometric-scanner-icon">
+                      <Sparkles size={18} color="#c59b27" />
+                    </div>
+                    <div>
+                      <h4 className="dossier-sec-title" style={{ margin: 0, padding: 0, border: 'none' }}>
+                        Validação Facial Inteligente & Verificação de Iluminação (SERNIC VisionAI)
+                      </h4>
+                      <p className="biometric-audit-sub">
+                        Auditoria de biometria facial, enquadramento ICAO 9303 e luminância em tempo real
+                      </p>
+                    </div>
+                  </div>
+                  <div className="biometric-score-badge">
+                    <span className="score-num">{selectedDossier.validacaoFacial?.scoreBiometrico || 98}%</span>
+                    <span className="score-lbl">Conformidade IA</span>
+                  </div>
+                </div>
+
+                <div className="biometric-audit-body-grid">
+                  {/* FOTO COM OVERLAY DE SCANNER HUD */}
+                  <div className="biometric-photo-hud-frame">
+                    <img 
+                      src={selectedDossier.fotoUrl || getCandidatePhotoUrl(selectedDossier.genero, selectedDossier.nomeCompleto.length)} 
+                      alt={selectedDossier.nomeCompleto}
+                      className="biometric-hud-photo"
+                    />
+                    <div className="hud-corner top-left" />
+                    <div className="hud-corner top-right" />
+                    <div className="hud-corner bottom-left" />
+                    <div className="hud-corner bottom-right" />
+                    <div className="hud-crosshair" />
+                    <div className="hud-target-oval" />
+                    <div className="hud-live-tag">
+                      <span className="live-dot" /> ROSTO DETECTADO
+                    </div>
+                  </div>
+
+                  {/* INDICADORES INTELIGENTES DE ILUMINAÇÃO & ROSTO */}
+                  <div className="biometric-metrics-list">
+                    <div className="biometric-metric-row">
+                      <div className="metric-info">
+                        <span className="metric-name">
+                          <Sun size={14} color="#f59e0b" />
+                          Iluminação & Contraste
+                        </span>
+                        <span className="metric-desc">
+                          {selectedDossier.validacaoFacial?.iluminacao || 'Excelente (Luz Difusa Equilibrada)'}
+                        </span>
+                      </div>
+                      <div className="metric-status success">
+                        <CheckCircle2 size={15} />
+                        <span>{selectedDossier.validacaoFacial?.iluminacaoScore || 97}% Ideal</span>
+                      </div>
+                    </div>
+
+                    <div className="biometric-metric-row">
+                      <div className="metric-info">
+                        <span className="metric-name">
+                          <ShieldCheck size={14} color="#16a34a" />
+                          Enquadramento Facial
+                        </span>
+                        <span className="metric-desc">
+                          {selectedDossier.validacaoFacial?.rostoEnquadrado !== false ? 'Rosto e ombros 100% centralizados (Padrão ICAO 9303)' : 'Desalinhado'}
+                        </span>
+                      </div>
+                      <div className="metric-status success">
+                        <CheckCircle2 size={15} />
+                        <span>100% Aprovado</span>
+                      </div>
+                    </div>
+
+                    <div className="biometric-metric-row">
+                      <div className="metric-info">
+                        <span className="metric-name">
+                          <Palette size={14} color="#2563eb" />
+                          Fundo da Fotografia
+                        </span>
+                        <span className="metric-desc">
+                          {selectedDossier.validacaoFacial?.fundoNeutro !== false ? 'Fundo neutro claro / branco homologado' : 'Requer revisão'}
+                        </span>
+                      </div>
+                      <div className="metric-status success">
+                        <CheckCircle2 size={15} />
+                        <span>Homologado</span>
+                      </div>
+                    </div>
+
+                    <div className="biometric-metric-row">
+                      <div className="metric-info">
+                        <span className="metric-name">
+                          <Eye size={14} color="#0284c7" />
+                          Foco, Olhos e Expressão
+                        </span>
+                        <span className="metric-desc">
+                          Olhos abertos, expressão neutra sem oclusão ou reflexos
+                        </span>
+                      </div>
+                      <div className="metric-status success">
+                        <CheckCircle2 size={15} />
+                        <span>Conforme</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* BLOCO 1: DADOS PESSOAIS */}
               <div className="dossier-section-block">
                 <h4 className="dossier-sec-title">

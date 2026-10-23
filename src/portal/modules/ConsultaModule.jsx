@@ -10,15 +10,18 @@ import {
   XCircle, 
   Printer,
   ShieldAlert,
-  FileText
+  FileText,
+  Sparkles,
+  ShieldCheck,
+  Award
 } from 'lucide-react';
 import { 
   INITIAL_CANDIDATURAS_CONSULTA, 
   INITIAL_LISTAS_PUBLICADAS,
   getStoredCandidaturas,
-  getStoredListasPublicadas
+  getStoredListasPublicadas,
+  getCandidatePhotoUrl
 } from '../mockData';
-import { Award } from 'lucide-react';
 import DraggableSubAba from '../components/DraggableSubAba';
 
 export default function ConsultaModule() {
@@ -251,36 +254,52 @@ export default function ConsultaModule() {
           {/* RESULTADO DA PESQUISA INDIVIDUAL */}
           {searchResult && (
             <div className="consulta-result-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1.2rem', marginBottom: '1.5rem' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem' }}>
-                    <span 
-                      style={{ 
-                        backgroundColor: getStatusBadge(searchResult.status).bg, 
-                        color: getStatusBadge(searchResult.status).color,
-                        padding: '0.25rem 0.75rem',
-                        borderRadius: '9999px',
-                        fontSize: '0.8rem',
-                        fontWeight: 800,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.35rem'
-                      }}
-                    >
-                      {getStatusBadge(searchResult.status).icon}
-                      {getStatusBadge(searchResult.status).label}
-                    </span>
-                    <span style={{ fontSize: '0.84rem', color: '#64748b' }}>
-                      Protocolo: <strong>{searchResult.codigoCandidatura}</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.25rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1.2rem', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexWrap: 'wrap' }}>
+                  <div className="consulta-avatar-wrap">
+                    <img 
+                      src={searchResult.fotoUrl || getCandidatePhotoUrl(searchResult.genero, 0)} 
+                      alt={searchResult.nomeCompleto}
+                      className="consulta-avatar-round"
+                    />
+                    <span className="consulta-ai-badge" title="Biometria Facial e Iluminação Homologadas pelo SERNIC VisionAI">
+                      <Sparkles size={11} />
                     </span>
                   </div>
 
-                  <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--portal-text-main)' }}>
-                    {searchResult.nomeCompleto}
-                  </h3>
-                  <p style={{ fontSize: '0.92rem', color: 'var(--portal-gold)', fontWeight: 700 }}>
-                    {searchResult.vagaTitulo}
-                  </p>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
+                      <span 
+                        style={{ 
+                          backgroundColor: getStatusBadge(searchResult.status).bg, 
+                          color: getStatusBadge(searchResult.status).color,
+                          padding: '0.25rem 0.75rem',
+                          borderRadius: '9999px',
+                          fontSize: '0.8rem',
+                          fontWeight: 800,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.35rem'
+                        }}
+                      >
+                        {getStatusBadge(searchResult.status).icon}
+                        {getStatusBadge(searchResult.status).label}
+                      </span>
+                      <span style={{ fontSize: '0.84rem', color: '#64748b' }}>
+                        Protocolo: <strong>{searchResult.codigoCandidatura}</strong>
+                      </span>
+                      <span className="biometric-chip-verified">
+                        <ShieldCheck size={12} /> Foto Homologada (IA 98%)
+                      </span>
+                    </div>
+
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--portal-text-main)' }}>
+                      {searchResult.nomeCompleto}
+                    </h3>
+                    <p style={{ fontSize: '0.92rem', color: 'var(--portal-gold)', fontWeight: 700 }}>
+                      {searchResult.vagaTitulo}
+                    </p>
+                  </div>
                 </div>
 
                 <button

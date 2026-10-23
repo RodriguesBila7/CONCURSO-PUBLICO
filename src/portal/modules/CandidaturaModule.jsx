@@ -12,7 +12,11 @@ import {
   Printer, 
   FileCheck, 
   RotateCcw, 
-  ShieldCheck 
+  ShieldCheck,
+  Sparkles,
+  Sun,
+  Camera,
+  Eye
 } from 'lucide-react';
 import { 
   INITIAL_VAGAS, 
@@ -22,7 +26,11 @@ import {
   validarTelefoneMZ,
   getStoredCandidaturas,
   saveStoredCandidaturas,
-  addStoredAuditoria
+  addStoredAuditoria,
+  getCandidatePhotoUrl,
+  getDefaultValidacaoFacial,
+  CANDIDATO_PHOTOS_MALE,
+  CANDIDATO_PHOTOS_FEMALE
 } from '../mockData';
 import sernicLogo from '../../assets/sernic-logo.png';
 
@@ -83,9 +91,15 @@ export default function CandidaturaModule({
       biDoc: null,
       certificadoDoc: null,
       cvDoc: null,
-      fotoDoc: null,
+      fotoDoc: {
+        name: 'Fotografia_Biometrica_Homologada.jpg',
+        size: '1.4 MB',
+        date: 'Recente'
+      },
       registoCriminalDoc: null
     },
+    fotoPreviewUrl: getCandidatePhotoUrl('Masculino', 0),
+    validacaoFacial: getDefaultValidacaoFacial('Em Análise Documental'),
 
     // Passo 5: Termo de Honra
     declaracaoVeracidade: false
@@ -197,6 +211,7 @@ export default function CandidaturaModule({
       if (!formData.docsAnexados.biDoc) newErrors.biDoc = 'O documento de identificação (BI/Passaporte) é obrigatório.';
       if (!formData.docsAnexados.certificadoDoc) newErrors.certificadoDoc = 'O certificado de habilitações é obrigatório.';
       if (!formData.docsAnexados.cvDoc) newErrors.cvDoc = 'O Curriculum Vitae em formato PDF é obrigatório.';
+      if (!formData.docsAnexados.fotoDoc) newErrors.fotoDoc = 'A fotografia tipo passe é estritamente obrigatória para validação biométrica e reconhecimento facial.';
     }
 
     if (step === 5) {
@@ -256,6 +271,8 @@ export default function CandidaturaModule({
       nuit: formData.nuit,
       nomeCompleto: formData.nomeCompleto,
       genero: formData.genero,
+      fotoUrl: formData.fotoPreviewUrl || getCandidatePhotoUrl(formData.genero, 0),
+      validacaoFacial: formData.validacaoFacial || getDefaultValidacaoFacial('Em Análise Documental'),
       dataNascimento: formData.dataNascimento,
       idade: formData.dataNascimento ? (new Date().getFullYear() - new Date(formData.dataNascimento).getFullYear()) : 26,
       telefone: formData.telefonePrincipal,
@@ -898,25 +915,89 @@ export default function CandidaturaModule({
                 {errors.cvDoc && <span className="form-error-msg">{errors.cvDoc}</span>}
               </div>
 
-              {/* Doc 4: Fotografia */}
+              {/* Doc 4: Fotografia Obrigatória com Biometria e Análise Facial */}
               <div 
-                className={`doc-upload-box ${formData.docsAnexados.fotoDoc ? 'uploaded' : ''}`}
-                onClick={() => handleFileUpload('fotoDoc', 'Fotografia_Tipo_Passe_Recente.jpg')}
+                className={`doc-upload-box biometric-upload-card ${formData.docsAnexados.fotoDoc ? 'uploaded' : ''}`}
+                style={{ gridColumn: 'span 2' }}
               >
-                {formData.docsAnexados.fotoDoc ? (
-                  <>
-                    <FileCheck size={32} color="#15803d" />
-                    <strong style={{ fontSize: '0.9rem', color: '#15803d' }}>Fotografia Anexada</strong>
-                    <span style={{ fontSize: '0.78rem', color: '#475569' }}>{formData.docsAnexados.fotoDoc.name}</span>
-                  </>
-                ) : (
-                  <>
-                    <UploadCloud size={32} color="#c59b27" />
-                    <strong style={{ fontSize: '0.9rem' }}>Fotografia Tipo Passe (3x4)</strong>
-                    <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Fundo branco e nítido</span>
-                    <span style={{ fontSize: '0.75rem', color: '#c59b27', fontWeight: 700 }}>Carregar Fotografia</span>
-                  </>
-                )}
+                <div className="biometric-form-inner">
+                  <div className="biometric-form-preview-col">
+                    <div className="biometric-form-avatar-frame">
+                      <img 
+                        src={formData.fotoPreviewUrl || getCandidatePhotoUrl(formData.genero, 0)} 
+                        alt="Fotografia do Candidato" 
+                        className="biometric-form-avatar-img"
+                      />
+                      <div className="hud-corner top-left" />
+                      <div className="hud-corner top-right" />
+                      <div className="hud-corner bottom-left" />
+                      <div className="hud-corner bottom-right" />
+                      <div className="hud-crosshair" />
+                    </div>
+                    <button
+                      type="button"
+                      className="btn-trocar-foto-biometrica"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const pool = formData.genero === 'Feminino' ? CANDIDATO_PHOTOS_FEMALE : CANDIDATO_PHOTOS_MALE;
+                        const currIdx = pool.indexOf(formData.fotoPreviewUrl);
+                        const nextIdx = (currIdx + 1) % pool.length;
+                        const nextUrl = pool[nextIdx];
+                        setFormData(prev => ({
+                          ...prev,
+                          fotoPreviewUrl: nextUrl,
+                          docsAnexados: {
+                            ...prev.docsAnexados,
+                            fotoDoc: { name: `Foto_Passe_Biometrica_${nextIdx + 1}.jpg`, size: '1.5 MB', date: 'Recente' }
+                          }
+                        }));
+                        if (onNotify) onNotify('success', 'Fotografia alterada com validação facial instantânea.');
+                      }}
+                    >
+                      <Camera size={13} />
+                      <span>Alternar Fotografia Homologada</span>
+                    </button>
+                  </div>
+
+                  <div className="biometric-form-info-col">
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <Sparkles size={18} color="#c59b27" />
+                        <strong style={{ fontSize: '0.98rem', color: 'var(--portal-text-main)' }}>
+                          Fotografia Tipo Passe (3x4) Biometrizada <span style={{ color: '#c32026' }}>*</span>
+                        </strong>
+                      </div>
+                      <span className="biometric-ai-tag">
+                        <CheckCircle2 size={13} /> IA SERNIC: 98% Aprovada
+                      </span>
+                    </div>
+
+                    <p style={{ fontSize: '0.8rem', color: 'var(--portal-text-muted)', marginBottom: '0.8rem' }}>
+                      A fotografia é <strong>estritamente obrigatória</strong> e analisada pelo motor de inteligência artificial do concurso para garantia de integridade, enquadramento facial ICAO 9303 e iluminação.
+                    </p>
+
+                    <div className="biometric-checks-pills">
+                      <div className="bio-check-pill success">
+                        <Sun size={13} color="#f59e0b" />
+                        <span>Iluminação: <strong>97% Equilibrada (Sem sombras)</strong></span>
+                      </div>
+                      <div className="bio-check-pill success">
+                        <ShieldCheck size={13} color="#16a34a" />
+                        <span>Rosto: <strong>100% Centralizado</strong></span>
+                      </div>
+                      <div className="bio-check-pill success">
+                        <Eye size={13} color="#2563eb" />
+                        <span>Fundo: <strong>Neutro Homologado</strong></span>
+                      </div>
+                    </div>
+
+                    {errors.fotoDoc && (
+                      <span className="form-error-msg" style={{ marginTop: '0.5rem', display: 'block' }}>
+                        {errors.fotoDoc}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Doc 5: Registo Criminal */}

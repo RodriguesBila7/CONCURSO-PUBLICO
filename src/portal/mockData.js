@@ -218,6 +218,50 @@ export const INITIAL_LISTAS_PUBLICADAS = [
   }
 ];
 
+// Fotografias Oficiais Tipo Passe com Análise de Rosto e Iluminação (SERNIC VisionAI)
+export const CANDIDATO_PHOTOS_MALE = [
+  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1522529599102-193c0d76b5b6?w=300&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=300&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=300&auto=format&fit=crop&q=80'
+];
+
+export const CANDIDATO_PHOTOS_FEMALE = [
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=300&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=300&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=300&auto=format&fit=crop&q=80',
+  'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=300&auto=format&fit=crop&q=80'
+];
+
+export function getCandidatePhotoUrl(genero, idx = 0) {
+  if (genero === 'Feminino') {
+    return CANDIDATO_PHOTOS_FEMALE[idx % CANDIDATO_PHOTOS_FEMALE.length];
+  }
+  return CANDIDATO_PHOTOS_MALE[idx % CANDIDATO_PHOTOS_MALE.length];
+}
+
+export function getDefaultValidacaoFacial(status = 'Em análise') {
+  const isExcluido = status === 'Excluído' || status === 'Excluída';
+  return {
+    status: isExcluido ? 'Requer Revisão' : 'Aprovada',
+    scoreBiometrico: isExcluido ? 82 : 98,
+    rostoEnquadrado: true,
+    iluminacao: isExcluido ? 'Regular (Luz lateral)' : 'Excelente (Luz Difusa Equilibrada)',
+    iluminacaoScore: isExcluido ? 84 : 97,
+    fundoNeutro: true,
+    olhosAbertos: true,
+    expressaoNeutra: true,
+    resolucaoHd: true,
+    dataVerificacao: '2026-10-15T09:30:00Z',
+    motorIa: 'SERNIC VisionAI v3.4 (Biometria Facial)'
+  };
+}
+
 // Candidaturas de Demonstração para Consulta Instantânea e Gestão do Concurso
 // Estrutura Oficial SERNIC:
 // 1ª Fase: 'Em Análise Documental'
@@ -229,6 +273,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     biNumero: '110100234567M',
     nuit: '100234567',
     nomeCompleto: 'Armando Carlos Mondlane',
+    fotoUrl: CANDIDATO_PHOTOS_MALE[0],
+    validacaoFacial: getDefaultValidacaoFacial('Entrevista Profissional'),
     genero: 'Masculino',
     dataNascimento: '1998-05-14',
     idade: 28,
@@ -285,6 +331,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     biNumero: '100200345678A',
     nuit: '100345678',
     nomeCompleto: 'Maria Helena Nhantumbo',
+    fotoUrl: CANDIDATO_PHOTOS_FEMALE[0],
+    validacaoFacial: getDefaultValidacaoFacial('Em Análise Documental'),
     genero: 'Feminino',
     dataNascimento: '1996-08-22',
     idade: 30,
@@ -338,6 +386,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     biNumero: '120300456789B',
     nuit: '100876543',
     nomeCompleto: 'Eusébio João Sitoe',
+    fotoUrl: CANDIDATO_PHOTOS_MALE[1],
+    validacaoFacial: getDefaultValidacaoFacial('Excluído'),
     genero: 'Masculino',
     dataNascimento: '1995-12-03',
     idade: 31,
@@ -391,6 +441,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     biNumero: '090400567890C',
     nuit: '100555444',
     nomeCompleto: 'Zito Alberto Macuácua',
+    fotoUrl: CANDIDATO_PHOTOS_MALE[2],
+    validacaoFacial: getDefaultValidacaoFacial('Em Análise Documental'),
     genero: 'Masculino',
     dataNascimento: '1997-03-19',
     idade: 29,
@@ -442,6 +494,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     biNumero: '030200889912D',
     nuit: '100443322',
     nomeCompleto: 'Fátima Abdul Remane',
+    fotoUrl: CANDIDATO_PHOTOS_FEMALE[1],
+    validacaoFacial: getDefaultValidacaoFacial('Admitido'),
     genero: 'Feminino',
     dataNascimento: '1999-11-05',
     idade: 27,
@@ -496,6 +550,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     biNumero: '110500112233E',
     nuit: '100667788',
     nomeCompleto: 'Cecília Mário Langa',
+    fotoUrl: CANDIDATO_PHOTOS_FEMALE[2],
+    validacaoFacial: getDefaultValidacaoFacial('Aprovado (Suplente)'),
     genero: 'Feminino',
     dataNascimento: '2000-01-18',
     idade: 26,
@@ -550,6 +606,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     biNumero: '070300998877F',
     nuit: '100998811',
     nomeCompleto: 'Tomás Manuel Chivambo',
+    fotoUrl: CANDIDATO_PHOTOS_MALE[3],
+    validacaoFacial: getDefaultValidacaoFacial('Excluído'),
     genero: 'Masculino',
     dataNascimento: '1984-04-12',
     idade: 42,
@@ -602,6 +660,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     biNumero: '040800334455G',
     nuit: '100778899',
     nomeCompleto: 'Graça Fernando Buque',
+    fotoUrl: CANDIDATO_PHOTOS_FEMALE[3],
+    validacaoFacial: getDefaultValidacaoFacial('Em Análise Documental'),
     genero: 'Feminino',
     dataNascimento: '1997-09-30',
     idade: 29,
@@ -652,6 +712,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     biNumero: '020100778899H',
     nuit: '100112244',
     nomeCompleto: 'Salvador Paulo Mucavele',
+    fotoUrl: CANDIDATO_PHOTOS_MALE[4],
+    validacaoFacial: getDefaultValidacaoFacial('Entrevista Profissional'),
     genero: 'Masculino',
     dataNascimento: '1998-07-11',
     idade: 28,
@@ -704,6 +766,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     biNumero: '110900445566I',
     nuit: '100334455',
     nomeCompleto: 'Ângela Beatriz Cossa',
+    fotoUrl: CANDIDATO_PHOTOS_FEMALE[4],
+    validacaoFacial: getDefaultValidacaoFacial('Admitido'),
     genero: 'Feminino',
     dataNascimento: '1999-02-14',
     idade: 27,
@@ -758,6 +822,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     biNumero: '110500123456K',
     nuit: '100456123',
     nomeCompleto: 'Bernardo Zacarias Chongo',
+    fotoUrl: CANDIDATO_PHOTOS_MALE[5],
+    validacaoFacial: getDefaultValidacaoFacial('Admitido'),
     genero: 'Masculino',
     dataNascimento: '1994-06-18',
     idade: 32,
@@ -812,6 +878,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     biNumero: '060200789012F',
     nuit: '100654321',
     nomeCompleto: 'Graça Inês Machava',
+    fotoUrl: CANDIDATO_PHOTOS_FEMALE[5],
+    validacaoFacial: getDefaultValidacaoFacial('Entrevista Profissional'),
     genero: 'Feminino',
     dataNascimento: '1997-11-20',
     idade: 29,
@@ -863,6 +931,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     biNumero: '090800345678H',
     nuit: '100987654',
     nomeCompleto: 'Aníbal Salvador Muando',
+    fotoUrl: CANDIDATO_PHOTOS_MALE[6],
+    validacaoFacial: getDefaultValidacaoFacial('Em Análise Documental'),
     genero: 'Masculino',
     dataNascimento: '1996-03-12',
     idade: 30,
@@ -1096,7 +1166,25 @@ export function getStoredCandidaturas() {
     const raw = localStorage.getItem(STORAGE_KEY_CANDIDATURAS);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        let hasChanges = false;
+        const normalized = parsed.map((c, i) => {
+          if (!c.fotoUrl || !c.validacaoFacial) {
+            hasChanges = true;
+            const fallback = INITIAL_CANDIDATURAS_CONSULTA.find(x => x.codigoCandidatura === c.codigoCandidatura) || INITIAL_CANDIDATURAS_CONSULTA[i % INITIAL_CANDIDATURAS_CONSULTA.length];
+            return {
+              ...c,
+              fotoUrl: c.fotoUrl || fallback?.fotoUrl || getCandidatePhotoUrl(c.genero, i),
+              validacaoFacial: c.validacaoFacial || fallback?.validacaoFacial || getDefaultValidacaoFacial(c.status)
+            };
+          }
+          return c;
+        });
+        if (hasChanges) {
+          saveStoredCandidaturas(normalized);
+        }
+        return normalized;
+      }
     }
   } catch (e) {
     console.warn('Erro ao ler candidaturas do localStorage', e);
