@@ -1014,61 +1014,60 @@ export default function GestorPortalModule({
 
   return (
     <div className="module-page-container gestor-portal-main">
-      {/* 1. CABEÇALHO DO PAINEL DO GESTOR COM IDENTIFICAÇÃO OFICIAL */}
-      <div className="gestor-hero-banner">
-        <div className="gestor-hero-top-info">
-          <div className="gestor-hero-badge-pill">
-            <ShieldCheck size={16} />
-            <span>ÁREA ADMINISTRATIVA RESTRITA • COMISSÃO NACIONAL DE RECRUTAMENTO</span>
-          </div>
-          <div className="gestor-session-user">
-            <div className="gestor-user-dot active" />
-            <span>Sessão: <strong>{currentUser?.name || 'Dr. Alberto Chissano'}</strong> ({currentUser?.cargo || 'Presidente do Júri'})</span>
-          </div>
-        </div>
-
-        <div className="gestor-hero-content-flex">
-          <div className="gestor-hero-titles">
-            <h2>
-              Plataforma de Gestão & Triagem do Concurso Público
-            </h2>
-            <p>
-              Serviço Nacional de Investigação Criminal • Direcção Geral • Direcção de Recursos Humanos.
-              Avaliação de candidaturas, conferência documental, deliberação da comissão e publicação oficial de editais.
-            </p>
-          </div>
-
-          <div className="gestor-hero-quick-actions">
-            <button
-              type="button"
-              className="gestor-action-btn secondary"
-              onClick={() => navigate('/portal-recrutamento')}
-              title="Ir para a visão pública do candidato"
-            >
-              <ExternalLink size={16} />
-              <span>Ver como Candidato</span>
-            </button>
-            <button
-              type="button"
-              className="gestor-action-btn primary"
-              onClick={() => {
-                reloadData();
-                if (onNotify) onNotify('info', 'Dados sincronizados com sucesso.');
-              }}
-              title="Actualizar dados da base de dados"
-            >
-              <RefreshCw size={16} />
-              <span>Sincronizar Base</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* ========================================================
-          ABA 1: DASHBOARD / PAINEL GERAL
+          ABA 1: DASHBOARD / PAINEL GERAL (COM BANNER DE BOAS-VINDAS)
           ======================================================== */}
       {gestorTab === 'dashboard' && (
         <div className="gestor-tab-content fadeIn">
+          {/* BANNER EXECUTIVO EXCLUSIVO DO DASHBOARD / PAINEL GERAL */}
+          <div className="gestor-hero-banner">
+            <div className="gestor-hero-top-info">
+              <div className="gestor-hero-badge-pill">
+                <ShieldCheck size={16} />
+                <span>ÁREA ADMINISTRATIVA RESTRITA • COMISSÃO NACIONAL DE RECRUTAMENTO</span>
+              </div>
+              <div className="gestor-session-user">
+                <div className="gestor-user-dot active" />
+                <span>Sessão: <strong>{currentUser?.name || 'Dr. Alberto Chissano'}</strong> ({currentUser?.cargo || 'Presidente do Júri'})</span>
+              </div>
+            </div>
+
+            <div className="gestor-hero-content-flex">
+              <div className="gestor-hero-titles">
+                <h2>
+                  Plataforma de Gestão & Triagem do Concurso Público
+                </h2>
+                <p>
+                  Serviço Nacional de Investigação Criminal • Direcção Geral • Direcção de Recursos Humanos.
+                  Avaliação de candidaturas, conferência documental, deliberação da comissão e publicação oficial de editais.
+                </p>
+              </div>
+
+              <div className="gestor-hero-quick-actions">
+                <button
+                  type="button"
+                  className="gestor-action-btn secondary"
+                  onClick={() => navigate('/portal-recrutamento')}
+                  title="Ir para a visão pública do candidato"
+                >
+                  <ExternalLink size={16} />
+                  <span>Ver como Candidato</span>
+                </button>
+                <button
+                  type="button"
+                  className="gestor-action-btn primary"
+                  onClick={() => {
+                    reloadData();
+                    if (onNotify) onNotify('info', 'Dados sincronizados com sucesso.');
+                  }}
+                  title="Actualizar dados da base de dados"
+                >
+                  <RefreshCw size={16} />
+                  <span>Sincronizar Base</span>
+                </button>
+              </div>
+            </div>
+          </div>
           {/* CARDS DE KPIS */}
           <div className="gestor-kpi-grid">
             <div className="gestor-kpi-card">
@@ -2092,98 +2091,69 @@ export default function GestorPortalModule({
           ======================================================== */}
       {gestorTab === 'definicoes' && (
         <div className="gestor-tab-content fadeIn definicoes-tab-container">
-          {/* CABEÇALHO DO MÓDULO DE DEFINIÇÕES */}
-          <div className="definicoes-header-banner">
-            <div className="definicoes-header-left">
-              <div className="definicoes-icon-badge">
-                <SlidersHorizontal size={24} color="#ffffff" />
-              </div>
-              <div>
-                <h3>Módulo Central de Definições & Parâmetros do Concurso</h3>
-                <p>
-                  Gestão integrada de cursos aceites, centros de realização de testes, cores e temas visuais, idioma oficial e prazos estatutários do SERNIC 2026.
-                </p>
-              </div>
-            </div>
-
-            <div className="definicoes-header-actions">
-              <button
-                type="button"
-                className="gestor-btn-outline"
-                onClick={reloadData}
-                title="Recarregar e sincronizar definições"
-              >
-                <RefreshCw size={15} />
-                <span>Recarregar Base</span>
-              </button>
-            </div>
-          </div>
-
-          {/* INDICADOR DA SECÇÃO DE DEFINIÇÃO ATIVA (CONTROLADA PELA BARRA LATERAL) */}
-          <div className="definicoes-section-indicator">
-            <div className="vaga-form-section-badge" style={{ width: '32px', height: '32px' }}>
-              {definicoesSubTab === 'cursos' && <GraduationCap size={16} />}
-              {definicoesSubTab === 'locais' && <MapPin size={16} />}
-              {definicoesSubTab === 'temas' && <Palette size={16} />}
-              {definicoesSubTab === 'idioma' && <Globe size={16} />}
-              {definicoesSubTab === 'geral' && <Settings size={16} />}
-            </div>
-            <div>
-              <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>
-                {definicoesSubTab === 'cursos' && 'Cursos Homologados para Ingresso no SERNIC'}
-                {definicoesSubTab === 'locais' && 'Centros de Exame & Locais de Provas Oficiais'}
-                {definicoesSubTab === 'temas' && 'Paletas de Cores, Temas Visuais & Aparência (CRUD)'}
-                {definicoesSubTab === 'idioma' && 'Configurações de Idioma Oficial & Fuso Horário'}
-                {definicoesSubTab === 'geral' && 'Parâmetros Gerais Estatutários do Concurso'}
-              </h4>
-              <span style={{ fontSize: '0.78rem', color: 'var(--portal-text-muted)' }}>
-                Opção selecionada e gerida diretamente através do menu na Barra Lateral
-              </span>
-            </div>
-          </div>
-
           {/* ========================================================
               SUB-ABA 1: GESTÃO DE CURSOS HOMOLOGADOS
               ======================================================== */}
           {definicoesSubTab === 'cursos' && (
             <div className="definicoes-panel-body fadeIn">
               <div className="definicoes-panel-top">
-                <div className="definicoes-filters-group">
-                  <div className="definicoes-search-box">
-                    <Search size={16} />
-                    <input
-                      type="text"
-                      placeholder="Pesquisar curso por nome, carreira ou código..."
-                      value={buscaCurso}
-                      onChange={(e) => setBuscaCurso(e.target.value)}
-                    />
-                    {buscaCurso && (
-                      <button type="button" onClick={() => setBuscaCurso('')} className="btn-clear-search">
-                        <X size={14} />
-                      </button>
-                    )}
-                  </div>
-
-                  <select
-                    className="definicoes-select"
-                    value={filtroGrauCurso}
-                    onChange={(e) => setFiltroGrauCurso(e.target.value)}
-                  >
-                    <option value="todos">Todos os Graus Académicos</option>
-                    <option value="Licenciatura">Licenciatura</option>
-                    <option value="Mestrado">Mestrado</option>
-                    <option value="Nível Médio">Nível Médio (12ª Classe)</option>
-                  </select>
+                <div>
+                  <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1.15rem', fontWeight: 800 }}>
+                    Cursos Homologados para Ingresso no SERNIC
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '0.86rem', color: 'var(--portal-text-muted)' }}>
+                    Formações académicas autorizadas e médias mínimas para as carreiras policiais e técnicas.
+                  </p>
                 </div>
 
-                <button
-                  type="button"
-                  className="gestor-btn-primary-red"
-                  onClick={handleOpenNovoCurso}
+                <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="gestor-btn-outline"
+                    onClick={reloadData}
+                    title="Recarregar e sincronizar cursos"
+                  >
+                    <RefreshCw size={15} />
+                    <span>Actualizar</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="gestor-btn-primary-red"
+                    onClick={handleOpenNovoCurso}
+                  >
+                    <Plus size={16} />
+                    <span>Homologar Novo Curso</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* FILTROS E PESQUISA DE CURSOS */}
+              <div className="definicoes-filters-group" style={{ marginBottom: '1.25rem' }}>
+                <div className="definicoes-search-box">
+                  <Search size={16} />
+                  <input
+                    type="text"
+                    placeholder="Pesquisar curso por nome, carreira ou código..."
+                    value={buscaCurso}
+                    onChange={(e) => setBuscaCurso(e.target.value)}
+                  />
+                  {buscaCurso && (
+                    <button type="button" onClick={() => setBuscaCurso('')} className="btn-clear-search">
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                <select
+                  className="definicoes-select"
+                  value={filtroGrauCurso}
+                  onChange={(e) => setFiltroGrauCurso(e.target.value)}
                 >
-                  <Plus size={16} />
-                  <span>Homologar Novo Curso</span>
-                </button>
+                  <option value="todos">Todos os Graus Académicos</option>
+                  <option value="Licenciatura">Licenciatura</option>
+                  <option value="Mestrado">Mestrado</option>
+                  <option value="Nível Médio">Nível Médio (12ª Classe)</option>
+                </select>
               </div>
 
               {/* TABELA DE CURSOS */}
@@ -2281,22 +2251,33 @@ export default function GestorPortalModule({
             <div className="definicoes-panel-body fadeIn">
               <div className="definicoes-panel-top">
                 <div>
-                  <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1.1rem', fontWeight: 800 }}>
+                  <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1.15rem', fontWeight: 800 }}>
                     Centros Oficiais de Realização de Exames e Testes
                   </h4>
-                  <p style={{ margin: 0, fontSize: '0.86rem', color: '#64748b' }}>
+                  <p style={{ margin: 0, fontSize: '0.86rem', color: 'var(--portal-text-muted)' }}>
                     Gestão dos locais onde serão realizadas as provas escritas, testes de aptidão física, inspeções médicas e perícias laboratoriais.
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  className="gestor-btn-primary-red"
-                  onClick={handleOpenNovoLocal}
-                >
-                  <Building size={16} />
-                  <span>Cadastrar Centro de Exames</span>
-                </button>
+                <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="gestor-btn-outline"
+                    onClick={reloadData}
+                    title="Recarregar centros de exames"
+                  >
+                    <RefreshCw size={15} />
+                    <span>Actualizar</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="gestor-btn-primary-red"
+                    onClick={handleOpenNovoLocal}
+                  >
+                    <Building size={16} />
+                    <span>Cadastrar Centro de Exames</span>
+                  </button>
+                </div>
               </div>
 
               {/* GRID DE LOCAIS */}

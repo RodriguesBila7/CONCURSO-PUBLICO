@@ -164,43 +164,21 @@ export default function PortalLayout({
             </div>
           </div>
 
-          {/* CONTROLES DE NAVEGAÇÃO CENTRALIZADOS: VOLTAR E AVANÇAR */}
-          <div className="portal-header-center">
-            <div className="portal-history-nav">
-              <button
-                type="button"
-                className="portal-history-btn"
-                onClick={() => {
-                  if (typeof window !== 'undefined') {
-                    window.history.back();
-                  }
-                }}
-                title="Voltar à página anterior"
-                aria-label="Voltar"
-              >
-                <ChevronLeft size={16} />
-                <span>Voltar</span>
-              </button>
-
-              <button
-                type="button"
-                className="portal-history-btn"
-                onClick={() => {
-                  if (typeof window !== 'undefined') {
-                    window.history.forward();
-                  }
-                }}
-                title="Avançar à próxima página"
-                aria-label="Avançar"
-              >
-                <span>Avançar</span>
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
-
-          {/* Ações e Controles à Direita (Idioma + Modo Claro/Preto + Utilizador + Botão Sair) */}
+          {/* Ações e Controles à Direita (Ações Rápidas + Idioma + Modo Claro/Preto + Utilizador + Botão Sair) */}
           <div className="portal-header-actions">
+
+            {/* Ação rápida para o Gestor: Ver como Candidato */}
+            {isGestorRoute && (
+              <button
+                type="button"
+                className="portal-back-home-btn"
+                onClick={() => navigate('/portal-recrutamento')}
+                title="Abrir visão pública do portal de recrutamento"
+              >
+                <ExternalLink size={14} />
+                <span>Ver como Candidato</span>
+              </button>
+            )}
 
             {/* Seletor de Idioma PT */}
             <div className="portal-lang-pill" title="Idioma: Português (Moçambique)">
