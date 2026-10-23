@@ -268,30 +268,57 @@ export default function GestorPortalModule({
   // ESTADOS DO MÓDULO "DELIBERAÇÃO DO JÚRI"
   // ========================================================
   const [deliberandoCandidato, setDeliberandoCandidato] = useState(null);
-  const [novoEstado, setNovoEstado] = useState('Admitida');
+  const [novoEstado, setNovoEstado] = useState('Entrevista Profissional');
   const [motivoExclusao, setMotivoExclusao] = useState('Art. 35 do EGFAE - Idade superior a 35 anos à data limite');
   const [outroMotivo, setOutroMotivo] = useState('');
   const [parecerJuri, setParecerJuri] = useState('');
   const [notaFinal, setNotaFinal] = useState('18.0');
-  const [eventoData, setEventoData] = useState('15 de Novembro de 2026 às 08h00');
-  const [eventoLocal, setEventoLocal] = useState('Academia de Ciências Policiais (ACIPOL) - Michafutene, Maputo');
-  const [tipoProva, setTipoProva] = useState('Prova Escrita de Conhecimentos');
+  const [eventoData, setEventoData] = useState('15 de Novembro de 2026 às 08h30');
+  const [eventoLocal, setEventoLocal] = useState('Direcção Geral do SERNIC - Sala de Conferências n.º 1, Maputo');
+  const [tipoProva, setTipoProva] = useState('Entrevista Profissional e de Competências');
 
   // ========================================================
   // DELIBERAÇÃO DIRETA DENTRO DA SUB-ABA DO DOSSIER (SEM SAIR DO MODAL)
   // ========================================================
   const handleInlineDeliberacao = (candidato, status) => {
+    let parecerPadrao = '';
+    let motivoFinal = null;
+    let evData = null;
+    let evLocal = null;
+    let evTitulo = null;
+    let nota = null;
+
+    if (status === 'Entrevista Profissional') {
+      parecerPadrao = 'Candidatura aprovada na 1ª Fase (Avaliação Documental). Convocado(a) oficialmente para a 2ª Fase (Entrevista Profissional).';
+      evData = '15 de Novembro de 2026 às 08h30';
+      evLocal = 'Direcção Geral do SERNIC - Sala de Conferências n.º 1, Maputo';
+      evTitulo = 'Entrevista Profissional e de Competências';
+    } else if (status === 'Admitido') {
+      parecerPadrao = 'Candidato aprovado com mérito na Entrevista Profissional para provimento efetivo de vaga.';
+      nota = '18.5';
+    } else if (status === 'Aprovado (Suplente)') {
+      parecerPadrao = 'Candidato aprovado na Entrevista Profissional e colocado na lista de suplentes (reserva de recrutamento).';
+      nota = '15.5';
+    } else if (status === 'Excluído') {
+      const isFase1 = candidato.faseAtual === 1 || candidato.status === 'Em Análise Documental' || candidato.status === 'Em análise' || candidato.status === 'Submetida';
+      motivoFinal = isFase1 
+        ? 'Inconformidade na avaliação documental com os requisitos obrigatórios do Edital'
+        : 'Não aproveitamento na Entrevista Profissional (classificação inferior a 10 valores)';
+      parecerPadrao = `Candidatura excluída do concurso: ${motivoFinal}.`;
+    } else if (status === 'Em Análise Documental') {
+      parecerPadrao = 'Candidatura reaberta para reavaliação documental preliminar.';
+    }
+
     const updates = {
       status: status,
-      parecer: status === 'Admitida' 
-        ? 'Candidatura admitida em conformidade com o edital.'
-        : status === 'Convocada para provas'
-        ? 'Convocado(a) oficialmente para a fase de exames.'
-        : status === 'Aprovada'
-        ? 'Candidato homologado e aprovado com mérito pelo júri.'
-        : 'Candidatura excluída por não conformidade com os requisitos do edital.',
-      motivoExclusao: status === 'Excluída' ? 'Não conformidade documental com o edital' : null
+      parecer: parecerPadrao,
+      motivoExclusao: motivoFinal,
+      eventoData: evData,
+      eventoLocal: evLocal,
+      eventoTitulo: evTitulo,
+      notaFinal: nota
     };
+
     const operadorNome = currentUser?.name || 'Dr. Alberto Chissano (Presidente do Júri)';
     const updated = updateStoredCandidatura(candidato.codigoCandidatura, updates, operadorNome);
     if (updated) {
@@ -420,13 +447,13 @@ export default function GestorPortalModule({
   // ========================================================
   const stats = useMemo(() => {
     const total = candidatos.length;
-    const admitidos = candidatos.filter(c => c.status === 'Admitida').length;
-    const convocados = candidatos.filter(c => c.status === 'Convocada para provas').length;
-    const aprovados = candidatos.filter(c => c.status === 'Aprovada').length;
-    const excluidos = candidatos.filter(c => c.status === 'Excluída').length;
-    const analise = candidatos.filter(c => c.status === 'Em análise' || c.status === 'Submetida').length;
+    const analise = candidatos.filter(c => c.status === 'Em Análise Documental' || c.status === 'Em análise' || c.status === 'Submetida').length;
+    const entrevista = candidatos.filter(c => c.status === 'Entrevista Profissional' || c.status === 'Convocada para provas').length;
+    const admitidos = candidatos.filter(c => c.status === 'Admitido' || c.status === 'Admitida').length;
+    const suplentes = candidatos.filter(c => c.status === 'Aprovado (Suplente)').length;
+    const excluidos = candidatos.filter(c => c.status === 'Excluído' || c.status === 'Excluída').length;
 
-    const taxaAdmissao = total > 0 ? Math.round(((admitidos + convocados + aprovados) / total) * 100) : 0;
+    const taxaAdmissao = total > 0 ? Math.round(((admitidos + suplentes) / total) * 100) : 0;
     const taxaExclusao = total > 0 ? Math.round((excluidos / total) * 100) : 0;
 
     // Distribuição por vaga
@@ -451,11 +478,11 @@ export default function GestorPortalModule({
 
     return {
       total,
-      admitidos,
-      convocados,
-      aprovados,
-      excluidos,
       analise,
+      entrevista,
+      admitidos,
+      suplentes,
+      excluidos,
       taxaAdmissao,
       taxaExclusao,
       porVaga,
@@ -467,11 +494,11 @@ export default function GestorPortalModule({
   const donutSegmentsLarge = useMemo(() => {
     const total = stats.total || 1;
     const items = [
-      { label: 'Aprovadas / Provimento', value: stats.aprovados, color: '#16a34a' },
-      { label: 'Convocadas p/ Provas', value: stats.convocados, color: '#2563eb' },
-      { label: 'Admitidas', value: stats.admitidos, color: '#0d9488' },
-      { label: 'Em Análise', value: stats.analise, color: '#f59e0b' },
-      { label: 'Excluídas', value: stats.excluidos, color: '#c32026' },
+      { label: '3ª Fase: Admitidos (Efetivo)', value: stats.admitidos, color: '#16a34a' },
+      { label: '3ª Fase: Aprovados (Suplentes)', value: stats.suplentes, color: '#f59e0b' },
+      { label: '2ª Fase: Entrevista Profissional', value: stats.entrevista, color: '#2563eb' },
+      { label: '1ª Fase: Em Análise Documental', value: stats.analise, color: '#64748b' },
+      { label: 'Excluídos do Concurso', value: stats.excluidos, color: '#c32026' },
     ];
     const r = 68;
     const circumference = 2 * Math.PI * r;
@@ -493,49 +520,56 @@ export default function GestorPortalModule({
     });
   }, [stats]);
 
-  // Etapas do Pipeline Progressivo do Funil
+  // Pipeline Progressivo Oficial em 3 Fases
   const funnelStages = useMemo(() => {
     return [
       {
-        step: 'Fase 1',
-        title: 'Em Análise Curricular & Triagem',
+        step: 'Inscrições',
+        title: 'Módulo: Inscritos no Concurso',
+        count: stats.total,
+        color: '#334155',
+        desc: 'Base global de candidatos registados após o lançamento oficial do concurso público.'
+      },
+      {
+        step: '1ª Fase',
+        title: 'Avaliação Documental (Em Análise)',
         count: stats.analise,
-        color: '#f59e0b',
-        desc: 'Processos a aguardar conferência documental e parecer formal do júri examinador.'
+        color: '#64748b',
+        desc: 'Conferência de BI, certidões e idoneidade. Apenas aprova para a 2ª fase ou exclui.'
       },
       {
-        step: 'Fase 2',
-        title: 'Candidaturas Admitidas (Homologadas)',
-        count: stats.admitidos,
-        color: '#0d9488',
-        desc: 'Documentação e requisitos legais validados em conformidade com o Estatuto do SERNIC.'
-      },
-      {
-        step: 'Fase 3',
-        title: 'Convocadas para Provas & Testes',
-        count: stats.convocados,
+        step: '2ª Fase',
+        title: 'Entrevista Profissional',
+        count: stats.entrevista,
         color: '#2563eb',
-        desc: 'Agendados para provas escritas na ACIPOL e perícias práticas laboratoriais.'
+        desc: 'Candidatos aprovados na 1ª fase convocados para avaliação presencial de competências.'
       },
       {
-        step: 'Fase 4',
-        title: 'Aprovadas / Provimento de Vaga',
-        count: stats.aprovados,
+        step: '3ª Fase (A)',
+        title: 'Admitidos (Provimento Efetivo)',
+        count: stats.admitidos,
         color: '#16a34a',
-        desc: 'Apuradas com mérito e classificação final para provimento das quotas autorizadas.'
+        desc: 'Apurados após entrevista para preenchimento imediato das vagas do edital.'
       },
       {
-        step: 'Fase 5',
+        step: '3ª Fase (B)',
+        title: 'Aprovados (Suplentes / Reserva)',
+        count: stats.suplentes,
+        color: '#f59e0b',
+        desc: 'Classificados com nota positiva na entrevista que integram a lista de reserva.'
+      },
+      {
+        step: 'Desfecho',
         title: 'Candidaturas Excluídas',
         count: stats.excluidos,
         color: '#c32026',
-        desc: 'Desclassificadas com fundamento jurídico exarado no livro oficial de atas.'
+        desc: 'Excluídos na análise documental (Fase 1) ou por nota insuficiente na entrevista (Fase 2).'
       }
     ];
   }, [stats]);
 
   const taxaAdmissibilidade = stats.total > 0
-    ? Math.round(((stats.admitidos + stats.convocados + stats.aprovados) / stats.total) * 100)
+    ? Math.round(((stats.admitidos + stats.suplentes) / stats.total) * 100)
     : 0;
 
   const taxaTriagemConcluida = stats.total > 0
@@ -564,7 +598,21 @@ export default function GestorPortalModule({
       if (filtroProvincia !== 'todas' && c.provincia !== filtroProvincia) return false;
 
       // Status
-      if (filtroStatus !== 'todos' && c.status !== filtroStatus) return false;
+      if (filtroStatus !== 'todos') {
+        if (filtroStatus === 'Em Análise Documental') {
+          if (c.status !== 'Em Análise Documental' && c.status !== 'Em análise' && c.status !== 'Submetida') return false;
+        } else if (filtroStatus === 'Entrevista Profissional') {
+          if (c.status !== 'Entrevista Profissional' && c.status !== 'Convocada para provas') return false;
+        } else if (filtroStatus === 'Admitido') {
+          if (c.status !== 'Admitido' && c.status !== 'Admitida') return false;
+        } else if (filtroStatus === 'Aprovado (Suplente)') {
+          if (c.status !== 'Aprovado (Suplente)') return false;
+        } else if (filtroStatus === 'Excluído') {
+          if (c.status !== 'Excluído' && c.status !== 'Excluída') return false;
+        } else if (c.status !== filtroStatus) {
+          return false;
+        }
+      }
 
       // Género
       if (filtroGenero !== 'todos' && c.genero !== filtroGenero) return false;
@@ -578,8 +626,20 @@ export default function GestorPortalModule({
   // ========================================================
   const iniciarDeliberacao = (candidato) => {
     setDeliberandoCandidato(candidato);
-    setNovoEstado(candidato.status === 'Submetida' ? 'Admitida' : candidato.status);
-    setParecerJuri(candidato.deliberacaoJuri?.parecer || '');
+    const isFase1 = candidato.faseAtual === 1 || candidato.status === 'Em Análise Documental' || candidato.status === 'Em análise' || candidato.status === 'Submetida';
+    const isFase2 = candidato.faseAtual === 2 || candidato.status === 'Entrevista Profissional' || candidato.status === 'Convocada para provas';
+
+    if (isFase1) {
+      setNovoEstado('Entrevista Profissional');
+      setParecerJuri('Candidatura conforme na validação documental. Aprovado(a) para a 2ª Fase (Entrevista Profissional).');
+    } else if (isFase2) {
+      setNovoEstado('Admitido');
+      setParecerJuri('Candidato demonstrou excelente domínio técnico na Entrevista Profissional. Proposto para provimento de vaga.');
+    } else {
+      setNovoEstado(candidato.status);
+      setParecerJuri(candidato.deliberacaoJuri?.parecer || '');
+    }
+
     if (candidato.deliberacaoJuri?.motivoExclusao) {
       setMotivoExclusao(candidato.deliberacaoJuri.motivoExclusao);
     }
@@ -597,23 +657,29 @@ export default function GestorPortalModule({
     if (e) e.preventDefault();
     if (!deliberandoCandidato) return;
 
-    const motivoFinal = novoEstado === 'Excluída' 
+    const motivoFinal = (novoEstado === 'Excluído' || novoEstado === 'Excluída')
       ? (motivoExclusao === 'Outro fundamento legal com descrição detalhada' ? outroMotivo : motivoExclusao)
       : null;
 
-    if (novoEstado === 'Excluída' && !motivoFinal) {
+    if ((novoEstado === 'Excluído' || novoEstado === 'Excluída') && !motivoFinal) {
       if (onNotify) onNotify('error', 'É obrigatório indicar o fundamento legal para a exclusão do candidato.');
       return;
     }
 
     const updates = {
       status: novoEstado,
-      parecer: parecerJuri || (novoEstado === 'Admitida' ? 'Candidatura admitida após validação documental conforme o edital.' : ''),
+      parecer: parecerJuri || (novoEstado === 'Entrevista Profissional' 
+        ? 'Candidatura aprovada na análise documental. Convocado(a) para entrevista.'
+        : novoEstado === 'Admitido'
+        ? 'Aprovado(a) na entrevista para provimento de vaga.'
+        : novoEstado === 'Aprovado (Suplente)'
+        ? 'Aprovado(a) na entrevista para a lista de reserva (suplente).'
+        : 'Deliberação homologada pelo júri.'),
       motivoExclusao: motivoFinal,
-      notaFinal: novoEstado === 'Aprovada' ? notaFinal : null,
-      eventoData: novoEstado === 'Convocada para provas' ? eventoData : null,
-      eventoLocal: novoEstado === 'Convocada para provas' ? eventoLocal : null,
-      eventoTitulo: novoEstado === 'Convocada para provas' ? `Convocado(a) para ${tipoProva}` : null
+      notaFinal: (novoEstado === 'Admitido' || novoEstado === 'Aprovado (Suplente)') ? notaFinal : null,
+      eventoData: novoEstado === 'Entrevista Profissional' ? eventoData : null,
+      eventoLocal: novoEstado === 'Entrevista Profissional' ? eventoLocal : null,
+      eventoTitulo: novoEstado === 'Entrevista Profissional' ? 'Entrevista Profissional' : null
     };
 
     const operadorNome = currentUser?.name || 'Dr. Alberto Chissano (Presidente do Júri)';
@@ -638,10 +704,10 @@ export default function GestorPortalModule({
 
     const currentListas = getStoredListasPublicadas();
     const countAtingidos = candidatos.filter(c => {
-      if (novoEditalData.tipo === 'Admitidos') return c.status === 'Admitida';
-      if (novoEditalData.tipo === 'Convocados') return c.status === 'Convocada para provas';
-      if (novoEditalData.tipo === 'Excluídos') return c.status === 'Excluída';
-      if (novoEditalData.tipo === 'Aprovados') return c.status === 'Aprovada';
+      if (novoEditalData.tipo === 'Admitidos') return c.status === 'Admitido' || c.status === 'Admitida';
+      if (novoEditalData.tipo === 'Convocados') return c.status === 'Entrevista Profissional' || c.status === 'Convocada para provas';
+      if (novoEditalData.tipo === 'Suplentes') return c.status === 'Aprovado (Suplente)';
+      if (novoEditalData.tipo === 'Excluídos') return c.status === 'Excluído' || c.status === 'Excluída';
       return true;
     }).length;
 
@@ -1081,21 +1147,25 @@ export default function GestorPortalModule({
     if (onNotify) onNotify('success', 'Parâmetros oficiais do concurso guardados com sucesso!');
   };
 
-  // Helper de badges de status
+  // Helper de badges de status oficiais em 3 fases
   const getBadgeStyle = (status) => {
     switch (status) {
-      case 'Aprovada':
-        return { bg: '#dcfce7', color: '#15803d', border: '#bbf7d0', label: 'Aprovada no Concurso', icon: <Award size={14} /> };
+      case 'Admitido':
       case 'Admitida':
-        return { bg: '#dcfce7', color: '#15803d', border: '#bbf7d0', label: 'Admitida', icon: <CheckCircle2 size={14} /> };
+        return { bg: '#dcfce7', color: '#15803d', border: '#bbf7d0', label: '3ª Fase: Admitido(a)', icon: <CheckCircle2 size={14} /> };
+      case 'Aprovado (Suplente)':
+        return { bg: '#fef3c7', color: '#b45309', border: '#fde68a', label: '3ª Fase: Suplente (Reserva)', icon: <Award size={14} /> };
+      case 'Entrevista Profissional':
       case 'Convocada para provas':
-        return { bg: '#dbeafe', color: '#1e40af', border: '#bfdbfe', label: 'Convocada p/ Provas', icon: <Calendar size={14} /> };
+        return { bg: '#dbeafe', color: '#1d4ed8', border: '#bfdbfe', label: '2ª Fase: Entrevista', icon: <Calendar size={14} /> };
+      case 'Excluído':
       case 'Excluída':
-        return { bg: '#fee2e2', color: '#c32026', border: '#fecaca', label: 'Excluída', icon: <XCircle size={14} /> };
+        return { bg: '#fee2e2', color: '#c32026', border: '#fecaca', label: 'Excluído(a)', icon: <XCircle size={14} /> };
+      case 'Em Análise Documental':
       case 'Em análise':
       case 'Submetida':
       default:
-        return { bg: '#fef3c7', color: '#92400e', border: '#fde68a', label: 'Em Análise Curricular', icon: <Clock size={14} /> };
+        return { bg: '#f1f5f9', color: '#475569', border: '#cbd5e1', label: '1ª Fase: Em Análise', icon: <Clock size={14} /> };
     }
   };
 
@@ -1159,45 +1229,56 @@ export default function GestorPortalModule({
           <div className="gestor-kpi-grid">
             <div className="gestor-kpi-card">
               <div className="gestor-kpi-header">
-                <span className="gestor-kpi-label">Total de Candidatos Inscritos</span>
+                <span className="gestor-kpi-label">Inscritos no Concurso</span>
                 <span className="gestor-kpi-icon-wrap primary"><Users size={20} /></span>
               </div>
               <div className="gestor-kpi-value">{stats.total}</div>
               <div className="gestor-kpi-footer">
-                <span className="gestor-kpi-sub">Inscrições válidas registadas</span>
+                <span className="gestor-kpi-sub">Total global de candidaturas</span>
               </div>
             </div>
 
             <div className="gestor-kpi-card">
               <div className="gestor-kpi-header">
-                <span className="gestor-kpi-label">Candidatos Admitidos</span>
+                <span className="gestor-kpi-label">1ª Fase: Em Análise</span>
+                <span className="gestor-kpi-icon-wrap warning"><Clock size={20} /></span>
+              </div>
+              <div className="gestor-kpi-value text-warning">{stats.analise}</div>
+              <div className="gestor-kpi-footer">
+                <span className="gestor-kpi-sub">Validação documental e requisitos</span>
+              </div>
+            </div>
+
+            <div className="gestor-kpi-card">
+              <div className="gestor-kpi-header">
+                <span className="gestor-kpi-label">2ª Fase: Entrevista</span>
+                <span className="gestor-kpi-icon-wrap info"><Calendar size={20} /></span>
+              </div>
+              <div className="gestor-kpi-value text-info">{stats.entrevista}</div>
+              <div className="gestor-kpi-footer">
+                <span className="gestor-kpi-sub">Aprovados na fase 1 / convocados</span>
+              </div>
+            </div>
+
+            <div className="gestor-kpi-card">
+              <div className="gestor-kpi-header">
+                <span className="gestor-kpi-label">3ª Fase: Admitidos</span>
                 <span className="gestor-kpi-icon-wrap success"><CheckCircle2 size={20} /></span>
               </div>
               <div className="gestor-kpi-value text-success">{stats.admitidos}</div>
               <div className="gestor-kpi-footer">
-                <span className="gestor-kpi-sub">{Math.round((stats.admitidos / (stats.total || 1)) * 100)}% do total de inscritos</span>
+                <span className="gestor-kpi-sub">Provimento efetivo de vagas</span>
               </div>
             </div>
 
             <div className="gestor-kpi-card">
               <div className="gestor-kpi-header">
-                <span className="gestor-kpi-label">Convocados para Provas</span>
-                <span className="gestor-kpi-icon-wrap info"><Calendar size={20} /></span>
+                <span className="gestor-kpi-label">3ª Fase: Suplentes</span>
+                <span className="gestor-kpi-icon-wrap warning"><Award size={20} /></span>
               </div>
-              <div className="gestor-kpi-value text-info">{stats.convocados}</div>
+              <div className="gestor-kpi-value text-warning">{stats.suplentes}</div>
               <div className="gestor-kpi-footer">
-                <span className="gestor-kpi-sub">Com agendamento na ACIPOL</span>
-              </div>
-            </div>
-
-            <div className="gestor-kpi-card">
-              <div className="gestor-kpi-header">
-                <span className="gestor-kpi-label">Aprovados / Provimento</span>
-                <span className="gestor-kpi-icon-wrap success"><Award size={20} /></span>
-              </div>
-              <div className="gestor-kpi-value text-success">{stats.aprovados}</div>
-              <div className="gestor-kpi-footer">
-                <span className="gestor-kpi-sub">Apurados com nota final</span>
+                <span className="gestor-kpi-sub">Aprovados em lista de reserva</span>
               </div>
             </div>
 
@@ -1208,18 +1289,7 @@ export default function GestorPortalModule({
               </div>
               <div className="gestor-kpi-value text-danger">{stats.excluidos}</div>
               <div className="gestor-kpi-footer">
-                <span className="gestor-kpi-sub">Com fundamentação legal</span>
-              </div>
-            </div>
-
-            <div className="gestor-kpi-card">
-              <div className="gestor-kpi-header">
-                <span className="gestor-kpi-label">Processos em Análise</span>
-                <span className="gestor-kpi-icon-wrap warning"><Clock size={20} /></span>
-              </div>
-              <div className="gestor-kpi-value text-warning">{stats.analise}</div>
-              <div className="gestor-kpi-footer">
-                <span className="gestor-kpi-sub">Aguardam deliberação do júri</span>
+                <span className="gestor-kpi-sub">Com fundamentação legal exarada</span>
               </div>
             </div>
           </div>
@@ -1375,12 +1445,17 @@ export default function GestorPortalModule({
                 <div className="donut-quick-summary">
                   <div className="donut-summary-row">
                     <span className="dot-circle" style={{ backgroundColor: '#16a34a' }} />
-                    <span>Aptos p/ Vagas:</span>
-                    <strong>{stats.aprovados + stats.convocados} ({stats.total > 0 ? Math.round(((stats.aprovados + stats.convocados) / stats.total) * 100) : 0}%)</strong>
+                    <span>Admitidos + Suplentes:</span>
+                    <strong>{stats.admitidos + stats.suplentes} ({stats.total > 0 ? Math.round(((stats.admitidos + stats.suplentes) / stats.total) * 100) : 0}%)</strong>
                   </div>
                   <div className="donut-summary-row">
-                    <span className="dot-circle" style={{ backgroundColor: '#f59e0b' }} />
-                    <span>Pendentes Deliberação:</span>
+                    <span className="dot-circle" style={{ backgroundColor: '#2563eb' }} />
+                    <span>Em Entrevista:</span>
+                    <strong>{stats.entrevista} ({stats.total > 0 ? Math.round((stats.entrevista / stats.total) * 100) : 0}%)</strong>
+                  </div>
+                  <div className="donut-summary-row">
+                    <span className="dot-circle" style={{ backgroundColor: '#64748b' }} />
+                    <span>Em Análise Documental:</span>
                     <strong>{stats.analise} ({stats.total > 0 ? Math.round((stats.analise / stats.total) * 100) : 0}%)</strong>
                   </div>
                 </div>
@@ -1519,14 +1594,14 @@ export default function GestorPortalModule({
               </div>
 
               <div className="gestor-filter-select-group">
-                <label>Estado:</label>
+                <label>Fase / Estado:</label>
                 <select value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
                   <option value="todos">Todos os Estados</option>
-                  <option value="Em análise">Em análise</option>
-                  <option value="Admitida">Admitida</option>
-                  <option value="Convocada para provas">Convocada para provas</option>
-                  <option value="Aprovada">Aprovada</option>
-                  <option value="Excluída">Excluída</option>
+                  <option value="Em Análise Documental">1ª Fase: Em Análise Documental</option>
+                  <option value="Entrevista Profissional">2ª Fase: Entrevista Profissional</option>
+                  <option value="Admitido">3ª Fase: Admitido (Efetivo)</option>
+                  <option value="Aprovado (Suplente)">3ª Fase: Aprovado (Suplente)</option>
+                  <option value="Excluído">Excluído do Concurso</option>
                 </select>
               </div>
 
@@ -1715,8 +1790,18 @@ export default function GestorPortalModule({
                       className={`deliberacao-candidato-item ${isSelected ? 'selected' : ''}`}
                       onClick={() => {
                         setDeliberandoCandidato(c);
-                        setNovoEstado(c.status === 'Submetida' ? 'Admitida' : c.status);
-                        setParecerJuri(c.deliberacaoJuri?.parecer || '');
+                        const isF1 = c.faseAtual === 1 || c.status === 'Em Análise Documental' || c.status === 'Em análise' || c.status === 'Submetida';
+                        const isF2 = c.faseAtual === 2 || c.status === 'Entrevista Profissional' || c.status === 'Convocada para provas';
+                        if (isF1) {
+                          setNovoEstado('Entrevista Profissional');
+                          setParecerJuri('Candidatura conforme na validação documental. Aprovado(a) para a 2ª Fase (Entrevista Profissional).');
+                        } else if (isF2) {
+                          setNovoEstado('Admitido');
+                          setParecerJuri('Candidato demonstrou excelente domínio técnico na Entrevista Profissional. Proposto para provimento de vaga.');
+                        } else {
+                          setNovoEstado(c.status);
+                          setParecerJuri(c.deliberacaoJuri?.parecer || '');
+                        }
                         if (c.deliberacaoJuri?.motivoExclusao) {
                           setMotivoExclusao(c.deliberacaoJuri.motivoExclusao);
                         }
@@ -1796,243 +1881,318 @@ export default function GestorPortalModule({
 
                   {/* FORMULÁRIO DE DELIBERAÇÃO FORMAL */}
                   <form onSubmit={handleGravarDeliberacao} className="deliberacao-form-body">
-                    <div className="deliberacao-choice-title">
-                      <FileSignature size={18} color="#c32026" />
-                      <span>Selecione a Decisão Formal da Comissão de Júri:</span>
-                    </div>
+                    {(() => {
+                      const candFase = deliberandoCandidato.faseAtual || (
+                        (deliberandoCandidato.status === 'Em Análise Documental' || deliberandoCandidato.status === 'Em análise' || deliberandoCandidato.status === 'Submetida') ? 1 :
+                        (deliberandoCandidato.status === 'Entrevista Profissional' || deliberandoCandidato.status === 'Convocada para provas') ? 2 : 3
+                      );
 
-                    {/* BOTÕES DE DECISÃO RÁPIDA (ADMITIDO, CONVOCADO, APROVADO, EXCLUÍDO, ANÁLISE) */}
-                    <div className="deliberacao-options-grid">
-                      {/* OPÇÃO 1: ADMITIDO */}
-                      <label 
-                        className={`deliberacao-radio-card option-admitido ${novoEstado === 'Admitida' ? 'checked' : ''}`}
-                        onClick={() => {
-                          setNovoEstado('Admitida');
-                          if (!parecerJuri) setParecerJuri('Candidatura cumpre integralmente os requisitos do Edital e validação documental.');
-                        }}
-                      >
-                        <input
-                          type="radio"
-                          name="estadoDeliberacao"
-                          value="Admitida"
-                          checked={novoEstado === 'Admitida'}
-                          onChange={() => {}}
-                        />
-                        <div className="radio-content">
-                          <div className="radio-header">
-                            <CheckCircle2 size={20} className="radio-icon" />
-                            <strong>ADMITIR CANDIDATO</strong>
-                          </div>
-                          <p>Homologado na triagem documental. Cumpre os requisitos de idade, habilitações e idoneidade.</p>
-                        </div>
-                      </label>
-
-                      {/* OPÇÃO 2: CONVOCADO PARA PROVAS */}
-                      <label 
-                        className={`deliberacao-radio-card option-convocado ${novoEstado === 'Convocada para provas' ? 'checked' : ''}`}
-                        onClick={() => {
-                          setNovoEstado('Convocada para provas');
-                          if (!parecerJuri) setParecerJuri('Convocado formalmente para a fase de provas escritas e de aptidão.');
-                        }}
-                      >
-                        <input
-                          type="radio"
-                          name="estadoDeliberacao"
-                          value="Convocada para provas"
-                          checked={novoEstado === 'Convocada para provas'}
-                          onChange={() => {}}
-                        />
-                        <div className="radio-content">
-                          <div className="radio-header">
-                            <Calendar size={20} className="radio-icon" />
-                            <strong>CONVOCAR PARA PROVAS</strong>
-                          </div>
-                          <p>Convocatória oficial com data, hora e local para realização de exames escritos ou físicos.</p>
-                        </div>
-                      </label>
-
-                      {/* OPÇÃO 3: APROVADO / PROVIMENTO */}
-                      <label 
-                        className={`deliberacao-radio-card option-aprovado ${novoEstado === 'Aprovada' ? 'checked' : ''}`}
-                        onClick={() => {
-                          setNovoEstado('Aprovada');
-                          if (!parecerJuri) setParecerJuri('Candidato aprovado em todas as etapas de avaliação com mérito para provimento de vaga.');
-                        }}
-                      >
-                        <input
-                          type="radio"
-                          name="estadoDeliberacao"
-                          value="Aprovada"
-                          checked={novoEstado === 'Aprovada'}
-                          onChange={() => {}}
-                        />
-                        <div className="radio-content">
-                          <div className="radio-header">
-                            <Award size={20} className="radio-icon" />
-                            <strong>APROVAR NO CONCURSO</strong>
-                          </div>
-                          <p>Apurado definitivamente para ingresso na carreira. Atribuição de nota final de provimento.</p>
-                        </div>
-                      </label>
-
-                      {/* OPÇÃO 4: EXCLUÍDO */}
-                      <label 
-                        className={`deliberacao-radio-card option-excluido ${novoEstado === 'Excluída' ? 'checked' : ''}`}
-                        onClick={() => {
-                          setNovoEstado('Excluída');
-                          if (!parecerJuri) setParecerJuri('Candidatura não admitida nos termos do EGFAE e regulamento do concurso.');
-                        }}
-                      >
-                        <input
-                          type="radio"
-                          name="estadoDeliberacao"
-                          value="Excluída"
-                          checked={novoEstado === 'Excluída'}
-                          onChange={() => {}}
-                        />
-                        <div className="radio-content">
-                          <div className="radio-header">
-                            <XCircle size={20} className="radio-icon" />
-                            <strong>EXCLUIR / NÃO ADMITIR</strong>
-                          </div>
-                          <p>Exclusão fundamentada. Exige a indicação formal do motivo legal e despacho do júri.</p>
-                        </div>
-                      </label>
-                    </div>
-
-                    {/* CAMPOS ESPECÍFICOS: CONVOCAÇÃO PARA PROVAS */}
-                    {novoEstado === 'Convocada para provas' && (
-                      <div className="deliberacao-extra-box info-box">
-                        <div className="extra-box-title">
-                          <Calendar size={17} />
-                          <span>Parâmetros da Convocatória Oficial para Exames</span>
-                        </div>
-                        <div className="extra-box-grid">
-                          <div className="form-field">
-                            <label>Tipo de Prova / Exame:</label>
-                            <select value={tipoProva} onChange={(e) => setTipoProva(e.target.value)}>
-                              <option value="Prova Escrita de Conhecimentos">Prova Escrita de Conhecimentos</option>
-                              <option value="Provas de Aptidão Física e Psicotécnicas">Provas de Aptidão Física e Psicotécnicas</option>
-                              <option value="Inspecção Médica e Junta de Saúde">Inspecção Médica e Junta de Saúde</option>
-                              <option value="Prova Prática Laboratorial de Criminalística">Prova Prática Laboratorial de Criminalística</option>
-                              <option value="Entrevista Técnica de Especialidade">Entrevista Técnica de Especialidade</option>
-                            </select>
+                      return (
+                        <>
+                          {/* BANNER OFICIAL DA FASE DO CONCURSO */}
+                          <div className={`deliberacao-phase-banner fase${candFase}`}>
+                            <div className="banner-title">
+                              <ShieldCheck size={18} />
+                              <span>
+                                {candFase === 1 && '1ª Fase: Avaliação Documental (Triagem de Requisitos)'}
+                                {candFase === 2 && '2ª Fase: Entrevista Profissional (Avaliação Técnica e Comportamental)'}
+                                {candFase === 3 && `3ª Fase: Deliberação Final Homologada (${deliberandoCandidato.status})`}
+                              </span>
+                            </div>
+                            <p className="banner-desc">
+                              {candFase === 1 && 'Regra Fundamental: Na 1ª fase o júri apenas pode aprovar o candidato para a 2ª Fase (Entrevista Profissional) ou excluí-lo por inconformidade documental com o Edital.'}
+                              {candFase === 2 && 'Regra Fundamental: Após a realização da Entrevista Profissional, o júri delibera o desfecho final em 3 categorias: Admitido (Efetivo), Aprovado (Suplente) ou Excluído.'}
+                              {candFase === 3 && 'O candidato já tem resultado final homologado pela comissão. É possível recalibrar a deliberação caso tenha sido interposto recurso com provimento.'}
+                            </p>
                           </div>
 
-                          <div className="form-field">
-                            <label>Data e Hora do Evento:</label>
-                            <input
-                              type="text"
-                              value={eventoData}
-                              onChange={(e) => setEventoData(e.target.value)}
-                              placeholder="Ex: 15 de Novembro de 2026 às 08h00"
-                            />
+                          <div className="deliberacao-choice-title">
+                            <FileSignature size={18} color="#c32026" />
+                            <span>
+                              {candFase === 1 && 'Deliberação da 1ª Fase (Avaliação Documental):'}
+                              {candFase === 2 && 'Deliberação da 2ª Fase (Entrevista Profissional):'}
+                              {candFase === 3 && 'Ajuste da Deliberação Final do Candidato:'}
+                            </span>
                           </div>
 
-                          <div className="form-field full-width">
-                            <label>Local Oficial da Prova:</label>
-                            <input
-                              type="text"
-                              value={eventoLocal}
-                              onChange={(e) => setEventoLocal(e.target.value)}
-                              placeholder="Ex: Academia de Ciências Policiais (ACIPOL) - Michafutene, Maputo"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                          {/* OPÇÕES DA 1ª FASE: EXATAMENTE 2 OPÇÕES */}
+                          {candFase === 1 && (
+                            <div className="deliberacao-options-grid">
+                              {/* OPÇÃO 1A: APROVAR P/ ENTREVISTA */}
+                              <label 
+                                className={`deliberacao-radio-card option-convocado ${novoEstado === 'Entrevista Profissional' ? 'checked' : ''}`}
+                                onClick={() => {
+                                  setNovoEstado('Entrevista Profissional');
+                                  if (!parecerJuri) setParecerJuri('Candidatura conforme na validação documental. Aprovado(a) para a 2ª Fase (Entrevista Profissional).');
+                                }}
+                              >
+                                <input
+                                  type="radio"
+                                  name="estadoDeliberacao"
+                                  value="Entrevista Profissional"
+                                  checked={novoEstado === 'Entrevista Profissional'}
+                                  onChange={() => {}}
+                                />
+                                <div className="radio-content">
+                                  <div className="radio-header">
+                                    <Calendar size={20} className="radio-icon" />
+                                    <strong>APROVAR PARA A 2ª FASE (ENTREVISTA)</strong>
+                                  </div>
+                                  <p>Validação documental regular. Convocar oficialmente o candidato para a Entrevista Profissional com o júri.</p>
+                                </div>
+                              </label>
 
-                    {/* CAMPOS ESPECÍFICOS: APROVAÇÃO COM NOTA FINAL */}
-                    {novoEstado === 'Aprovada' && (
-                      <div className="deliberacao-extra-box success-box">
-                        <div className="extra-box-title">
-                          <Award size={17} />
-                          <span>Classificação e Provimento de Vaga</span>
-                        </div>
-                        <div className="extra-box-grid">
-                          <div className="form-field">
-                            <label>Nota Final Ponderada (0 a 20 valores):</label>
-                            <input
-                              type="number"
-                              step="0.1"
-                              min="10"
-                              max="20"
-                              value={notaFinal}
-                              onChange={(e) => setNotaFinal(e.target.value)}
-                              style={{ fontWeight: 800, fontSize: '1.2rem', color: '#15803d' }}
-                            />
-                          </div>
-                          <div className="form-field">
-                            <label>Destino de Colocação Sugerido:</label>
-                            <input
-                              type="text"
-                              defaultValue={`Delegação Provincial de ${deliberandoCandidato.provincia || 'Maputo'}`}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* CAMPOS ESPECÍFICOS: EXCLUSÃO COM FUNDAMENTAÇÃO LEGAL */}
-                    {novoEstado === 'Excluída' && (
-                      <div className="deliberacao-extra-box danger-box">
-                        <div className="extra-box-title">
-                          <XCircle size={17} />
-                          <span>Fundamentação Jurídica Obrigatória para Exclusão</span>
-                        </div>
-                        <div className="extra-box-grid">
-                          <div className="form-field full-width">
-                            <label>Motivo Legal Canónico (EGFAE e Regulamento do Concurso SERNIC):</label>
-                            <select 
-                              value={motivoExclusao} 
-                              onChange={(e) => setMotivoExclusao(e.target.value)}
-                              className="select-danger"
-                            >
-                              <option value="Art. 35 do EGFAE - Idade superior a 35 anos à data limite">
-                                Art. 35 do EGFAE - Idade superior a 35 anos à data limite do Edital
-                              </option>
-                              <option value="Falta de Certificado de Habilitações autenticado ou sem homologação">
-                                Falta de Certificado de Habilitações autenticado ou sem homologação ministerial
-                              </option>
-                              <option value="Registo Criminal não conforme ou existência de antecedentes desabonadores">
-                                Registo Criminal não conforme ou existência de antecedentes desabonadores
-                              </option>
-                              <option value="Não cumprimento da altura mínima obrigatória (1.65m masculino / 1.60m feminino)">
-                                Não cumprimento da altura mínima obrigatória (1.65m masculino / 1.60m feminino)
-                              </option>
-                              <option value="Documento de identificação (BI/Passaporte) caducado ou ilegível">
-                                Documento de identificação (BI/Passaporte) caducado ou ilegível
-                              </option>
-                              <option value="Falta de Atestado Médico ou inaptidão física/mental comprovada">
-                                Falta de Atestado Médico ou inaptidão física/mental comprovada
-                              </option>
-                              <option value="Não comparência injustificada às provas ou exames convocados">
-                                Não comparência injustificada às provas ou exames convocados
-                              </option>
-                              <option value="Média curricular inferior à nota de corte do aviso de abertura">
-                                Média curricular inferior à nota de corte do aviso de abertura
-                              </option>
-                              <option value="Outro fundamento legal com descrição detalhada">
-                                Outro fundamento legal com descrição detalhada
-                              </option>
-                            </select>
-                          </div>
-
-                          {motivoExclusao === 'Outro fundamento legal com descrição detalhada' && (
-                            <div className="form-field full-width">
-                              <label>Descreva o Fundamento Jurídico Específico:</label>
-                              <input
-                                type="text"
-                                placeholder="Indique a disposição legal e o facto concreto que fundamenta a exclusão..."
-                                value={outroMotivo}
-                                onChange={(e) => setOutroMotivo(e.target.value)}
-                                required
-                              />
+                              {/* OPÇÃO 1B: EXCLUIR NA FASE 1 */}
+                              <label 
+                                className={`deliberacao-radio-card option-excluido ${novoEstado === 'Excluído' || novoEstado === 'Excluída' ? 'checked' : ''}`}
+                                onClick={() => {
+                                  setNovoEstado('Excluído');
+                                  if (!parecerJuri) setParecerJuri('Candidatura excluída por não conformidade documental com os requisitos obrigatórios do edital.');
+                                }}
+                              >
+                                <input
+                                  type="radio"
+                                  name="estadoDeliberacao"
+                                  value="Excluído"
+                                  checked={novoEstado === 'Excluído' || novoEstado === 'Excluída'}
+                                  onChange={() => {}}
+                                />
+                                <div className="radio-content">
+                                  <div className="radio-header">
+                                    <XCircle size={20} className="radio-icon" />
+                                    <strong>EXCLUIR POR INCONFORMIDADE DOCUMENTAL</strong>
+                                  </div>
+                                  <p>Falta de certidão, idade acima do limite ou registo criminal desfavorável. Requer fundamentação jurídica.</p>
+                                </div>
+                              </label>
                             </div>
                           )}
-                        </div>
-                      </div>
-                    )}
+
+                          {/* OPÇÕES DA 2ª E 3ª FASE: EXATAMENTE 3 RESULTADOS FINAIS */}
+                          {candFase >= 2 && (
+                            <div className="deliberacao-options-grid">
+                              {/* OPÇÃO 2A: ADMITIDO */}
+                              <label 
+                                className={`deliberacao-radio-card option-admitido ${novoEstado === 'Admitido' || novoEstado === 'Admitida' ? 'checked' : ''}`}
+                                onClick={() => {
+                                  setNovoEstado('Admitido');
+                                  if (!parecerJuri) setParecerJuri('Candidato demonstrou elevado mérito na Entrevista Profissional. Proposto para provimento efetivo.');
+                                }}
+                              >
+                                <input
+                                  type="radio"
+                                  name="estadoDeliberacao"
+                                  value="Admitido"
+                                  checked={novoEstado === 'Admitido' || novoEstado === 'Admitida'}
+                                  onChange={() => {}}
+                                />
+                                <div className="radio-content">
+                                  <div className="radio-header">
+                                    <CheckCircle2 size={20} className="radio-icon" />
+                                    <strong>ADMITIDO (PROVIMENTO EFETIVO)</strong>
+                                  </div>
+                                  <p>Apurado com nota de topo na entrevista para preenchimento imediato de vaga na carreira.</p>
+                                </div>
+                              </label>
+
+                              {/* OPÇÃO 2B: APROVADO SUPLENTE */}
+                              <label 
+                                className={`deliberacao-radio-card option-suplente ${novoEstado === 'Aprovado (Suplente)' ? 'checked' : ''}`}
+                                onClick={() => {
+                                  setNovoEstado('Aprovado (Suplente)');
+                                  if (!parecerJuri) setParecerJuri('Candidato aprovado com mérito na Entrevista Profissional. Classificado em lista de suplência / reserva.');
+                                }}
+                              >
+                                <input
+                                  type="radio"
+                                  name="estadoDeliberacao"
+                                  value="Aprovado (Suplente)"
+                                  checked={novoEstado === 'Aprovado (Suplente)'}
+                                  onChange={() => {}}
+                                />
+                                <div className="radio-content">
+                                  <div className="radio-header">
+                                    <Award size={20} className="radio-icon" />
+                                    <strong>APROVADO (SUPLENTE / RESERVA)</strong>
+                                  </div>
+                                  <p>Aprovado com nota positiva na entrevista, integrado na lista de reserva para provimento superveniente.</p>
+                                </div>
+                              </label>
+
+                              {/* OPÇÃO 2C: EXCLUÍDO */}
+                              <label 
+                                className={`deliberacao-radio-card option-excluido ${novoEstado === 'Excluído' || novoEstado === 'Excluída' ? 'checked' : ''}`}
+                                onClick={() => {
+                                  setNovoEstado('Excluído');
+                                  if (!parecerJuri) setParecerJuri('Candidato não obteve a classificação mínima estatutária (10.0 valores) na Entrevista Profissional.');
+                                }}
+                              >
+                                <input
+                                  type="radio"
+                                  name="estadoDeliberacao"
+                                  value="Excluído"
+                                  checked={novoEstado === 'Excluído' || novoEstado === 'Excluída'}
+                                  onChange={() => {}}
+                                />
+                                <div className="radio-content">
+                                  <div className="radio-header">
+                                    <XCircle size={20} className="radio-icon" />
+                                    <strong>EXCLUÍDO (ENTREVISTA)</strong>
+                                  </div>
+                                  <p>Classificação insuficiente na entrevista ou inaptidão detectada pelo júri de avaliação.</p>
+                                </div>
+                              </label>
+                            </div>
+                          )}
+
+                          {/* CAMPOS ESPECÍFICOS: CONVOCAÇÃO PARA ENTREVISTA PROFISSIONAL */}
+                          {novoEstado === 'Entrevista Profissional' && (
+                            <div className="deliberacao-extra-box info-box">
+                              <div className="extra-box-title">
+                                <Calendar size={17} />
+                                <span>Agendamento da Entrevista Profissional (2ª Fase)</span>
+                              </div>
+                              <div className="extra-box-grid">
+                                <div className="form-field">
+                                  <label>Designação Oficial do Ato:</label>
+                                  <input
+                                    type="text"
+                                    value={tipoProva}
+                                    onChange={(e) => setTipoProva(e.target.value)}
+                                    placeholder="Ex: Entrevista Profissional e de Competências"
+                                  />
+                                </div>
+
+                                <div className="form-field">
+                                  <label>Data e Hora da Entrevista:</label>
+                                  <input
+                                    type="text"
+                                    value={eventoData}
+                                    onChange={(e) => setEventoData(e.target.value)}
+                                    placeholder="Ex: 15 de Novembro de 2026 às 08h30"
+                                  />
+                                </div>
+
+                                <div className="form-field full-width">
+                                  <label>Local Oficial / Sala da Entrevista:</label>
+                                  <input
+                                    type="text"
+                                    value={eventoLocal}
+                                    onChange={(e) => setEventoLocal(e.target.value)}
+                                    placeholder="Ex: Direcção Geral do SERNIC - Sala de Conferências n.º 1, Maputo"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* CAMPOS ESPECÍFICOS: ADMITIDO OU SUPLENTE (COM NOTA DA ENTREVISTA) */}
+                          {(novoEstado === 'Admitido' || novoEstado === 'Admitida' || novoEstado === 'Aprovado (Suplente)') && (
+                            <div className={`deliberacao-extra-box ${novoEstado === 'Aprovado (Suplente)' ? 'warning-box' : 'success-box'}`}>
+                              <div className="extra-box-title">
+                                <Award size={17} />
+                                <span>
+                                  {novoEstado === 'Aprovado (Suplente)' 
+                                    ? 'Classificação na Entrevista e Posicionamento em Lista de Reserva'
+                                    : 'Classificação Final e Proposta de Provimento Efetivo'}
+                                </span>
+                              </div>
+                              <div className="extra-box-grid">
+                                <div className="form-field">
+                                  <label>Classificação na Entrevista Profissional (0 a 20 valores):</label>
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    min="10"
+                                    max="20"
+                                    value={notaFinal}
+                                    onChange={(e) => setNotaFinal(e.target.value)}
+                                    style={{ fontWeight: 800, fontSize: '1.2rem', color: novoEstado === 'Aprovado (Suplente)' ? '#b45309' : '#15803d' }}
+                                  />
+                                </div>
+                                <div className="form-field">
+                                  <label>Delegação Provincial Proposta:</label>
+                                  <input
+                                    type="text"
+                                    defaultValue={`Delegação Provincial de ${deliberandoCandidato.provincia || 'Maputo'}`}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* CAMPOS ESPECÍFICOS: EXCLUSÃO COM FUNDAMENTAÇÃO LEGAL */}
+                          {(novoEstado === 'Excluído' || novoEstado === 'Excluída') && (
+                            <div className="deliberacao-extra-box danger-box">
+                              <div className="extra-box-title">
+                                <XCircle size={17} />
+                                <span>Fundamentação Jurídica Obrigatória para Exclusão</span>
+                              </div>
+                              <div className="extra-box-grid">
+                                <div className="form-field full-width">
+                                  <label>Motivo Legal Canónico (EGFAE e Regulamento do Concurso SERNIC):</label>
+                                  <select 
+                                    value={motivoExclusao} 
+                                    onChange={(e) => setMotivoExclusao(e.target.value)}
+                                    className="select-danger"
+                                  >
+                                    <optgroup label="1ª Fase - Avaliação Documental">
+                                      <option value="Art. 35 do EGFAE - Idade superior a 35 anos à data limite">
+                                        Art. 35 do EGFAE - Idade superior a 35 anos à data limite do Edital
+                                      </option>
+                                      <option value="Falta de Certificado de Habilitações autenticado ou sem homologação">
+                                        Falta de Certificado de Habilitações autenticado ou sem homologação ministerial
+                                      </option>
+                                      <option value="Registo Criminal não conforme ou existência de antecedentes desabonadores">
+                                        Registo Criminal não conforme ou existência de antecedentes desabonadores
+                                      </option>
+                                      <option value="Não cumprimento da altura mínima obrigatória (1.65m masculino / 1.60m feminino)">
+                                        Não cumprimento da altura mínima obrigatória (1.65m masculino / 1.60m feminino)
+                                      </option>
+                                      <option value="Documento de identificação (BI/Passaporte) caducado ou ilegível">
+                                        Documento de identificação (BI/Passaporte) caducado ou ilegível
+                                      </option>
+                                      <option value="Falta de Atestado Médico ou inaptidão física/mental comprovada">
+                                        Falta de Atestado Médico ou inaptidão física/mental comprovada
+                                      </option>
+                                    </optgroup>
+                                    <optgroup label="2ª Fase - Entrevista Profissional">
+                                      <option value="Classificação na Entrevista Profissional inferior a 10.0 valores">
+                                        Classificação na Entrevista Profissional inferior a 10.0 valores (Não Aproveitamento)
+                                      </option>
+                                      <option value="Não comparência injustificada à Entrevista Profissional">
+                                        Não comparência injustificada à Entrevista Profissional na data convocada
+                                      </option>
+                                      <option value="Perfil comportamental incompatível com as funções de investigação criminal">
+                                        Perfil comportamental incompatível com as funções de investigação criminal
+                                      </option>
+                                    </optgroup>
+                                    <optgroup label="Outro">
+                                      <option value="Outro fundamento legal com descrição detalhada">
+                                        Outro fundamento legal com descrição detalhada
+                                      </option>
+                                    </optgroup>
+                                  </select>
+                                </div>
+
+                                {motivoExclusao === 'Outro fundamento legal com descrição detalhada' && (
+                                  <div className="form-field full-width">
+                                    <label>Descreva o Fundamento Jurídico Específico:</label>
+                                    <input
+                                      type="text"
+                                      placeholder="Indique a disposição legal e o facto concreto que fundamenta a exclusão..."
+                                      value={outroMotivo}
+                                      onChange={(e) => setOutroMotivo(e.target.value)}
+                                      required
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
 
                     {/* PARECER E OBSERVAÇÕES FORMAIS DA COMISSÃO DE JÚRI */}
                     <div className="form-field full-width" style={{ marginTop: '1.25rem' }}>
@@ -3114,41 +3274,93 @@ export default function GestorPortalModule({
                 Decisão da Mesa de Júri:
               </span>
               <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  className="sub-aba-btn-action"
-                  style={{ color: '#15803d', borderColor: '#86efac' }}
-                  onClick={() => handleInlineDeliberacao(selectedDossier, 'Admitida')}
-                >
-                  <Check size={13} />
-                  <span>Admitir</span>
-                </button>
-                <button
-                  type="button"
-                  className="sub-aba-btn-action"
-                  style={{ color: '#2563eb', borderColor: '#93c5fd' }}
-                  onClick={() => handleInlineDeliberacao(selectedDossier, 'Convocada para provas')}
-                >
-                  <Calendar size={13} />
-                  <span>Convocar Exames</span>
-                </button>
-                <button
-                  type="button"
-                  className="sub-aba-btn-action"
-                  style={{ color: '#d97706', borderColor: '#fcd34d' }}
-                  onClick={() => handleInlineDeliberacao(selectedDossier, 'Aprovada')}
-                >
-                  <Award size={13} />
-                  <span>Aprovar</span>
-                </button>
-                <button
-                  type="button"
-                  className="sub-aba-btn-action danger"
-                  onClick={() => handleInlineDeliberacao(selectedDossier, 'Excluída')}
-                >
-                  <UserX size={13} />
-                  <span>Excluir</span>
-                </button>
+                {(() => {
+                  const fase = selectedDossier.faseAtual || (
+                    (selectedDossier.status === 'Em Análise Documental' || selectedDossier.status === 'Em análise' || selectedDossier.status === 'Submetida') ? 1 :
+                    (selectedDossier.status === 'Entrevista Profissional' || selectedDossier.status === 'Convocada para provas') ? 2 : 3
+                  );
+
+                  if (fase === 1) {
+                    return (
+                      <>
+                        <button
+                          type="button"
+                          className="sub-aba-btn-action"
+                          style={{ color: '#2563eb', borderColor: '#93c5fd', backgroundColor: '#eff6ff' }}
+                          onClick={() => handleInlineDeliberacao(selectedDossier, 'Entrevista Profissional')}
+                          title="Aprovar na análise documental e convocar para Entrevista Profissional"
+                        >
+                          <Check size={13} />
+                          <span>Aprovar p/ 2ª Fase (Entrevista)</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="sub-aba-btn-action danger"
+                          onClick={() => handleInlineDeliberacao(selectedDossier, 'Excluído')}
+                          title="Excluir na fase de análise documental"
+                        >
+                          <UserX size={13} />
+                          <span>Excluir na Análise Documental</span>
+                        </button>
+                      </>
+                    );
+                  }
+
+                  if (fase === 2) {
+                    return (
+                      <>
+                        <button
+                          type="button"
+                          className="sub-aba-btn-action"
+                          style={{ color: '#15803d', borderColor: '#86efac', backgroundColor: '#f0fdf4' }}
+                          onClick={() => handleInlineDeliberacao(selectedDossier, 'Admitido')}
+                          title="Aprovar para provimento efetivo"
+                        >
+                          <Check size={13} />
+                          <span>Admitir (Provimento Efetivo)</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="sub-aba-btn-action"
+                          style={{ color: '#b45309', borderColor: '#fde68a', backgroundColor: '#fffbeb' }}
+                          onClick={() => handleInlineDeliberacao(selectedDossier, 'Aprovado (Suplente)')}
+                          title="Aprovar como suplente para a lista de reserva"
+                        >
+                          <Award size={13} />
+                          <span>Aprovar (Suplente)</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="sub-aba-btn-action danger"
+                          onClick={() => handleInlineDeliberacao(selectedDossier, 'Excluído')}
+                          title="Excluir por não aproveitamento na entrevista"
+                        >
+                          <UserX size={13} />
+                          <span>Excluir (Entrevista)</span>
+                        </button>
+                      </>
+                    );
+                  }
+
+                  return (
+                    <>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 700, padding: '0.25rem 0.55rem', borderRadius: '6px', background: '#f1f5f9', color: '#475569' }}>
+                        Fase 3 Concluída: {selectedDossier.status}
+                      </span>
+                      <button
+                        type="button"
+                        className="sub-aba-btn-action"
+                        style={{ color: '#475569', borderColor: '#cbd5e1' }}
+                        onClick={() => handleInlineDeliberacao(selectedDossier, 'Em Análise Documental')}
+                        title="Reabrir processo de avaliação do candidato"
+                      >
+                        <RefreshCw size={13} />
+                        <span>Reabrir Avaliação</span>
+                      </button>
+                    </>
+                  );
+                })()}
+
                 <button
                   type="button"
                   className="sub-aba-btn-action danger"

@@ -219,6 +219,10 @@ export const INITIAL_LISTAS_PUBLICADAS = [
 ];
 
 // Candidaturas de Demonstração para Consulta Instantânea e Gestão do Concurso
+// Estrutura Oficial SERNIC:
+// 1ª Fase: 'Em Análise Documental'
+// 2ª Fase: 'Entrevista Profissional' (Aprovado na 1ª fase documental)
+// 3ª Fase / Desfecho Final: 'Admitido' | 'Aprovado (Suplente)' | 'Excluído'
 export const INITIAL_CANDIDATURAS_CONSULTA = [
   {
     codigoCandidatura: 'SERNIC-2026-00849',
@@ -240,8 +244,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     vagaTitulo: 'Investigador Criminal de 2ª Classe',
     carreira: 'Investigação Criminal',
     dataSubmissao: '2026-10-04T09:30:00Z',
-    status: 'Convocada para provas', // 'Em análise' | 'Admitida' | 'Convocada para provas' | 'Aprovada' | 'Excluída'
-    faseAtual: 4,
+    status: 'Entrevista Profissional', // Fase 2
+    faseAtual: 2,
     habilitacoes: {
       grau: 'Licenciatura',
       curso: 'Direito e Ciências Criminais',
@@ -258,23 +262,22 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
       { id: 'doc-cv', tipo: 'Curriculum Vitae e Carta de Motivação', status: 'Validado', tamanho: '1.8 MB', data: '2026-10-04' }
     ],
     detalhesFase: {
-      titulo: 'Convocado(a) para Prova Escrita e Teste de Aptidão',
-      dataEvento: '15 de Novembro de 2026 às 08h00',
-      local: 'Academia de Ciências Policiais (ACIPOL), Bloco C, Sala 14 - Michafutene, Maputo',
-      observacoes: 'Apresentação obrigatória com o documento de identificação original (BI/Passaporte) e cópia impressa do Comprovativo de Candidatura.',
-      mensagemComissao: 'A sua candidatura cumpriu todos os critérios da triagem curricular e validação documental. O candidato encontra-se devidamente admitido para a fase de provas de conhecimento.'
+      titulo: 'Convocado(a) para 2ª Fase: Entrevista Profissional',
+      dataEvento: '15 de Novembro de 2026 às 08h30',
+      local: 'Direcção Geral do SERNIC - Sala 14 do Júri, Maputo',
+      observacoes: 'Apresentação obrigatória com documento de identificação original (BI/Passaporte) e comprovativo impresso de inscrição.',
+      mensagemComissao: 'Parabéns! A sua candidatura foi aprovada na 1ª Fase de Avaliação Documental. Foi formalmente convocado(a) para a 2ª Fase: Entrevista Profissional perante a Comissão de Júri.'
     },
     deliberacaoJuri: {
-      decisao: 'Convocada para provas',
+      decisao: 'Entrevista Profissional',
       dataDeliberacao: '2026-10-20T10:15:00Z',
       operador: 'Dr. Alberto Chissano (Presidente do Júri)',
-      parecer: 'Candidato apto e em conformidade com as exigências do Aviso n.º 01/2026. Convocado para exame escrito na ACIPOL.'
+      parecer: 'Documentação validada integralmente em conformidade com o Edital. Candidato qualificado para a 2ª Fase: Entrevista Profissional.'
     },
     historico: [
-      { data: '2026-10-04', etapa: 'Candidatura Submetida', descricao: 'Processo registado com sucesso no portal oficial do SERNIC.' },
-      { data: '2026-10-09', etapa: 'Triagem Documental Concluída', descricao: 'Certificados e registo criminal validados em conformidade com o Estatuto do SERNIC.' },
-      { data: '2026-10-15', etapa: 'Candidatura Admitida', descricao: 'Aprovada para a lista preliminar de candidatos elegíveis.' },
-      { data: '2026-10-20', etapa: 'Convocação para Provas', descricao: 'Convocado para o exame escrito de conhecimentos e avaliação de perfil.' }
+      { data: '2026-10-04', etapa: 'Inscrição Submetida', descricao: 'Processo registado no módulo Inscritos no Concurso.' },
+      { data: '2026-10-12', etapa: '1ª Fase: Avaliação Documental', descricao: 'Certificados e registo criminal aprovados pelo júri examinador.' },
+      { data: '2026-10-20', etapa: '2ª Fase: Convocatória para Entrevista', descricao: 'Convocado para a Entrevista Profissional na Direcção Geral do SERNIC.' }
     ]
   },
   {
@@ -297,8 +300,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     vagaTitulo: 'Especialista em Cibersegurança e Crimes Cibernéticos',
     carreira: 'Inteligência Digital e Cibercrime',
     dataSubmissao: '2026-10-11T14:15:00Z',
-    status: 'Admitida',
-    faseAtual: 3,
+    status: 'Em Análise Documental', // Fase 1
+    faseAtual: 1,
     habilitacoes: {
       grau: 'Licenciatura',
       curso: 'Engenharia Informática e Telecomunicações',
@@ -313,22 +316,21 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
       { id: 'doc-med', tipo: 'Atestado Médico Oficial', status: 'Validado', tamanho: '890 KB', data: '2026-10-11' }
     ],
     detalhesFase: {
-      titulo: 'Candidatura Admitida - Aguarda Convocação de Prova Prática',
-      dataEvento: 'A publicar até 30 de Outubro de 2026',
-      local: 'Aviso a ser emitido no portal oficial e enviado por SMS',
-      observacoes: 'A análise curricular e a certificação profissional em segurança da informação foram aprovadas com distinção.',
-      mensagemComissao: 'Candidato homologado como apto para participar na fase de provas laboratoriais práticas.'
+      titulo: '1ª Fase: Avaliação Documental em Curso',
+      dataEvento: 'Previsão de publicação de deliberação: 30 de Outubro de 2026',
+      local: 'Comissão Provincial de Júri - Sofala (Beira)',
+      observacoes: 'A comissão de júri está a conferir a autenticidade e validade jurídica dos certificados e certidões anexadas.',
+      mensagemComissao: 'O seu processo de candidatura foi submetido com sucesso e encontra-se na 1ª Fase de Avaliação Documental. Aguarde a deliberação do júri para saber se passa à Entrevista Profissional.'
     },
     deliberacaoJuri: {
-      decisao: 'Admitida',
-      dataDeliberacao: '2026-10-19T14:20:00Z',
-      operador: 'Dr. Alberto Chissano (Presidente do Júri)',
-      parecer: 'Requisitos plenamente validados. Excelente perfil técnico em perícia digital.'
+      decisao: 'Em Análise Documental',
+      dataDeliberacao: null,
+      operador: null,
+      parecer: 'Processo na fila de triagem documental da Comissão Provincial de Sofala.'
     },
     historico: [
-      { data: '2026-10-11', etapa: 'Candidatura Submetida', descricao: 'Processo enviado online.' },
-      { data: '2026-10-16', etapa: 'Validação Curricular', descricao: 'Aptidão técnica aprovada pelo júri de telecomunicações forenses.' },
-      { data: '2026-10-19', etapa: 'Candidatura Admitida', descricao: 'Homologação oficial publicada.' }
+      { data: '2026-10-11', etapa: 'Inscrição Submetida', descricao: 'Processo registado no módulo Inscritos no Concurso.' },
+      { data: '2026-10-16', etapa: '1ª Fase: Em Análise Documental', descricao: 'Documentação remetida à mesa de avaliação do júri examinador.' }
     ]
   },
   {
@@ -351,8 +353,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     vagaTitulo: 'Perito Forense Balístico e Dactiloscópico',
     carreira: 'Polícia Científica',
     dataSubmissao: '2026-10-08T11:00:00Z',
-    status: 'Excluída',
-    faseAtual: 2,
+    status: 'Excluído', // Excluído na Fase 1
+    faseAtual: 1,
     habilitacoes: {
       grau: 'Licenciatura',
       curso: 'Química Industrial',
@@ -365,23 +367,23 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
       { id: 'doc-cert', tipo: 'Certificado de Habilitações (Incompleto)', status: 'Rejeitado', tamanho: '1.9 MB', data: '2026-10-08' }
     ],
     detalhesFase: {
-      titulo: 'Candidatura Excluída do Processo Selectivo',
-      dataEvento: 'Publicado a 16 de Outubro de 2026',
-      local: 'Departamento de Recursos Humanos do SERNIC',
-      observacoes: 'Prazo para interposição de recurso: 5 (cinco) dias úteis a contar da notificação.',
-      motivoExclusao: 'Documento de Habilitações Literárias incompleto: Não foi anexado o Certificado de Homologação de Grau Académico obtido no exterior, contrariando o estabelecido no Ponto 4.2 do Edital n.º 02/2026.',
-      mensagemComissao: 'Lamentamos informar que a documentação apresentada não satisfaz os requisitos legais obrigatórios previstos no edital do concurso.'
+      titulo: 'Candidatura Excluída na 1ª Fase (Inconformidade Documental)',
+      dataEvento: 'Deliberação exarada a 16 de Outubro de 2026',
+      local: 'Comissão de Recrutamento do SERNIC - Gaza',
+      observacoes: 'Prazo legal para reclamação ou recurso administrativo: 5 (cinco) dias úteis após a notificação oficial.',
+      motivoExclusao: 'Documento de Habilitações Literárias incompleto: Não foi anexada a Certidão de Equivalência/Homologação do Grau Académico obtido no exterior, contrariando o Ponto 4.2 do Edital.',
+      mensagemComissao: 'Lamentamos informar que a sua candidatura foi excluída na 1ª Fase de Avaliação Documental por não conformidade dos requisitos formais exigidos no edital.'
     },
     deliberacaoJuri: {
-      decisao: 'Excluída',
+      decisao: 'Excluído',
       dataDeliberacao: '2026-10-16T11:45:00Z',
       operador: 'Dra. Elsa Manjate (Vogal do Júri)',
-      motivoExclusao: 'Falta de Certificado de Habilitações autenticado ou sem homologação',
-      parecer: 'Excluído nos termos do Ponto 4.2 do Edital por não submissão da homologação ministerial do diploma estrangeiro.'
+      motivoExclusao: 'Falta de Certidão de Homologação ou Equivalência de Habilitações',
+      parecer: 'Excluído na triagem documental nos termos do Ponto 4.2 do Edital n.º 02/2026.'
     },
     historico: [
-      { data: '2026-10-08', etapa: 'Candidatura Submetida', descricao: 'Processo registado no portal.' },
-      { data: '2026-10-16', etapa: 'Exclusão Documental', descricao: 'Falta de documento obrigatório (Equivalência/Homologação do Certificado).' }
+      { data: '2026-10-08', etapa: 'Inscrição Submetida', descricao: 'Processo registado no módulo Inscritos no Concurso.' },
+      { data: '2026-10-16', etapa: '1ª Fase: Exclusão Documental', descricao: 'Candidatura não admitida por falta de documento legal obrigatório.' }
     ]
   },
   {
@@ -404,7 +406,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     vagaTitulo: 'Técnico Superior de Medicina Legal e Toxicologia Forense',
     carreira: 'Medicina Legal',
     dataSubmissao: '2026-10-19T16:45:00Z',
-    status: 'Em análise',
+    status: 'Em Análise Documental', // Fase 1
     faseAtual: 1,
     habilitacoes: {
       grau: 'Licenciatura',
@@ -418,21 +420,21 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
       { id: 'doc-cert', tipo: 'Certificado de Conclusão e Carteira Médica', status: 'Sob Análise', tamanho: '2.5 MB', data: '2026-10-19' }
     ],
     detalhesFase: {
-      titulo: 'Processo em Fase de Análise Documental e Confirmação de Registo',
+      titulo: '1ª Fase: Avaliação Documental em Curso',
       dataEvento: 'Previsão de conclusão: 28 de Outubro de 2026',
-      local: 'Comissão de Avaliação Documental do SERNIC',
-      observacoes: 'A sua documentação está actualmente a ser verificada junto da Ordem dos Médicos e instituições de ensino.',
-      mensagemComissao: 'O seu processo de candidatura encontra-se sob apreciação do corpo de júri técnico.'
+      local: 'Comissão Provincial de Júri - Inhambane',
+      observacoes: 'A aguardar confirmação de inscrição activa na Ordem dos Médicos de Moçambique.',
+      mensagemComissao: 'O seu processo de candidatura encontra-se sob apreciação da comissão de avaliação documental.'
     },
     deliberacaoJuri: {
-      decisao: 'Em análise',
+      decisao: 'Em Análise Documental',
       dataDeliberacao: null,
       operador: null,
-      parecer: 'A aguardar confirmação de inscrição activa na Ordem dos Médicos de Moçambique.'
+      parecer: 'A aguardar conferência de inscrição na Ordem dos Médicos.'
     },
     historico: [
-      { data: '2026-10-19', etapa: 'Candidatura Submetida', descricao: 'Registo inicial com sucesso.' },
-      { data: '2026-10-21', etapa: 'Aguardando Análise Documental', descricao: 'Processo em processamento pela mesa de júri.' }
+      { data: '2026-10-19', etapa: 'Inscrição Submetida', descricao: 'Registo inicial no módulo Inscritos no Concurso.' },
+      { data: '2026-10-21', etapa: '1ª Fase: Em Análise Documental', descricao: 'Aguardando validação dos requisitos e diplomas.' }
     ]
   },
   {
@@ -455,8 +457,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     vagaTitulo: 'Investigador Criminal de 2ª Classe',
     carreira: 'Investigação Criminal',
     dataSubmissao: '2026-10-02T08:15:00Z',
-    status: 'Aprovada',
-    faseAtual: 6,
+    status: 'Admitido', // Fase 3: Admitido para provimento de vaga
+    faseAtual: 3,
     habilitacoes: {
       grau: 'Licenciatura',
       curso: 'Ciências Policiais e Segurança Pública',
@@ -469,24 +471,24 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
       { id: 'doc-cert', tipo: 'Certificado ACIPOL', status: 'Validado', tamanho: '3.1 MB', data: '2026-10-02' }
     ],
     detalhesFase: {
-      titulo: 'Candidata Aprovada com Distinção para Provimento de Vaga',
-      dataEvento: 'Homologação oficial: 22 de Outubro de 2026',
-      local: 'Direcção Geral do SERNIC - Maputo',
-      observacoes: 'Apurada em 1º Lugar na Delegação Provincial de Nampula. Convocada para tomada de posse.',
-      mensagemComissao: 'Parabéns! Obteve a classificação final de 18.5 valores nas provas escritas, físicas e psicotécnicas.'
+      titulo: 'Candidata Admitida - Provimento Efetivo de Vaga',
+      dataEvento: 'Homologação oficial publicada a 22 de Outubro de 2026',
+      local: 'Delegação Provincial do SERNIC - Nampula',
+      observacoes: 'Apurada em 1º Lugar com nota 18.5 na Entrevista Profissional. Convocada para posse.',
+      mensagemComissao: 'Parabéns! Concluiu com distinção todas as fases de seleção (avaliação documental e entrevista profissional). Encontra-se admitida para provimento imediato de vaga.'
     },
     deliberacaoJuri: {
-      decisao: 'Aprovada',
+      decisao: 'Admitido',
       dataDeliberacao: '2026-10-21T16:00:00Z',
       operador: 'Dr. Alberto Chissano (Presidente do Júri)',
       notaFinal: '18.5',
-      parecer: 'Aprovada com mérito. Recomendada para a Delegação Provincial do SERNIC de Nampula.'
+      parecer: 'Aprovada com nota 18.5 na Entrevista Profissional. Candidata admitida para provimento de vaga em Nampula.'
     },
     historico: [
-      { data: '2026-10-02', etapa: 'Candidatura Submetida', descricao: 'Inscrição submetida.' },
-      { data: '2026-10-07', etapa: 'Triagem Documental Concluída', descricao: 'Homologada.' },
-      { data: '2026-10-14', etapa: 'Provas Escritas e Físicas', descricao: 'Classificação de 18.5 valores.' },
-      { data: '2026-10-21', etapa: 'Aprovação Final e Provimento', descricao: 'Apurada para colocação.' }
+      { data: '2026-10-02', etapa: 'Inscrição Submetida', descricao: 'Processo registado no módulo Inscritos no Concurso.' },
+      { data: '2026-10-07', etapa: '1ª Fase: Avaliação Documental', descricao: 'Aprovada na triagem documental.' },
+      { data: '2026-10-15', etapa: '2ª Fase: Entrevista Profissional', descricao: 'Realizada com classificação de 18.5 valores.' },
+      { data: '2026-10-21', etapa: '3ª Fase: Candidata Admitida', descricao: 'Homologação para provimento efetivo da vaga.' }
     ]
   },
   {
@@ -509,7 +511,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     vagaTitulo: 'Investigador Criminal de 2ª Classe',
     carreira: 'Investigação Criminal',
     dataSubmissao: '2026-10-06T10:20:00Z',
-    status: 'Admitida',
+    status: 'Aprovado (Suplente)', // Fase 3: Suplente / Reserva
     faseAtual: 3,
     habilitacoes: {
       grau: 'Licenciatura',
@@ -523,21 +525,24 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
       { id: 'doc-cert', tipo: 'Certificado de Licenciatura', status: 'Validado', tamanho: '2.0 MB', data: '2026-10-06' }
     ],
     detalhesFase: {
-      titulo: 'Candidatura Admitida - Aguarda Convocação de Provas',
-      dataEvento: 'Convocatória prevista para Novembro de 2026',
-      local: 'Michafutene - ACIPOL',
-      observacoes: 'Documentação validada pelo departamento de recursos humanos.',
-      mensagemComissao: 'Candidata apta para prosseguir às fases seguintes.'
+      titulo: 'Aprovada na Entrevista - Candidata Suplente (Lista de Reserva)',
+      dataEvento: 'Válido durante o prazo de vigência do concurso (1 ano)',
+      local: 'SERNIC - Registo Nacional de Reserva de Vagas',
+      observacoes: 'Aprovada com mérito na Entrevista Profissional (16.0 valores). Integrada na bolsa de suplência.',
+      mensagemComissao: 'A sua candidatura obteve aprovação na entrevista profissional com 16.0 valores. Encontra-se qualificada na lista de suplentes para preenchimento de quotas adicionais ou substituição por desistência.'
     },
     deliberacaoJuri: {
-      decisao: 'Admitida',
-      dataDeliberacao: '2026-10-18T09:30:00Z',
+      decisao: 'Aprovado (Suplente)',
+      dataDeliberacao: '2026-10-21T11:30:00Z',
       operador: 'Dr. Alberto Chissano (Presidente do Júri)',
-      parecer: 'Documentação em conformidade com o EGFAE e edital.'
+      notaFinal: '16.0',
+      parecer: 'Aprovada na Entrevista Profissional com 16.0 valores. Homologada como suplente para a quota de Maputo Província.'
     },
     historico: [
-      { data: '2026-10-06', etapa: 'Candidatura Submetida', descricao: 'Inscrição efetuada.' },
-      { data: '2026-10-18', etapa: 'Candidatura Admitida', descricao: 'Triagem documental favorável.' }
+      { data: '2026-10-06', etapa: 'Inscrição Submetida', descricao: 'Processo registado no módulo Inscritos no Concurso.' },
+      { data: '2026-10-11', etapa: '1ª Fase: Avaliação Documental', descricao: 'Triagem documental aprovada.' },
+      { data: '2026-10-18', etapa: '2ª Fase: Entrevista Profissional', descricao: 'Entrevista realizada com nota 16.0 valores.' },
+      { data: '2026-10-21', etapa: '3ª Fase: Aprovado (Suplente)', descricao: 'Integração oficial na lista de reserva de vagas.' }
     ]
   },
   {
@@ -560,8 +565,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     vagaTitulo: 'Especialista em Cibersegurança e Crimes Cibernéticos',
     carreira: 'Inteligência Digital e Cibercrime',
     dataSubmissao: '2026-10-09T15:40:00Z',
-    status: 'Excluída',
-    faseAtual: 2,
+    status: 'Excluído', // Excluído na Fase 1
+    faseAtual: 1,
     habilitacoes: {
       grau: 'Licenciatura',
       curso: 'Engenharia de Redes e Telecomunicações',
@@ -573,23 +578,23 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
       { id: 'doc-bi', tipo: 'Bilhete de Identidade Autenticado', status: 'Validado', tamanho: '1.2 MB', data: '2026-10-09' }
     ],
     detalhesFase: {
-      titulo: 'Candidatura Excluída por Limite de Idade',
+      titulo: 'Candidatura Excluída na 1ª Fase (Limite de Idade)',
       dataEvento: 'Publicado a 17 de Outubro de 2026',
-      local: 'SERNIC - Comissão Central de Concurso',
-      observacoes: 'Prazo legal de reclamação: 5 dias úteis.',
-      motivoExclusao: 'Art. 35 do EGFAE - Idade superior a 40 anos à data de fecho do concurso.',
-      mensagemComissao: 'Lamentamos informar a exclusão nos termos do regime geral de ingresso na Função Pública.'
+      local: 'Comissão Central do Concurso - Tete',
+      observacoes: 'Prazo legal de recurso: 5 dias úteis a contar da publicação oficial.',
+      motivoExclusao: 'Art. 35 do EGFAE - Idade superior a 40 anos à data limite de submissão do concurso.',
+      mensagemComissao: 'A sua candidatura foi excluída na 1ª Fase por não cumprir o requisito de idade máxima legal estabelecido no Edital e no EGFAE.'
     },
     deliberacaoJuri: {
-      decisao: 'Excluída',
+      decisao: 'Excluído',
       dataDeliberacao: '2026-10-17T11:00:00Z',
       operador: 'Dra. Elsa Manjate (Vogal do Júri)',
-      motivoExclusao: 'Art. 35 do EGFAE - Idade superior a 40 anos à data limite',
-      parecer: 'Excluído em cumprimento ao Art. 35 do EGFAE conjugado com o Edital n.º 03/2026 (limite de 40 anos).'
+      motivoExclusao: 'Art. 35 do EGFAE - Idade superior a 40 anos',
+      parecer: 'Excluído nos termos legais do Estatuto Geral dos Funcionários e Agentes do Estado.'
     },
     historico: [
-      { data: '2026-10-09', etapa: 'Candidatura Submetida', descricao: 'Registo efetuado.' },
-      { data: '2026-10-17', etapa: 'Candidatura Excluída', descricao: 'Exclusão por limite de idade.' }
+      { data: '2026-10-09', etapa: 'Inscrição Submetida', descricao: 'Processo registado no módulo Inscritos no Concurso.' },
+      { data: '2026-10-17', etapa: '1ª Fase: Exclusão Documental', descricao: 'Exclusão por não observância da idade máxima legal.' }
     ]
   },
   {
@@ -612,7 +617,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     vagaTitulo: 'Perito Forense Balístico e Dactiloscópico',
     carreira: 'Polícia Científica',
     dataSubmissao: '2026-10-14T12:00:00Z',
-    status: 'Em análise',
+    status: 'Em Análise Documental', // Fase 1
     faseAtual: 1,
     habilitacoes: {
       grau: 'Licenciatura',
@@ -626,20 +631,20 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
       { id: 'doc-cert', tipo: 'Certificado de Bioquímica', status: 'Sob Análise', tamanho: '2.2 MB', data: '2026-10-14' }
     ],
     detalhesFase: {
-      titulo: 'Documentação Sob Apreciação Técnica',
+      titulo: '1ª Fase: Avaliação Documental em Curso',
       dataEvento: 'Conclusão prevista para 31 de Outubro',
-      local: 'Laboratório Central de Criminalística',
-      observacoes: 'Verificação da equivalência de unidades curriculares em química forense.',
-      mensagemComissao: 'Processo na fase de conferência curricular pela comissão de júri.'
+      local: 'Delegação Provincial da Zambézia (Quelimane)',
+      observacoes: 'Verificação da conformidade das certidões e equivalência de créditos.',
+      mensagemComissao: 'Processo na 1ª Fase de triagem documental da comissão examinadora.'
     },
     deliberacaoJuri: {
-      decisao: 'Em análise',
+      decisao: 'Em Análise Documental',
       dataDeliberacao: null,
       operador: null,
-      parecer: 'A aguardar parecer dos peritos de química forense sobre a grade curricular.'
+      parecer: 'A aguardar conclusão da conferência curricular pela banca de peritagem.'
     },
     historico: [
-      { data: '2026-10-14', etapa: 'Candidatura Submetida', descricao: 'Processo registado.' }
+      { data: '2026-10-14', etapa: 'Inscrição Submetida', descricao: 'Processo registado no módulo Inscritos no Concurso.' }
     ]
   },
   {
@@ -662,8 +667,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     vagaTitulo: 'Técnico Superior de Medicina Legal e Toxicologia Forense',
     carreira: 'Medicina Legal',
     dataSubmissao: '2026-10-05T13:45:00Z',
-    status: 'Convocada para provas',
-    faseAtual: 4,
+    status: 'Entrevista Profissional', // Fase 2
+    faseAtual: 2,
     habilitacoes: {
       grau: 'Licenciatura',
       curso: 'Farmácia e Toxicologia',
@@ -676,22 +681,22 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
       { id: 'doc-cert', tipo: 'Certificado de Farmácia', status: 'Validado', tamanho: '2.3 MB', data: '2026-10-05' }
     ],
     detalhesFase: {
-      titulo: 'Convocado para Prova Teórico-Prática de Toxicologia',
+      titulo: 'Convocado para 2ª Fase: Entrevista Profissional',
       dataEvento: '18 de Novembro de 2026 às 09h00',
-      local: 'Hospital Provincial de Pemba - Gabinete Médico-Legal',
-      observacoes: 'Trajar vestuário adequado de laboratório e portar documento de identificação original.',
-      mensagemComissao: 'Candidato admitido e formalmente convocado para os exames práticos.'
+      local: 'Hospital Provincial de Pemba - Gabinete de Medicina Legal',
+      observacoes: 'Comparecer munido do documento de identificação original e comprovativo de inscrição.',
+      mensagemComissao: 'Candidato aprovado na 1ª Fase de Avaliação Documental e formalmente convocado para a 2ª Fase: Entrevista Profissional.'
     },
     deliberacaoJuri: {
-      decisao: 'Convocada para provas',
+      decisao: 'Entrevista Profissional',
       dataDeliberacao: '2026-10-20T14:00:00Z',
       operador: 'Dr. Alberto Chissano (Presidente do Júri)',
-      parecer: 'Processo conforme. Convocado para prova prática no Hospital Provincial de Pemba.'
+      parecer: 'Processo documental conforme. Candidato aprovado para a 2ª Fase de Entrevista Profissional.'
     },
     historico: [
-      { data: '2026-10-05', etapa: 'Candidatura Submetida', descricao: 'Inscrição realizada.' },
-      { data: '2026-10-12', etapa: 'Candidatura Admitida', descricao: 'Triagem favorável.' },
-      { data: '2026-10-20', etapa: 'Convocação para Provas', descricao: 'Convocado para prova prática de toxicologia.' }
+      { data: '2026-10-05', etapa: 'Inscrição Submetida', descricao: 'Processo registado no módulo Inscritos no Concurso.' },
+      { data: '2026-10-12', etapa: '1ª Fase: Avaliação Documental', descricao: 'Triagem documental com parecer favorável.' },
+      { data: '2026-10-20', etapa: '2ª Fase: Convocação para Entrevista', descricao: 'Convocado para Entrevista Profissional em Pemba.' }
     ]
   },
   {
@@ -714,8 +719,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     vagaTitulo: 'Especialista em Cibersegurança e Crimes Cibernéticos',
     carreira: 'Inteligência Digital e Cibercrime',
     dataSubmissao: '2026-10-03T11:10:00Z',
-    status: 'Aprovada',
-    faseAtual: 6,
+    status: 'Admitido', // Fase 3: Admitida
+    faseAtual: 3,
     habilitacoes: {
       grau: 'Licenciatura',
       curso: 'Ciência da Computação e Segurança da Informação',
@@ -728,28 +733,28 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
       { id: 'doc-cert', tipo: 'Diploma ISUTC e Certificação CEH', status: 'Validado', tamanho: '3.4 MB', data: '2026-10-03' }
     ],
     detalhesFase: {
-      titulo: 'Candidata Aprovada para Ingresso na Divisão de Cibercrimes',
+      titulo: 'Candidata Admitida - Provimento de Vaga Especialista',
       dataEvento: 'Cerimónia de Apresentação: 1 de Dezembro de 2026',
       local: 'Direcção Geral do SERNIC - Maputo',
-      observacoes: 'Apurada com nota final de 17.8 valores. Notificação oficial expedida.',
+      observacoes: 'Apurada com nota final de 17.8 valores na Entrevista Profissional. Notificação oficial expedida.',
       mensagemComissao: 'Classificada para o provimento da vaga de Especialista em Cibersegurança.'
     },
     deliberacaoJuri: {
-      decisao: 'Aprovada',
+      decisao: 'Admitido',
       dataDeliberacao: '2026-10-21T17:30:00Z',
       operador: 'Dr. Alberto Chissano (Presidente do Júri)',
       notaFinal: '17.8',
-      parecer: 'Aprovada por unanimidade pelo corpo de júri técnico forense digital.'
+      parecer: 'Aprovada com mérito por unanimidade na Entrevista Profissional (17.8 valores). Admitida para provimento de vaga.'
     },
     historico: [
-      { data: '2026-10-03', etapa: 'Candidatura Submetida', descricao: 'Processo enviado.' },
-      { data: '2026-10-10', etapa: 'Triagem Documental Concluída', descricao: 'Homologação favorável.' },
-      { data: '2026-10-16', etapa: 'Provas Práticas de Laboratório', descricao: 'Excelente desempenho prático.' },
-      { data: '2026-10-21', etapa: 'Aprovação Final', descricao: 'Apurada com 17.8 valores.' }
+      { data: '2026-10-03', etapa: 'Inscrição Submetida', descricao: 'Processo registado no módulo Inscritos no Concurso.' },
+      { data: '2026-10-10', etapa: '1ª Fase: Avaliação Documental', descricao: 'Homologação favorável da documentação técnica.' },
+      { data: '2026-10-16', etapa: '2ª Fase: Entrevista Profissional', descricao: 'Excelente desempenho na entrevista perante o júri.' },
+      { data: '2026-10-21', etapa: '3ª Fase: Candidata Admitida', descricao: 'Apurada para provimento efetivo da vaga.' }
     ]
   },
   {
-    codigoCandidatura: 'SERNIC-2026-00311',
+    codigoCandidatura: 'SERNIC-2026-00312',
     biNumero: '110500123456K',
     nuit: '100456123',
     nomeCompleto: 'Bernardo Zacarias Chongo',
@@ -768,8 +773,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     vagaTitulo: 'Investigador Criminal de 2ª Classe',
     carreira: 'Investigação Criminal',
     dataSubmissao: '2026-10-06T08:45:00Z',
-    status: 'Aprovada',
-    faseAtual: 6,
+    status: 'Admitido', // Fase 3
+    faseAtual: 3,
     habilitacoes: {
       grau: 'Licenciatura',
       curso: 'Direito e Segurança Pública',
@@ -782,23 +787,24 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
       { id: 'doc-cert', tipo: 'Certificado de Licenciatura', status: 'Validado', tamanho: '2.0 MB', data: '2026-10-06' }
     ],
     detalhesFase: {
-      titulo: 'Candidato Homologado pela Direcção Geral',
+      titulo: 'Candidato Admitido - Sede Central (Direcção Geral)',
       dataEvento: 'Apresentação: 1 de Dezembro de 2026',
       local: 'Direcção Geral do SERNIC - Auditório Central',
-      observacoes: 'Aprovado para provimento imediato.',
-      mensagemComissao: 'Processo concluído com parecer favorável.'
+      observacoes: 'Aprovado para provimento imediato na Sede Central com nota 16.8.',
+      mensagemComissao: 'Processo concluído com parecer favorável de admissão.'
     },
     deliberacaoJuri: {
-      decisao: 'Aprovada',
+      decisao: 'Admitido',
       dataDeliberacao: '2026-10-21T18:00:00Z',
       operador: 'Dr. Alberto Chissano (Presidente do Júri)',
       notaFinal: '16.8',
-      parecer: 'Aprovado com mérito pelo júri nacional.'
+      parecer: 'Aprovado com 16.8 valores na Entrevista Profissional. Admitido para a Direcção Geral.'
     },
     historico: [
-      { data: '2026-10-06', etapa: 'Candidatura Submetida', descricao: 'Processo enviado.' },
-      { data: '2026-10-12', etapa: 'Triagem Documental', descricao: 'Homologação favorável.' },
-      { data: '2026-10-21', etapa: 'Aprovação Final', descricao: 'Nota 16.8 valores.' }
+      { data: '2026-10-06', etapa: 'Inscrição Submetida', descricao: 'Processo registado no módulo Inscritos no Concurso.' },
+      { data: '2026-10-12', etapa: '1ª Fase: Avaliação Documental', descricao: 'Homologação documental favorável.' },
+      { data: '2026-10-18', etapa: '2ª Fase: Entrevista Profissional', descricao: 'Entrevista realizada perante o Júri Nacional.' },
+      { data: '2026-10-21', etapa: '3ª Fase: Candidato Admitido', descricao: 'Admitido para provimento da vaga central.' }
     ]
   },
   {
@@ -821,8 +827,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     vagaTitulo: 'Perito Forense Balístico e Dactiloscópico',
     carreira: 'Criminalística e Ciências Forenses',
     dataSubmissao: '2026-10-08T10:20:00Z',
-    status: 'Admitida',
-    faseAtual: 3,
+    status: 'Entrevista Profissional', // Fase 2
+    faseAtual: 2,
     habilitacoes: {
       grau: 'Licenciatura',
       curso: 'Química e Peritagem Forense',
@@ -835,21 +841,21 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
       { id: 'doc-cert', tipo: 'Certificado de Habilitações', status: 'Validado', tamanho: '1.8 MB', data: '2026-10-08' }
     ],
     detalhesFase: {
-      titulo: 'Candidatura Admitida na Província de Manica',
-      dataEvento: 'Convocação a publicar',
-      local: 'Delegação Provincial de Manica - Chimoio',
-      observacoes: 'Apta para provas laboratoriais.',
-      mensagemComissao: 'Documentação validada pelo júri provincial.'
+      titulo: 'Convocada para 2ª Fase: Entrevista Profissional',
+      dataEvento: '20 de Novembro de 2026 às 10h00',
+      local: 'Delegação Provincial do SERNIC de Manica - Chimoio',
+      observacoes: 'Apresentar-se com BI original na delegação provincial.',
+      mensagemComissao: 'Candidatura aprovada na 1ª fase documental. Convocada para a 2ª fase: Entrevista Profissional.'
     },
     deliberacaoJuri: {
-      decisao: 'Admitida',
+      decisao: 'Entrevista Profissional',
       dataDeliberacao: '2026-10-18T11:40:00Z',
       operador: 'Dr. Alberto Chissano (Presidente do Júri)',
-      parecer: 'Apta na conferência curricular.'
+      parecer: 'Apta na conferência curricular. Convocada para a 2ª Fase.'
     },
     historico: [
-      { data: '2026-10-08', etapa: 'Candidatura Submetida', descricao: 'Processo enviado.' },
-      { data: '2026-10-18', etapa: 'Candidatura Admitida', descricao: 'Homologação favorável.' }
+      { data: '2026-10-08', etapa: 'Inscrição Submetida', descricao: 'Processo registado no módulo Inscritos no Concurso.' },
+      { data: '2026-10-18', etapa: '1ª Fase: Avaliação Documental', descricao: 'Aprovada para a 2ª Fase.' }
     ]
   },
   {
@@ -872,8 +878,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     vagaTitulo: 'Técnico Superior de Medicina Legal e Toxicologia Forense',
     carreira: 'Medicina Legal e Toxicologia Forense',
     dataSubmissao: '2026-10-12T16:10:00Z',
-    status: 'Em análise',
-    faseAtual: 2,
+    status: 'Em Análise Documental', // Fase 1
+    faseAtual: 1,
     habilitacoes: {
       grau: 'Licenciatura',
       curso: 'Biologia e Análises Clínicas',
@@ -886,20 +892,20 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
       { id: 'doc-cert', tipo: 'Certificado de Conclusão', status: 'Validado', tamanho: '2.2 MB', data: '2026-10-12' }
     ],
     detalhesFase: {
-      titulo: 'Em Análise Curricular na Província de Niassa',
-      dataEvento: 'Triagem em curso',
+      titulo: '1ª Fase: Avaliação Documental em Curso',
+      dataEvento: 'Triagem em curso pelo Júri Provincial',
       local: 'Delegação Provincial do SERNIC - Lichinga',
       observacoes: 'Aguardando parecer final do júri examinador.',
-      mensagemComissao: 'Processo na fase de conferência da comissão provincial.'
+      mensagemComissao: 'Processo na 1ª Fase de avaliação documental pelo corpo técnico.'
     },
     deliberacaoJuri: {
-      decisao: 'Em análise',
+      decisao: 'Em Análise Documental',
       dataDeliberacao: null,
       operador: null,
-      parecer: 'Em fase de conferência documental.'
+      parecer: 'Em fase de conferência documental pela mesa de júri.'
     },
     historico: [
-      { data: '2026-10-12', etapa: 'Candidatura Submetida', descricao: 'Processo registado no portal.' }
+      { data: '2026-10-12', etapa: 'Inscrição Submetida', descricao: 'Processo registado no módulo Inscritos no Concurso.' }
     ]
   }
 ];
@@ -950,7 +956,7 @@ export function validarTelefoneMZ(tel) {
 // PERSISTÊNCIA EM LOCALSTORAGE & HELPERS DE CONEXÃO
 // ========================================================
 
-const STORAGE_KEY_CANDIDATURAS = 'sernic_concurso_candidaturas_v4';
+const STORAGE_KEY_CANDIDATURAS = 'sernic_concurso_candidaturas_v5';
 const STORAGE_KEY_LISTAS = 'sernic_concurso_listas_v2';
 const STORAGE_KEY_AUDITORIA = 'sernic_concurso_auditoria_v2';
 const STORAGE_KEY_VAGAS = 'sernic_concurso_vagas_v2';
@@ -1122,21 +1128,30 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
 
   // Novo histórico
   const novoHistorico = [...(current.historico || [])];
-  let novaEtapa = 'Deliberação da Comissão';
+  let novaEtapa = 'Deliberação do Júri';
   let descEtapa = `Estado atualizado para: ${updates.status || current.status}.`;
+  let novaFaseAtual = current.faseAtual || 1;
 
-  if (updates.status === 'Admitida') {
-    novaEtapa = 'Candidatura Admitida';
-    descEtapa = updates.parecer || 'Aprovada na triagem documental e homologada pela comissão de júri.';
-  } else if (updates.status === 'Convocada para provas') {
-    novaEtapa = 'Convocação Oficial para Provas';
-    descEtapa = updates.eventoLocal ? `Convocado para provas em ${updates.eventoLocal}.` : 'Convocado para realização de exames oficiais.';
-  } else if (updates.status === 'Aprovada') {
-    novaEtapa = 'Aprovação Final e Provimento de Vaga';
-    descEtapa = `Aprovado com a nota final de ${updates.notaFinal || '18.0'} valores para provimento de vaga.`;
-  } else if (updates.status === 'Excluída') {
-    novaEtapa = 'Candidatura Não Admitida / Excluída';
-    descEtapa = updates.motivoExclusao || updates.parecer || 'Não admissão fundamentada por não conformidade com o edital.';
+  if (updates.status === 'Entrevista Profissional' || updates.status === 'Convocada para provas') {
+    novaEtapa = '2ª Fase: Convocação para Entrevista Profissional';
+    descEtapa = updates.parecer || (updates.eventoLocal ? `Convocado para Entrevista Profissional em ${updates.eventoLocal}.` : 'Aprovado na 1ª fase (avaliação documental). Convocado para a Entrevista Profissional.');
+    novaFaseAtual = 2;
+  } else if (updates.status === 'Admitido' || updates.status === 'Admitida' || updates.status === 'Aprovada') {
+    novaEtapa = '3ª Fase: Candidato Admitido para Provimento';
+    descEtapa = `Aprovado na Entrevista Profissional com a nota de ${updates.notaFinal || '18.0'} valores. Admitido para provimento da vaga.`;
+    novaFaseAtual = 3;
+  } else if (updates.status === 'Aprovado (Suplente)') {
+    novaEtapa = '3ª Fase: Aprovado (Suplente / Reserva)';
+    descEtapa = `Aprovado na Entrevista Profissional com a nota de ${updates.notaFinal || '16.0'} valores. Classificado como suplente na lista de reserva.`;
+    novaFaseAtual = 3;
+  } else if (updates.status === 'Excluído' || updates.status === 'Excluída') {
+    novaEtapa = 'Candidatura Excluída';
+    descEtapa = updates.motivoExclusao || updates.parecer || 'Exclusão fundamentada nos requisitos do edital do concurso.';
+    novaFaseAtual = current.faseAtual === 2 ? 2 : 1;
+  } else if (updates.status === 'Em Análise Documental' || updates.status === 'Em análise') {
+    novaEtapa = '1ª Fase: Avaliação Documental';
+    descEtapa = 'Processo em análise documental pela comissão de júri.';
+    novaFaseAtual = 1;
   }
 
   novoHistorico.push({
@@ -1145,12 +1160,16 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
     descricao: descEtapa
   });
 
+  const finalStatus = updates.status || current.status;
+
   const updatedCandidate = {
     ...current,
     ...updates,
+    status: finalStatus,
+    faseAtual: novaFaseAtual,
     historico: novoHistorico,
     deliberacaoJuri: {
-      decisao: updates.status || current.status,
+      decisao: finalStatus,
       dataDeliberacao: nowStr,
       operador: operador,
       motivoExclusao: updates.motivoExclusao || null,
@@ -1159,17 +1178,17 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
     },
     detalhesFase: {
       ...current.detalhesFase,
-      titulo: updates.status === 'Admitida' 
-        ? 'Candidatura Admitida no Concurso' 
-        : updates.status === 'Convocada para provas'
-        ? (updates.eventoTitulo || 'Convocado(a) para Provas e Exames')
-        : updates.status === 'Aprovada'
-        ? 'Candidato(a) Aprovado(a) para Provimento de Vaga'
-        : updates.status === 'Excluída'
+      titulo: finalStatus === 'Entrevista Profissional'
+        ? 'Convocado(a) para 2ª Fase: Entrevista Profissional'
+        : finalStatus === 'Admitido'
+        ? 'Candidato(a) Admitido(a) - Provimento Efetivo de Vaga'
+        : finalStatus === 'Aprovado (Suplente)'
+        ? 'Aprovado(a) na Entrevista - Candidato Suplente (Lista de Reserva)'
+        : finalStatus === 'Excluído'
         ? 'Candidatura Excluída do Processo Selectivo'
-        : 'Processo em Fase de Apreciação',
+        : '1ª Fase: Avaliação Documental em Curso',
       dataEvento: updates.eventoData || current.detalhesFase?.dataEvento || 'Conforme Edital Publicado',
-      local: updates.eventoLocal || current.detalhesFase?.local || 'Instalações Oficiais do SERNIC / ACIPOL',
+      local: updates.eventoLocal || current.detalhesFase?.local || 'Instalações Oficiais do SERNIC',
       observacoes: updates.observacoes || current.detalhesFase?.observacoes || '',
       motivoExclusao: updates.motivoExclusao || current.detalhesFase?.motivoExclusao || null,
       mensagemComissao: updates.parecer || current.detalhesFase?.mensagemComissao || ''
@@ -1182,10 +1201,10 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
   // Registar na auditoria
   addStoredAuditoria({
     acao: 'Deliberação de Candidatura',
-    candidato: `${current.nomeCompleto} (${codigo})`,
+    candidato: `${current.nomeCompleto} (${current.codigoCandidatura})`,
     estadoAnterior: current.status,
-    novoEstado: updates.status || current.status,
-    motivo: updates.motivoExclusao || updates.parecer || 'Deliberação regular da mesa de júri',
+    novoEstado: finalStatus,
+    motivo: updates.motivoExclusao || updates.parecer || `Deliberação formal registrada (${finalStatus})`,
     operador: operador
   });
 

@@ -83,20 +83,26 @@ export default function ConsultaModule() {
     setSearchError('');
   };
 
-  // Obter classe e ícone do estado
+  // Obter classe e ícone do estado de acordo com as 3 fases oficiais do concurso
   const getStatusBadge = (status) => {
     switch (status) {
-      case 'Aprovada':
-        return { bg: '#dcfce7', color: '#15803d', icon: <Award size={16} />, label: 'Aprovada no Concurso Público' };
-      case 'Convocada para provas':
-        return { bg: '#dbeafe', color: '#1e40af', icon: <Calendar size={16} />, label: 'Convocada para Provas' };
+      case 'Admitido':
       case 'Admitida':
-        return { bg: '#dcfce7', color: '#15803d', icon: <CheckCircle2 size={16} />, label: 'Admitida no Concurso' };
+      case 'Aprovada':
+        return { bg: '#dcfce7', color: '#15803d', icon: <Award size={16} />, label: '3ª Fase: Admitido(a) - Provimento Efetivo' };
+      case 'Aprovado (Suplente)':
+        return { bg: '#fef9c3', color: '#854d0e', icon: <CheckCircle2 size={16} />, label: '3ª Fase: Aprovado(a) - Suplente (Lista de Reserva)' };
+      case 'Entrevista Profissional':
+      case 'Convocada para provas':
+        return { bg: '#dbeafe', color: '#1e40af', icon: <Calendar size={16} />, label: '2ª Fase: Convocado(a) para Entrevista Profissional' };
+      case 'Excluído':
       case 'Excluída':
-        return { bg: '#fee2e2', color: '#c32026', icon: <XCircle size={16} />, label: 'Não Admitida / Excluída' };
+        return { bg: '#fee2e2', color: '#c32026', icon: <XCircle size={16} />, label: 'Candidatura Excluída do Concurso' };
+      case 'Em Análise Documental':
       case 'Em análise':
+      case 'Submetida':
       default:
-        return { bg: '#fef3c7', color: '#92400e', icon: <Clock size={16} />, label: 'Em Análise Curricular' };
+        return { bg: '#fef3c7', color: '#92400e', icon: <Clock size={16} />, label: '1ª Fase: Em Análise Documental' };
     }
   };
 
@@ -196,7 +202,7 @@ export default function ConsultaModule() {
 
             {/* TESTES RÁPIDOS DEMO DISCRETOS */}
             <div style={{ marginTop: '1.2rem', paddingTop: '0.9rem', borderTop: '1px solid var(--portal-border)', fontSize: '0.8rem', color: 'var(--portal-text-muted)' }}>
-              <span style={{ fontWeight: 700, marginRight: '0.5rem' }}>Exemplos:</span>
+              <span style={{ fontWeight: 700, marginRight: '0.5rem' }}>Simular por fase oficial:</span>
               <div style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.2rem' }}>
                 <button
                   type="button"
@@ -204,7 +210,7 @@ export default function ConsultaModule() {
                   className="auth-demo-pill"
                   style={{ padding: '0.25rem 0.65rem', fontSize: '0.75rem' }}
                 >
-                  Convocada (00849)
+                  2ª Fase: Entrevista (00849)
                 </button>
                 <button
                   type="button"
@@ -212,7 +218,23 @@ export default function ConsultaModule() {
                   className="auth-demo-pill"
                   style={{ padding: '0.25rem 0.65rem', fontSize: '0.75rem' }}
                 >
-                  Admitida (00122)
+                  1ª Fase: Análise Doc (00122)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLoadDemo(INITIAL_CANDIDATURAS_CONSULTA[4])}
+                  className="auth-demo-pill"
+                  style={{ padding: '0.25rem 0.65rem', fontSize: '0.75rem' }}
+                >
+                  3ª Fase: Admitido (00311)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleLoadDemo(INITIAL_CANDIDATURAS_CONSULTA[5])}
+                  className="auth-demo-pill"
+                  style={{ padding: '0.25rem 0.65rem', fontSize: '0.75rem' }}
+                >
+                  3ª Fase: Suplente (00445)
                 </button>
                 <button
                   type="button"
@@ -220,15 +242,7 @@ export default function ConsultaModule() {
                   className="auth-demo-pill"
                   style={{ padding: '0.25rem 0.65rem', fontSize: '0.75rem' }}
                 >
-                  Excluída (00567)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleLoadDemo(INITIAL_CANDIDATURAS_CONSULTA[3])}
-                  className="auth-demo-pill"
-                  style={{ padding: '0.25rem 0.65rem', fontSize: '0.75rem' }}
-                >
-                  Em Análise (00990)
+                  Excluído Doc (00567)
                 </button>
               </div>
             </div>
@@ -280,83 +294,178 @@ export default function ConsultaModule() {
                 </button>
               </div>
 
-              {/* TIMELINE VISUAL DE PROGRESSÃO */}
+              {/* TIMELINE VISUAL DE PROGRESSÃO (ESTRUTURA OFICIAL DE 3 ETAPAS) */}
               <div style={{ marginBottom: '2.5rem' }}>
-                <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--portal-text-main)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '1rem' }}>
-                  Fases do Processo Selectivo
-                </h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.4rem' }}>
+                  <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--portal-text-main)', textTransform: 'uppercase', letterSpacing: '0.04em', margin: 0 }}>
+                    Etapas Oficiais do Concurso Público SERNIC
+                  </h4>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--portal-text-muted)', fontWeight: 700 }}>
+                    {searchResult.status === 'Em Análise Documental' || searchResult.status === 'Em análise' ? 'Fase Actual: 1 de 3 (Avaliação Documental)' :
+                     searchResult.status === 'Entrevista Profissional' || searchResult.status === 'Convocada para provas' ? 'Fase Actual: 2 de 3 (Entrevista Profissional)' :
+                     'Fase Actual: 3 de 3 (Deliberação Final)'}
+                  </span>
+                </div>
                 
-                <div className="status-timeline">
+                <div className="status-timeline three-steps">
                   <div className="timeline-line" />
 
-                  <div className={`timeline-step ${searchResult.faseAtual >= 1 ? 'done' : ''}`}>
+                  {/* ETAPA 1: AVALIAÇÃO DOCUMENTAL */}
+                  <div className={`timeline-step ${
+                    (searchResult.status === 'Excluído' || searchResult.status === 'Excluída') && searchResult.faseAtual === 1 
+                      ? 'excluido' 
+                      : searchResult.status === 'Em Análise Documental' || searchResult.status === 'Em análise' || searchResult.status === 'Submetida' 
+                      ? 'active' 
+                      : 'done'
+                  }`}>
                     <div className="timeline-circle">1</div>
-                    <span className="timeline-label">Submissão</span>
+                    <span className="timeline-label">1ª Fase: Avaliação Documental</span>
+                    <span className="timeline-subtext">
+                      {(searchResult.status === 'Excluído' || searchResult.status === 'Excluída') && searchResult.faseAtual === 1 
+                        ? 'Não Admitido' 
+                        : searchResult.status === 'Em Análise Documental' || searchResult.status === 'Em análise' || searchResult.status === 'Submetida' 
+                        ? 'Em Triagem' 
+                        : 'Aprovado ✓'}
+                    </span>
                   </div>
 
-                  <div className={`timeline-step ${searchResult.faseAtual >= 2 ? (searchResult.status === 'Excluída' ? 'active' : 'done') : ''}`}>
+                  {/* ETAPA 2: ENTREVISTA PROFISSIONAL */}
+                  <div className={`timeline-step ${
+                    searchResult.status === 'Em Análise Documental' || searchResult.status === 'Em análise' || searchResult.status === 'Submetida' 
+                      ? '' 
+                      : searchResult.status === 'Entrevista Profissional' || searchResult.status === 'Convocada para provas' 
+                      ? 'active' 
+                      : (searchResult.status === 'Excluído' || searchResult.status === 'Excluída') && searchResult.faseAtual === 2 
+                      ? 'excluido' 
+                      : 'done'
+                  }`}>
                     <div className="timeline-circle">2</div>
-                    <span className="timeline-label">Triagem Curricular</span>
+                    <span className="timeline-label">2ª Fase: Entrevista Profissional</span>
+                    <span className="timeline-subtext">
+                      {searchResult.status === 'Em Análise Documental' || searchResult.status === 'Em análise' || searchResult.status === 'Submetida' 
+                        ? 'Aguardando 1ª Fase' 
+                        : searchResult.status === 'Entrevista Profissional' || searchResult.status === 'Convocada para provas' 
+                        ? 'Convocado' 
+                        : (searchResult.status === 'Excluído' || searchResult.status === 'Excluída') && searchResult.faseAtual === 2 
+                        ? 'Não Apurado' 
+                        : 'Aprovado ✓'}
+                    </span>
                   </div>
 
-                  <div className={`timeline-step ${searchResult.faseAtual >= 3 ? 'done' : ''}`}>
+                  {/* ETAPA 3: DELIBERAÇÃO FINAL */}
+                  <div className={`timeline-step ${
+                    searchResult.status === 'Admitido' || searchResult.status === 'Admitida' || searchResult.status === 'Aprovada'
+                      ? 'done'
+                      : searchResult.status === 'Aprovado (Suplente)'
+                      ? 'suplente'
+                      : searchResult.status === 'Excluído' || searchResult.status === 'Excluída'
+                      ? 'excluido'
+                      : ''
+                  }`}>
                     <div className="timeline-circle">3</div>
-                    <span className="timeline-label">Homologação</span>
-                  </div>
-
-                  <div className={`timeline-step ${searchResult.faseAtual >= 4 ? 'active' : ''}`}>
-                    <div className="timeline-circle">4</div>
-                    <span className="timeline-label">Provas & Testes</span>
-                  </div>
-
-                  <div className={`timeline-step ${searchResult.faseAtual >= 5 ? 'done' : ''}`}>
-                    <div className="timeline-circle">5</div>
-                    <span className="timeline-label">Decisão Final</span>
+                    <span className="timeline-label">3ª Fase: Deliberação Final</span>
+                    <span className="timeline-subtext">
+                      {searchResult.status === 'Admitido' || searchResult.status === 'Admitida' || searchResult.status === 'Aprovada'
+                        ? 'Admitido(a) 🎉'
+                        : searchResult.status === 'Aprovado (Suplente)'
+                        ? 'Suplente (Reserva)'
+                        : searchResult.status === 'Excluído' || searchResult.status === 'Excluída'
+                        ? 'Excluído'
+                        : 'Aguardando'}
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* DETALHES ESPECÍFICOS DO ESTADO ATUAL */}
               <div style={{ backgroundColor: 'var(--portal-card-inner)', border: '1px solid var(--portal-border)', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' }}>
-                <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--portal-text-main)', marginBottom: '0.5rem' }}>
-                  {searchResult.detalhesFase.titulo}
-                </h4>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.6rem' }}>
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--portal-text-main)', margin: 0 }}>
+                    {searchResult.detalhesFase?.titulo || 'Informações Oficiais do Processo'}
+                  </h4>
+                  {searchResult.deliberacaoJuri?.notaFinal && (
+                    <span style={{ fontSize: '0.85rem', fontWeight: 800, padding: '0.2rem 0.65rem', borderRadius: '6px', background: 'rgba(22, 163, 74, 0.1)', color: '#16a34a', border: '1px solid rgba(22, 163, 74, 0.25)' }}>
+                      Nota da Entrevista: {searchResult.deliberacaoJuri.notaFinal} Valores
+                    </span>
+                  )}
+                </div>
 
-                <p style={{ fontSize: '0.9rem', color: 'var(--portal-text-muted)', lineHeight: 1.6, marginBottom: '1rem' }}>
-                  {searchResult.detalhesFase.mensagemComissao}
+                <p style={{ fontSize: '0.92rem', color: 'var(--portal-text-muted)', lineHeight: 1.6, marginBottom: '1.2rem' }}>
+                  {searchResult.detalhesFase?.mensagemComissao}
                 </p>
 
-                {/* Se Convocado para Provas: Informações de data e local */}
-                {searchResult.status === 'Convocada para provas' && (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', backgroundColor: 'var(--portal-card-bg)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--portal-border)' }}>
+                {/* Se Convocado para Entrevista Profissional: Informações de data e local */}
+                {(searchResult.status === 'Entrevista Profissional' || searchResult.status === 'Convocada para provas') && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', backgroundColor: 'var(--portal-card-bg)', padding: '1.1rem', borderRadius: '10px', border: '1px solid var(--portal-border)' }}>
                     <div>
-                      <span style={{ fontSize: '0.74rem', color: 'var(--portal-text-muted)', textTransform: 'uppercase', fontWeight: 800 }}>Data e Horário</span>
-                      <strong style={{ display: 'block', fontSize: '0.92rem', color: '#1e40af' }}>
-                        {searchResult.detalhesFase.dataEvento}
+                      <span style={{ fontSize: '0.74rem', color: 'var(--portal-text-muted)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.04em' }}>Data e Horário da Entrevista</span>
+                      <strong style={{ display: 'block', fontSize: '0.94rem', color: '#1e40af', marginTop: '0.2rem' }}>
+                        {searchResult.detalhesFase?.dataEvento || '15 de Novembro de 2026 às 08h30'}
                       </strong>
                     </div>
 
                     <div>
-                      <span style={{ fontSize: '0.74rem', color: 'var(--portal-text-muted)', textTransform: 'uppercase', fontWeight: 800 }}>Local da Prova</span>
-                      <strong style={{ display: 'block', fontSize: '0.92rem', color: 'var(--portal-text-main)' }}>
-                        {searchResult.detalhesFase.local}
+                      <span style={{ fontSize: '0.74rem', color: 'var(--portal-text-muted)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.04em' }}>Local da Entrevista com o Júri</span>
+                      <strong style={{ display: 'block', fontSize: '0.94rem', color: 'var(--portal-text-main)', marginTop: '0.2rem' }}>
+                        {searchResult.detalhesFase?.local || 'Gabinete Provincial de Entrevistas do SERNIC'}
                       </strong>
+                    </div>
+
+                    <div style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--portal-border)', paddingTop: '0.75rem', fontSize: '0.82rem', color: 'var(--portal-text-muted)' }}>
+                      <strong>Instruções Obrigatórias:</strong> {searchResult.detalhesFase?.observacoes || 'Apresentação com Bilhete de Identidade original e comprovativo impresso de inscrição.'}
+                    </div>
+                  </div>
+                )}
+
+                {/* Se Admitido para Provimento Efetivo */}
+                {(searchResult.status === 'Admitido' || searchResult.status === 'Admitida' || searchResult.status === 'Aprovada') && (
+                  <div style={{ backgroundColor: 'rgba(34, 197, 94, 0.08)', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '1rem 1.25rem', borderRadius: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <Award size={22} color="#15803d" style={{ flexShrink: 0 }} />
+                      <div>
+                        <strong style={{ fontSize: '0.92rem', color: '#15803d', display: 'block' }}>
+                          Provimento Efetivo Autorizado
+                        </strong>
+                        <p style={{ fontSize: '0.85rem', color: '#166534', margin: '0.2rem 0 0 0', lineHeight: 1.4 }}>
+                          O candidato concluiu com mérito todas as etapas eliminatórias (avaliação documental e entrevista profissional). Deverá aguardar publicação do aviso de tomada de posse.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Se Aprovado como Suplente */}
+                {searchResult.status === 'Aprovado (Suplente)' && (
+                  <div style={{ backgroundColor: 'rgba(217, 119, 6, 0.08)', border: '1px solid rgba(217, 119, 6, 0.3)', padding: '1rem 1.25rem', borderRadius: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <CheckCircle2 size={22} color="#b45309" style={{ flexShrink: 0 }} />
+                      <div>
+                        <strong style={{ fontSize: '0.92rem', color: '#b45309', display: 'block' }}>
+                          Candidato Aprovado na Bolsa de Reserva / Suplência
+                        </strong>
+                        <p style={{ fontSize: '0.85rem', color: '#92400e', margin: '0.2rem 0 0 0', lineHeight: 1.4 }}>
+                          Aprovado na entrevista profissional com classificação positiva. Mantém prioridade de chamada durante o período de validade do concurso para eventuais vagas remanescentes ou desistências.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
 
                 {/* Se Excluído: Motivo Legal */}
-                {searchResult.status === 'Excluída' && (
-                  <div style={{ backgroundColor: '#fff5f5', border: '1px solid #fecaca', padding: '1rem', borderRadius: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem' }}>
-                      <ShieldAlert size={20} color="#b91c1c" style={{ flexShrink: 0, marginTop: '2px' }} />
+                {(searchResult.status === 'Excluído' || searchResult.status === 'Excluída') && (
+                  <div style={{ backgroundColor: '#fff5f5', border: '1px solid #fecaca', padding: '1rem 1.25rem', borderRadius: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem' }}>
+                      <ShieldAlert size={22} color="#b91c1c" style={{ flexShrink: 0, marginTop: '2px' }} />
                       <div>
-                        <strong style={{ fontSize: '0.9rem', color: '#b91c1c', display: 'block', marginBottom: '0.2rem' }}>
-                          Fundamento Legal da Não Admissão:
+                        <strong style={{ fontSize: '0.92rem', color: '#b91c1c', display: 'block', marginBottom: '0.2rem' }}>
+                          Fundamento Legal da Não Admissão / Exclusão:
                         </strong>
-                        <p style={{ fontSize: '0.85rem', color: '#7f1d1d', lineHeight: 1.5 }}>
-                          {searchResult.detalhesFase.motivoExclusao}
+                        <p style={{ fontSize: '0.86rem', color: '#7f1d1d', lineHeight: 1.5, margin: 0 }}>
+                          {searchResult.detalhesFase?.motivoExclusao || searchResult.deliberacaoJuri?.motivoExclusao || 'Inconformidade com os requisitos formais expressos no edital de concurso.'}
                         </p>
+                        <span style={{ display: 'block', marginTop: '0.45rem', fontSize: '0.78rem', color: '#991b1b', fontStyle: 'italic' }}>
+                          Prazo de recurso administrativo: 5 (cinco) dias úteis contados a partir da notificação oficial.
+                        </span>
                       </div>
                     </div>
                   </div>

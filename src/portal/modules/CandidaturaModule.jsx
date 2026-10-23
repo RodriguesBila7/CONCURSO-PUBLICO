@@ -19,7 +19,10 @@ import {
   PROVINCIAS_MOCAMBIQUE, 
   validarNUIT, 
   validarBI, 
-  validarTelefoneMZ 
+  validarTelefoneMZ,
+  getStoredCandidaturas,
+  saveStoredCandidaturas,
+  addStoredAuditoria
 } from '../mockData';
 import sernicLogo from '../../assets/sernic-logo.png';
 
@@ -244,6 +247,78 @@ export default function CandidaturaModule({
       dataSubmissao: new Date().toISOString()
     };
 
+    const codigoFinal = codigoCandidaturaGerado;
+
+    // Persistir novo candidato diretamente para visualização imediata no módulo Inscritos no Concurso
+    const novoCandidato = {
+      codigoCandidatura: codigoFinal,
+      biNumero: formData.biNumero,
+      nuit: formData.nuit,
+      nomeCompleto: formData.nomeCompleto,
+      genero: formData.genero,
+      dataNascimento: formData.dataNascimento,
+      idade: formData.dataNascimento ? (new Date().getFullYear() - new Date(formData.dataNascimento).getFullYear()) : 26,
+      telefone: formData.telefonePrincipal,
+      email: formData.email,
+      provincia: formData.provinciaResidencia,
+      distrito: formData.distritoResidencia || 'Sede',
+      morada: formData.moradaCompleta || formData.bairroResidencia || 'Residência oficial',
+      filiacaoPai: 'Não declarado',
+      filiacaoMae: 'Não declarado',
+      estadoCivil: formData.estadoCivil,
+      vagaId: vagaSelecionada.id,
+      vagaTitulo: vagaSelecionada.titulo,
+      carreira: vagaSelecionada.carreira || vagaSelecionada.titulo,
+      dataSubmissao: new Date().toISOString(),
+      status: 'Em Análise Documental',
+      faseAtual: 1,
+      habilitacoes: {
+        grau: formData.nivelAcademico,
+        curso: formData.cursoNome,
+        instituicao: formData.instituicaoEnsino,
+        anoConclusao: formData.anoConclusao,
+        mediaFinal: formData.mediaFinal || '14.5'
+      },
+      documentos: [
+        { id: 'doc-bi', tipo: 'Bilhete de Identidade Autenticado', status: 'Sob Análise', tamanho: '1.2 MB', data: new Date().toISOString().split('T')[0] },
+        { id: 'doc-cert', tipo: 'Certificado de Habilitações', status: 'Sob Análise', tamanho: '2.1 MB', data: new Date().toISOString().split('T')[0] },
+        { id: 'doc-crim', tipo: 'Certidão de Registo Criminal', status: 'Sob Análise', tamanho: '850 KB', data: new Date().toISOString().split('T')[0] },
+        { id: 'doc-cv', tipo: 'Curriculum Vitae', status: 'Sob Análise', tamanho: '1.5 MB', data: new Date().toISOString().split('T')[0] }
+      ],
+      detalhesFase: {
+        titulo: '1ª Fase: Avaliação Documental em Curso',
+        dataEvento: 'Conforme calendário oficial do Edital',
+        local: `Delegação Provincial do SERNIC (${formData.provinciaResidencia})`,
+        observacoes: 'A comissão de júri está a conferir a autenticidade e validade jurídica dos documentos submetidos.',
+        mensagemComissao: 'O seu processo de candidatura foi recebido e encontra-se na 1ª Fase de Avaliação Documental. Se aprovado, passará à 2ª Fase: Entrevista Profissional.'
+      },
+      deliberacaoJuri: {
+        decisao: 'Em Análise Documental',
+        dataDeliberacao: null,
+        operador: null,
+        parecer: 'Processo na fila de triagem documental da comissão de júri.'
+      },
+      historico: [
+        { data: new Date().toISOString().split('T')[0], etapa: 'Inscrição Submetida', descricao: 'Processo registado no módulo Inscritos no Concurso.' },
+        { data: new Date().toISOString().split('T')[0], etapa: '1ª Fase: Avaliação Documental', descricao: 'Início da conferência de conformidade documental pelo júri.' }
+      ]
+    };
+
+    try {
+      const listaAtual = getStoredCandidaturas();
+      saveStoredCandidaturas([novoCandidato, ...listaAtual]);
+      addStoredAuditoria({
+        acao: 'Nova Inscrição no Concurso',
+        candidato: `${novoCandidato.nomeCompleto} (${novoCandidato.codigoCandidatura})`,
+        estadoAnterior: 'Sem inscrição',
+        novoEstado: 'Em Análise Documental',
+        motivo: `Candidatura submetida para ${novoCandidato.vagaTitulo} (${novoCandidato.provincia})`,
+        operador: 'Sistema SERNIC (Portal do Candidato)'
+      });
+    } catch (err) {
+      console.warn('Erro ao salvar candidatura em localStorage', err);
+    }
+
     try {
       const res = await fetch('/api/candidaturas/solicitar', {
         method: 'POST',
@@ -253,7 +328,7 @@ export default function CandidaturaModule({
       const data = await res.json();
       if (data.success) {
         setSubmissionSuccess({
-          codigo: data.codigoCandidatura || codigoCandidaturaGerado,
+          codigo: data.codigoCandidatura || codigoFinal,
           dados: payload,
           vaga: vagaSelecionada,
           dataTexto: dataSubmissaoFormatada,
@@ -261,7 +336,7 @@ export default function CandidaturaModule({
         });
       } else {
         setSubmissionSuccess({
-          codigo: codigoCandidaturaGerado,
+          codigo: codigoFinal,
           dados: payload,
           vaga: vagaSelecionada,
           dataTexto: dataSubmissaoFormatada,
@@ -270,7 +345,7 @@ export default function CandidaturaModule({
       }
     } catch {
       setSubmissionSuccess({
-        codigo: codigoCandidaturaGerado,
+        codigo: codigoFinal,
         dados: payload,
         vaga: vagaSelecionada,
         dataTexto: dataSubmissaoFormatada,
@@ -296,16 +371,16 @@ export default function CandidaturaModule({
           </div>
 
           <span className="vaga-badge-status vaga-status-aberto" style={{ fontSize: '0.82rem', padding: '0.3rem 0.8rem' }}>
-            Candidatura Registada com Sucesso
+            Inscrição Concluída • Entrada no Módulo Inscritos no Concurso
           </span>
 
           <h2 style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--portal-text-main)', marginTop: '0.6rem' }}>
             Processo Submetido ao SERNIC
           </h2>
 
-          <p style={{ fontSize: '0.96rem', color: 'var(--portal-text-muted)', maxWidth: '600px', margin: '0.4rem auto 1.5rem auto' }}>
-            A sua candidatura foi gravada na base de dados do Serviço Nacional de Investigação Criminal. 
-            Guarde com segurança o seu código de protocolo para futuras consultas e comparências.
+          <p style={{ fontSize: '0.96rem', color: 'var(--portal-text-muted)', maxWidth: '620px', margin: '0.4rem auto 1.5rem auto', lineHeight: 1.6 }}>
+            A sua candidatura foi gravada com sucesso. O processo encontra-se na <strong>1ª Fase: Avaliação Documental</strong>. 
+            Após validação dos documentos pelo Júri, caso aprovado, avançará para a <strong>2ª Fase: Entrevista Profissional</strong>.
           </p>
 
           <div style={{ background: 'var(--portal-card-inner)', border: '2px dashed #c59b27', borderRadius: '14px', padding: '1.5rem', display: 'inline-block', minWidth: '320px', marginBottom: '2rem' }}>
@@ -315,9 +390,9 @@ export default function CandidaturaModule({
             <div style={{ fontSize: '1.9rem', fontWeight: 900, color: 'var(--portal-text-main)', letterSpacing: '0.02em', marginTop: '0.3rem' }}>
               {submissionSuccess.codigo}
             </div>
-            <span style={{ fontSize: '0.8rem', color: '#15803d', fontWeight: 700 }}>
-              ✓ Autenticação Eletrónica Válida
-            </span>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.4rem', padding: '0.2rem 0.65rem', borderRadius: '9999px', background: '#fef3c7', color: '#92400e', fontSize: '0.76rem', fontWeight: 800 }}>
+              <span>Estado Inicial: Em Análise Documental (1ª Fase)</span>
+            </div>
           </div>
 
           {/* ACÇÕES DE SUCESSO */}

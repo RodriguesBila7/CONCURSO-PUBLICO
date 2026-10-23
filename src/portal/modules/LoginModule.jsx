@@ -26,7 +26,8 @@ import {
   validarNUIT, 
   validarTelefoneMZ, 
   PROVINCIAS_MOCAMBIQUE,
-  INITIAL_CANDIDATURAS_CONSULTA 
+  INITIAL_CANDIDATURAS_CONSULTA,
+  getStoredCandidaturas 
 } from '../mockData';
 
 export default function LoginModule({ 
@@ -69,9 +70,12 @@ export default function LoginModule({
   const [forgotSuccess, setForgotSuccess] = useState(false);
 
   // Candidaturas associadas ao candidato logado
-  const [userCandidaturas, setUserCandidaturas] = useState(
-    currentUser ? INITIAL_CANDIDATURAS_CONSULTA.filter(c => c.nuit === currentUser.nuit || c.biNumero === currentUser.bi) : []
-  );
+  const [userCandidaturas, setUserCandidaturas] = useState(() => {
+    if (!currentUser) return [];
+    const all = getStoredCandidaturas();
+    const matched = all.filter(c => c.nuit === currentUser.nuit || c.biNumero === currentUser.bi);
+    return matched.length > 0 ? matched : all.slice(0, 2);
+  });
 
   // Manipular Login
   const handleLogin = async (e) => {
@@ -317,18 +321,46 @@ export default function LoginModule({
                             </span>
                           </div>
 
-                          <span 
-                            style={{
-                              backgroundColor: c.status === 'Convocada para provas' ? '#dbeafe' : (c.status === 'Admitida' ? '#dcfce7' : '#fef3c7'),
-                              color: c.status === 'Convocada para provas' ? '#1e40af' : (c.status === 'Admitida' ? '#15803d' : '#92400e'),
-                              padding: '0.25rem 0.7rem',
-                              borderRadius: '9999px',
-                              fontSize: '0.78rem',
-                              fontWeight: 800
-                            }}
-                          >
-                            {c.status}
-                          </span>
+                          {(() => {
+                            let badgeBg = '#f1f5f9';
+                            let badgeColor = '#475569';
+                            let badgeLabel = '1ª Fase: Em Análise Documental';
+
+                            if (c.status === 'Entrevista Profissional' || c.status === 'Convocada para provas') {
+                              badgeBg = '#dbeafe';
+                              badgeColor = '#1d4ed8';
+                              badgeLabel = '2ª Fase: Entrevista Profissional';
+                            } else if (c.status === 'Admitido' || c.status === 'Admitida') {
+                              badgeBg = '#dcfce7';
+                              badgeColor = '#15803d';
+                              badgeLabel = '3ª Fase: Admitido(a)';
+                            } else if (c.status === 'Aprovado (Suplente)') {
+                              badgeBg = '#fef3c7';
+                              badgeColor = '#b45309';
+                              badgeLabel = '3ª Fase: Suplente (Reserva)';
+                            } else if (c.status === 'Excluído' || c.status === 'Excluída') {
+                              badgeBg = '#fee2e2';
+                              badgeColor = '#c32026';
+                              badgeLabel = 'Candidatura Excluída';
+                            }
+
+                            return (
+                              <span 
+                                style={{
+                                  backgroundColor: badgeBg,
+                                  color: badgeColor,
+                                  padding: '0.35rem 0.85rem',
+                                  borderRadius: '9999px',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 800,
+                                  letterSpacing: '0.02em',
+                                  border: `1px solid ${badgeColor}33`
+                                }}
+                              >
+                                {badgeLabel}
+                              </span>
+                            );
+                          })()}
                         </div>
 
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '0.8rem', marginTop: '0.6rem', fontSize: '0.82rem', color: '#64748b' }}>
