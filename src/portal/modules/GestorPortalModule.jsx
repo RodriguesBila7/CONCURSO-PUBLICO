@@ -51,7 +51,9 @@ import {
   Check,
   X,
   Building,
-  AlertTriangle
+  AlertTriangle,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { 
   INITIAL_VAGAS, 
@@ -128,6 +130,7 @@ export default function GestorPortalModule({
   const [cursos, setCursos] = useState(() => getStoredCursos());
   const [locais, setLocais] = useState(() => getStoredLocais());
   const [definicoes, setDefinicoes] = useState(() => getStoredDefinicoes());
+  const [paletasCores, setPaletasCores] = useState(() => getStoredPaletasCores());
 
   // Recarregar dados
   const reloadData = () => {
@@ -175,7 +178,6 @@ export default function GestorPortalModule({
   };
 
   // CRUD DE PALETAS DE CORES & TEMAS INSTITUCIONAIS
-  const [paletasCores, setPaletasCores] = useState(() => getStoredPaletasCores());
   const [isPaletaModalOpen, setIsPaletaModalOpen] = useState(false);
   const [editingPaleta, setEditingPaleta] = useState(null);
   const [paletaForm, setPaletaForm] = useState({

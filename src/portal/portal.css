@@ -5649,6 +5649,10 @@
   border-left-color: #2c3c52;
 }
 
+.portal-sidebar.collapsed .portal-sidebar-submenu {
+  display: none !important;
+}
+
 .portal-sidebar-sub-btn {
   display: flex;
   align-items: center;
