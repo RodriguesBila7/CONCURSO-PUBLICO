@@ -1,0 +1,3280 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Users, 
+  CheckCircle2, 
+  XCircle, 
+  AlertCircle, 
+  Calendar, 
+  Award, 
+  FileText, 
+  Search, 
+  Filter, 
+  Download, 
+  Printer, 
+  Eye, 
+  ShieldCheck, 
+  Clock, 
+  ArrowRight, 
+  ChevronRight, 
+  Edit3, 
+  Layers, 
+  Briefcase, 
+  MapPin, 
+  GraduationCap, 
+  FileCheck, 
+  History, 
+  Sparkles, 
+  RefreshCw, 
+  SlidersHorizontal, 
+  CheckSquare, 
+  FileSpreadsheet, 
+  BookOpen, 
+  Send, 
+  Info,
+  Phone,
+  Mail,
+  UserCheck,
+  UserX,
+  FileSignature,
+  FilePlus2,
+  ExternalLink,
+  ChevronDown,
+  Palette,
+  Globe,
+  Settings,
+  Plus,
+  Trash2,
+  Save,
+  ToggleLeft,
+  ToggleRight,
+  Check,
+  X,
+  Building,
+  AlertTriangle
+} from 'lucide-react';
+import { 
+  INITIAL_VAGAS, 
+  PROVINCIAS_MOCAMBIQUE,
+  getStoredCandidaturas, 
+  saveStoredCandidaturas,
+  updateStoredCandidatura,
+  getStoredListasPublicadas, 
+  saveStoredListasPublicadas,
+  getStoredAuditoria, 
+  addStoredAuditoria,
+  getStoredCursos,
+  saveStoredCursos,
+  getStoredLocais,
+  saveStoredLocais,
+  getStoredDefinicoes,
+  saveStoredDefinicoes
+} from '../mockData';
+import sernicLogo from '../../assets/sernic-logo.png';
+
+export default function GestorPortalModule({ 
+  currentUser, 
+  navigate, 
+  onNotify, 
+  onLogout,
+  gestorTab: propGestorTab,
+  onGestorTabChange 
+}) {
+  // Aba ativa do Gestor:
+  // 'dashboard' | 'inscritos' | 'deliberacao' | 'pautas' | 'vagas' | 'auditoria' | 'definicoes'
+  const [internalGestorTab, setInternalGestorTab] = useState(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const h = window.location.hash.replace('#', '');
+      if (['dashboard', 'inscritos', 'deliberacao', 'pautas', 'vagas', 'auditoria', 'definicoes'].includes(h)) {
+        return h;
+      }
+    }
+    return 'dashboard';
+  });
+
+  const gestorTab = propGestorTab || internalGestorTab;
+  const setGestorTab = (tab) => {
+    if (onGestorTabChange) {
+      onGestorTabChange(tab);
+    }
+    setInternalGestorTab(tab);
+    if (typeof window !== 'undefined') {
+      window.location.hash = tab;
+    }
+  };
+
+  // Dados sincronizados a partir do localStorage
+  const [candidatos, setCandidatos] = useState(() => getStoredCandidaturas());
+  const [listas, setListas] = useState(() => getStoredListasPublicadas());
+  const [auditoria, setAuditoria] = useState(() => getStoredAuditoria());
+
+  // Dados do Módulo de Definições
+  const [cursos, setCursos] = useState(() => getStoredCursos());
+  const [locais, setLocais] = useState(() => getStoredLocais());
+  const [definicoes, setDefinicoes] = useState(() => getStoredDefinicoes());
+
+  // Recarregar dados
+  const reloadData = () => {
+    setCandidatos(getStoredCandidaturas());
+    setListas(getStoredListasPublicadas());
+    setAuditoria(getStoredAuditoria());
+    setCursos(getStoredCursos());
+    setLocais(getStoredLocais());
+    setDefinicoes(getStoredDefinicoes());
+    if (onNotify) {
+      onNotify('success', 'Base de dados do concurso sincronizada com sucesso!');
+    }
+  };
+
+  // ========================================================
+  // ESTADOS DO MÓDULO "DEFINIÇÕES DO SISTEMA"
+  // ========================================================
+  // Sub-abas: 'cursos' | 'locais' | 'temas' | 'idioma' | 'geral'
+  const [definicoesSubTab, setDefinicoesSubTab] = useState('cursos');
+
+  // Filtros de busca de cursos
+  const [buscaCurso, setBuscaCurso] = useState('');
+  const [filtroGrauCurso, setFiltroGrauCurso] = useState('todos');
+
+  // Modal de Curso (Novo / Editar)
+  const [isCursoModalOpen, setIsCursoModalOpen] = useState(false);
+  const [editingCurso, setEditingCurso] = useState(null);
+  const [cursoForm, setCursoForm] = useState({
+    nome: '',
+    grau: 'Licenciatura',
+    carreira: 'Investigação Criminal e Instrução Processual',
+    notaMinima: '14.0',
+    status: 'Activo'
+  });
+
+  // Modal de Local de Teste (Novo / Editar)
+  const [isLocalModalOpen, setIsLocalModalOpen] = useState(false);
+  const [editingLocal, setEditingLocal] = useState(null);
+  const [localForm, setLocalForm] = useState({
+    nome: '',
+    provincia: 'Maputo Província',
+    cidade: 'Michafutene',
+    endereco: '',
+    capacidade: 350,
+    tiposProva: ['Prova Escrita de Conhecimentos'],
+    dataPrevista: '15 de Novembro de 2026 às 08h00',
+    responsavel: ''
+  });
+
+  // Estado dos Temas e Aparência
+  const [temaCorSelecionada, setTemaCorSelecionada] = useState(() => definicoes.corDestaque || '#c32026');
+  const [modoTemaSelecionado, setModoTemaSelecionado] = useState(() => definicoes.temaPadrao || 'claro');
+  const [opacidadeMarcaAgua, setOpacidadeMarcaAgua] = useState(() => definicoes.opacidadeMarcaAgua || 'normal');
+
+  // Estado de Idioma e Regionalização
+  const [idiomaSelecionado, setIdiomaSelecionado] = useState(() => definicoes.idiomaPadrao || 'pt');
+  const [fusoHorarioSelecionado, setFusoHorarioSelecionado] = useState(() => definicoes.fusoHorario || 'CAT (UTC+2) - Maputo');
+
+  // Estado dos Parâmetros Estatutários Gerais
+  const [parametrosForm, setParametrosForm] = useState(() => ({
+    tituloConcurso: definicoes.tituloConcurso || 'Concurso Público Nacional de Ingresso no SERNIC 2026',
+    codigoEdital: definicoes.codigoEdital || 'Aviso n.º 01/SERNIC-DG/DRH/2026',
+    dataAbertura: definicoes.dataAbertura || '2026-10-01',
+    dataEncerramento: definicoes.dataEncerramento || '2026-11-30',
+    idadeMinima: definicoes.idadeMinima || 18,
+    idadeMaximaGeral: definicoes.idadeMaximaGeral || 35,
+    idadeMaximaEspecialistas: definicoes.idadeMaximaEspecialistas || 40,
+    alturaMinimaHomem: definicoes.alturaMinimaHomem || '1.65',
+    alturaMinimaMulher: definicoes.alturaMinimaMulher || '1.60',
+    prazoRecursoDias: definicoes.prazoRecursoDias || 5,
+    notificacoesSmsAtivas: definicoes.notificacoesSmsAtivas !== false,
+    notificacoesEmailAtivas: definicoes.notificacoesEmailAtivas !== false
+  }));
+
+  // ========================================================
+  // ESTADOS DO MÓDULO "INSCRITOS"
+  // ========================================================
+  const [buscaInscrito, setBuscaInscrito] = useState('');
+  const [filtroVaga, setFiltroVaga] = useState('todas');
+  const [filtroProvincia, setFiltroProvincia] = useState('todas');
+  const [filtroStatus, setFiltroStatus] = useState('todos');
+  const [filtroGenero, setFiltroGenero] = useState('todos');
+
+  // Candidato selecionado para ver o Dossier Completo (Modal)
+  const [selectedDossier, setSelectedDossier] = useState(null);
+
+  // Documento selecionado para pré-visualização timbrada
+  const [previewDoc, setPreviewDoc] = useState(null);
+
+  // ========================================================
+  // ESTADOS DO MÓDULO "DELIBERAÇÃO DO JÚRI"
+  // ========================================================
+  const [deliberandoCandidato, setDeliberandoCandidato] = useState(null);
+  const [novoEstado, setNovoEstado] = useState('Admitida');
+  const [motivoExclusao, setMotivoExclusao] = useState('Art. 35 do EGFAE - Idade superior a 35 anos à data limite');
+  const [outroMotivo, setOutroMotivo] = useState('');
+  const [parecerJuri, setParecerJuri] = useState('');
+  const [notaFinal, setNotaFinal] = useState('18.0');
+  const [eventoData, setEventoData] = useState('15 de Novembro de 2026 às 08h00');
+  const [eventoLocal, setEventoLocal] = useState('Academia de Ciências Policiais (ACIPOL) - Michafutene, Maputo');
+  const [tipoProva, setTipoProva] = useState('Prova Escrita de Conhecimentos');
+
+  // ========================================================
+  // ESTADOS DO MÓDULO "PAUTAS E EDITAIS"
+  // ========================================================
+  const [isNovoEditalModalOpen, setIsNovoEditalModalOpen] = useState(false);
+  const [novoEditalData, setNovoEditalData] = useState({
+    tituloLista: '',
+    vagaTitulo: 'Investigador Criminal de 2ª Classe',
+    tipo: 'Admitidos',
+    observacoes: 'Apresentação obrigatória com Bilhete de Identidade original.'
+  });
+  const [selectedPautaPrint, setSelectedPautaPrint] = useState(null);
+
+  // ========================================================
+  // CÁLCULOS ESTATÍSTICOS DO DASHBOARD
+  // ========================================================
+  const stats = useMemo(() => {
+    const total = candidatos.length;
+    const admitidos = candidatos.filter(c => c.status === 'Admitida').length;
+    const convocados = candidatos.filter(c => c.status === 'Convocada para provas').length;
+    const aprovados = candidatos.filter(c => c.status === 'Aprovada').length;
+    const excluidos = candidatos.filter(c => c.status === 'Excluída').length;
+    const analise = candidatos.filter(c => c.status === 'Em análise' || c.status === 'Submetida').length;
+
+    const taxaAdmissao = total > 0 ? Math.round(((admitidos + convocados + aprovados) / total) * 100) : 0;
+    const taxaExclusao = total > 0 ? Math.round((excluidos / total) * 100) : 0;
+
+    // Distribuição por vaga
+    const porVaga = {};
+    INITIAL_VAGAS.forEach(v => {
+      porVaga[v.titulo] = candidatos.filter(c => c.vagaTitulo === v.titulo).length;
+    });
+
+    // Distribuição por província
+    const porProvincia = {};
+    candidatos.forEach(c => {
+      const p = c.provincia || 'Maputo Cidade';
+      porProvincia[p] = (porProvincia[p] || 0) + 1;
+    });
+
+    return {
+      total,
+      admitidos,
+      convocados,
+      aprovados,
+      excluidos,
+      analise,
+      taxaAdmissao,
+      taxaExclusao,
+      porVaga,
+      porProvincia
+    };
+  }, [candidatos]);
+
+  // ========================================================
+  // FILTRAGEM DE INSCRITOS
+  // ========================================================
+  const filteredCandidatos = useMemo(() => {
+    return candidatos.filter(c => {
+      // Busca
+      const search = buscaInscrito.trim().toLowerCase();
+      if (search) {
+        const codMatch = (c.codigoCandidatura || '').toLowerCase().includes(search);
+        const nomeMatch = (c.nomeCompleto || '').toLowerCase().includes(search);
+        const biMatch = (c.biNumero || '').toLowerCase().includes(search);
+        const nuitMatch = (c.nuit || '').toLowerCase().includes(search);
+        if (!codMatch && !nomeMatch && !biMatch && !nuitMatch) return false;
+      }
+
+      // Vaga
+      if (filtroVaga !== 'todas' && c.vagaTitulo !== filtroVaga) return false;
+
+      // Província
+      if (filtroProvincia !== 'todas' && c.provincia !== filtroProvincia) return false;
+
+      // Status
+      if (filtroStatus !== 'todos' && c.status !== filtroStatus) return false;
+
+      // Género
+      if (filtroGenero !== 'todos' && c.genero !== filtroGenero) return false;
+
+      return true;
+    });
+  }, [candidatos, buscaInscrito, filtroVaga, filtroProvincia, filtroStatus, filtroGenero]);
+
+  // ========================================================
+  // ABRIR DELIBERAÇÃO PARA UM CANDIDATO ESPECÍFICO
+  // ========================================================
+  const iniciarDeliberacao = (candidato) => {
+    setDeliberandoCandidato(candidato);
+    setNovoEstado(candidato.status === 'Submetida' ? 'Admitida' : candidato.status);
+    setParecerJuri(candidato.deliberacaoJuri?.parecer || '');
+    if (candidato.deliberacaoJuri?.motivoExclusao) {
+      setMotivoExclusao(candidato.deliberacaoJuri.motivoExclusao);
+    }
+    if (candidato.deliberacaoJuri?.notaFinal) {
+      setNotaFinal(candidato.deliberacaoJuri.notaFinal);
+    }
+    setGestorTab('deliberacao');
+    setSelectedDossier(null);
+  };
+
+  // ========================================================
+  // EXECUTAR DELIBERAÇÃO OFICIAL
+  // ========================================================
+  const handleGravarDeliberacao = (e) => {
+    if (e) e.preventDefault();
+    if (!deliberandoCandidato) return;
+
+    const motivoFinal = novoEstado === 'Excluída' 
+      ? (motivoExclusao === 'Outro fundamento legal com descrição detalhada' ? outroMotivo : motivoExclusao)
+      : null;
+
+    if (novoEstado === 'Excluída' && !motivoFinal) {
+      if (onNotify) onNotify('error', 'É obrigatório indicar o fundamento legal para a exclusão do candidato.');
+      return;
+    }
+
+    const updates = {
+      status: novoEstado,
+      parecer: parecerJuri || (novoEstado === 'Admitida' ? 'Candidatura admitida após validação documental conforme o edital.' : ''),
+      motivoExclusao: motivoFinal,
+      notaFinal: novoEstado === 'Aprovada' ? notaFinal : null,
+      eventoData: novoEstado === 'Convocada para provas' ? eventoData : null,
+      eventoLocal: novoEstado === 'Convocada para provas' ? eventoLocal : null,
+      eventoTitulo: novoEstado === 'Convocada para provas' ? `Convocado(a) para ${tipoProva}` : null
+    };
+
+    const operadorNome = currentUser?.name || 'Dr. Alberto Chissano (Presidente do Júri)';
+    const updated = updateStoredCandidatura(deliberandoCandidato.codigoCandidatura, updates, operadorNome);
+
+    if (updated) {
+      reloadData();
+      if (onNotify) onNotify('success', `Deliberação registada com sucesso para o protocolo ${deliberandoCandidato.codigoCandidatura}!`);
+      setDeliberandoCandidato(updated);
+    }
+  };
+
+  // ========================================================
+  // CRIAR E PUBLICAR NOVO EDITAL
+  // ========================================================
+  const handlePublicarEdital = (e) => {
+    if (e) e.preventDefault();
+    if (!novoEditalData.tituloLista.trim()) {
+      if (onNotify) onNotify('error', 'Por favor informe o título oficial da pauta ou edital.');
+      return;
+    }
+
+    const currentListas = getStoredListasPublicadas();
+    const countAtingidos = candidatos.filter(c => {
+      if (novoEditalData.tipo === 'Admitidos') return c.status === 'Admitida';
+      if (novoEditalData.tipo === 'Convocados') return c.status === 'Convocada para provas';
+      if (novoEditalData.tipo === 'Excluídos') return c.status === 'Excluída';
+      if (novoEditalData.tipo === 'Aprovados') return c.status === 'Aprovada';
+      return true;
+    }).length;
+
+    const novaPauta = {
+      id: `LST-${String(currentListas.length + 1).padStart(2, '0')}`,
+      edital: 'Aviso de Concurso n.º 01/SERNIC-DG/DRH/2026',
+      vagaTitulo: novoEditalData.vagaTitulo,
+      tipo: novoEditalData.tipo,
+      tituloLista: novoEditalData.tituloLista,
+      dataPublicacao: new Date().toISOString().split('T')[0],
+      totalCandidatos: countAtingidos || 12,
+      arquivoNome: `SERNIC_${novoEditalData.tipo}_Oficial_2026.pdf`,
+      arquivoTamanho: '1.9 MB',
+      observacoes: novoEditalData.observacoes || 'Publicado pela Comissão de Recrutamento do SERNIC.'
+    };
+
+    const updatedList = [novaPauta, ...currentListas];
+    saveStoredListasPublicadas(updatedList);
+    
+    addStoredAuditoria({
+      acao: 'Publicação de Edital Oficial',
+      candidato: novoEditalData.tituloLista,
+      estadoAnterior: 'Não Publicado',
+      novoEstado: 'Publicado no Portal',
+      motivo: `Publicação de lista de ${novoEditalData.tipo} para consulta pública`,
+      operador: currentUser?.name || 'Dr. Alberto Chissano'
+    });
+
+    reloadData();
+    setIsNovoEditalModalOpen(false);
+    setNovoEditalData({
+      tituloLista: '',
+      vagaTitulo: 'Investigador Criminal de 2ª Classe',
+      tipo: 'Admitidos',
+      observacoes: 'Apresentação obrigatória com Bilhete de Identidade original.'
+    });
+
+    if (onNotify) onNotify('success', 'Edital Oficial publicado com sucesso! Já está visível na Consulta Pública dos candidatos.');
+  };
+
+  // ========================================================
+  // EXPORTAR LISTA DE INSCRITOS PARA CSV
+  // ========================================================
+  const handleExportCSV = () => {
+    const headers = ['Protocolo', 'Nome Completo', 'BI', 'NUIT', 'Carreira', 'Provincia', 'Data Submissao', 'Estado'];
+    const rows = filteredCandidatos.map(c => [
+      c.codigoCandidatura,
+      `"${c.nomeCompleto}"`,
+      c.biNumero,
+      c.nuit,
+      `"${c.carreira || c.vagaTitulo}"`,
+      c.provincia || 'Maputo',
+      c.dataSubmissao ? c.dataSubmissao.split('T')[0] : '',
+      c.status
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `SERNIC_Inscritos_Concurso_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    if (onNotify) onNotify('success', `${filteredCandidatos.length} registos exportados com sucesso.`);
+  };
+
+  // ========================================================
+  // HANDLERS DO MÓDULO DE DEFINIÇÕES
+  // ========================================================
+  // 1. Cursos Homologados
+  const filteredCursos = useMemo(() => {
+    return cursos.filter(c => {
+      const matchBusca = !buscaCurso || 
+        c.nome.toLowerCase().includes(buscaCurso.toLowerCase()) || 
+        c.carreira.toLowerCase().includes(buscaCurso.toLowerCase()) ||
+        c.id.toLowerCase().includes(buscaCurso.toLowerCase());
+      const matchGrau = filtroGrauCurso === 'todos' || c.grau === filtroGrauCurso;
+      return matchBusca && matchGrau;
+    });
+  }, [cursos, buscaCurso, filtroGrauCurso]);
+
+  const handleOpenNovoCurso = () => {
+    setEditingCurso(null);
+    setCursoForm({
+      nome: '',
+      grau: 'Licenciatura',
+      carreira: 'Investigação Criminal e Instrução Processual',
+      notaMinima: '14.0',
+      status: 'Activo'
+    });
+    setIsCursoModalOpen(true);
+  };
+
+  const handleEditCurso = (c) => {
+    setEditingCurso(c);
+    setCursoForm({
+      nome: c.nome,
+      grau: c.grau,
+      carreira: c.carreira,
+      notaMinima: c.notaMinima || '14.0',
+      status: c.status || 'Activo'
+    });
+    setIsCursoModalOpen(true);
+  };
+
+  const handleSaveCurso = (e) => {
+    if (e) e.preventDefault();
+    if (!cursoForm.nome.trim()) {
+      if (onNotify) onNotify('error', 'Por favor indique a designação oficial do curso.');
+      return;
+    }
+
+    let updatedList;
+    if (editingCurso) {
+      updatedList = cursos.map(c => c.id === editingCurso.id ? { ...c, ...cursoForm } : c);
+      addStoredAuditoria({
+        acao: 'Atualização de Curso Homologado',
+        candidato: cursoForm.nome,
+        estadoAnterior: editingCurso.status,
+        novoEstado: cursoForm.status,
+        motivo: `Edição dos requisitos do curso ${cursoForm.nome} (${cursoForm.grau})`,
+        operador: currentUser?.name || 'Dr. Alberto Chissano'
+      });
+      if (onNotify) onNotify('success', `Curso "${cursoForm.nome}" atualizado com sucesso!`);
+    } else {
+      const novo = {
+        id: `CUR-${String(cursos.length + 1).padStart(2, '0')}`,
+        ...cursoForm
+      };
+      updatedList = [novo, ...cursos];
+      addStoredAuditoria({
+        acao: 'Homologação de Novo Curso',
+        candidato: cursoForm.nome,
+        estadoAnterior: 'Inexistente',
+        novoEstado: 'Homologado',
+        motivo: `Inclusão do curso ${cursoForm.nome} para a carreira ${cursoForm.carreira}`,
+        operador: currentUser?.name || 'Dr. Alberto Chissano'
+      });
+      if (onNotify) onNotify('success', `Novo curso "${cursoForm.nome}" homologado com sucesso!`);
+    }
+
+    setCursos(updatedList);
+    saveStoredCursos(updatedList);
+    setIsCursoModalOpen(false);
+  };
+
+  const handleToggleStatusCurso = (id) => {
+    const target = cursos.find(c => c.id === id);
+    if (!target) return;
+    const novoStatus = target.status === 'Activo' ? 'Inactivo' : 'Activo';
+    const updated = cursos.map(c => c.id === id ? { ...c, status: novoStatus } : c);
+    setCursos(updated);
+    saveStoredCursos(updated);
+    addStoredAuditoria({
+      acao: 'Alteração de Estado de Curso',
+      candidato: target.nome,
+      estadoAnterior: target.status,
+      novoEstado: novoStatus,
+      motivo: `Alteração do estado de aceitação do curso ${target.nome}`,
+      operador: currentUser?.name || 'Dr. Alberto Chissano'
+    });
+    if (onNotify) onNotify('info', `Curso marcado como ${novoStatus}.`);
+  };
+
+  const handleDeleteCurso = (id) => {
+    const target = cursos.find(c => c.id === id);
+    if (!target) return;
+    if (window.confirm(`Tem a certeza que deseja remover o curso "${target.nome}" da lista de qualificações aceites?`)) {
+      const updated = cursos.filter(c => c.id !== id);
+      setCursos(updated);
+      saveStoredCursos(updated);
+      addStoredAuditoria({
+        acao: 'Remoção de Curso Homologado',
+        candidato: target.nome,
+        estadoAnterior: target.status,
+        novoEstado: 'Removido',
+        motivo: `Exclusão do curso das qualificações elegíveis`,
+        operador: currentUser?.name || 'Dr. Alberto Chissano'
+      });
+      if (onNotify) onNotify('info', `Curso "${target.nome}" removido das opções.`);
+    }
+  };
+
+  // 2. Centros e Locais de Testes
+  const handleOpenNovoLocal = () => {
+    setEditingLocal(null);
+    setLocalForm({
+      nome: '',
+      provincia: 'Maputo Província',
+      cidade: 'Michafutene',
+      endereco: '',
+      capacidade: 350,
+      tiposProva: ['Prova Escrita de Conhecimentos'],
+      dataPrevista: '15 de Novembro de 2026 às 08h00',
+      responsavel: ''
+    });
+    setIsLocalModalOpen(true);
+  };
+
+  const handleEditLocal = (loc) => {
+    setEditingLocal(loc);
+    setLocalForm({
+      nome: loc.nome,
+      provincia: loc.provincia,
+      cidade: loc.cidade,
+      endereco: loc.endereco,
+      capacidade: loc.capacidade,
+      tiposProva: loc.tiposProva || ['Prova Escrita de Conhecimentos'],
+      dataPrevista: loc.dataPrevista,
+      responsavel: loc.responsavel || ''
+    });
+    setIsLocalModalOpen(true);
+  };
+
+  const handleSaveLocal = (e) => {
+    if (e) e.preventDefault();
+    if (!localForm.nome.trim()) {
+      if (onNotify) onNotify('error', 'Por favor indique o nome do centro de testes.');
+      return;
+    }
+
+    let updatedList;
+    if (editingLocal) {
+      updatedList = locais.map(l => l.id === editingLocal.id ? { ...l, ...localForm } : l);
+      addStoredAuditoria({
+        acao: 'Atualização de Centro de Exames',
+        candidato: localForm.nome,
+        estadoAnterior: editingLocal.provincia,
+        novoEstado: localForm.provincia,
+        motivo: `Edição do centro de provas em ${localForm.provincia} (${localForm.capacidade} vagas)`,
+        operador: currentUser?.name || 'Dr. Alberto Chissano'
+      });
+      if (onNotify) onNotify('success', `Centro "${localForm.nome}" atualizado com sucesso!`);
+    } else {
+      const novo = {
+        id: `LOC-${String(locais.length + 1).padStart(2, '0')}`,
+        ...localForm
+      };
+      updatedList = [novo, ...locais];
+      addStoredAuditoria({
+        acao: 'Cadastro de Centro de Provas',
+        candidato: localForm.nome,
+        estadoAnterior: 'Novo',
+        novoEstado: 'Activo',
+        motivo: `Credenciação do centro de provas em ${localForm.provincia} (${localForm.capacidade} vagas)`,
+        operador: currentUser?.name || 'Dr. Alberto Chissano'
+      });
+      if (onNotify) onNotify('success', `Novo centro de testes "${localForm.nome}" cadastrado com sucesso!`);
+    }
+
+    setLocais(updatedList);
+    saveStoredLocais(updatedList);
+    setIsLocalModalOpen(false);
+  };
+
+  const handleDeleteLocal = (id) => {
+    const target = locais.find(l => l.id === id);
+    if (!target) return;
+    if (window.confirm(`Tem a certeza que deseja remover o local "${target.nome}"?`)) {
+      const updated = locais.filter(l => l.id !== id);
+      setLocais(updated);
+      saveStoredLocais(updated);
+      addStoredAuditoria({
+        acao: 'Remoção de Centro de Provas',
+        candidato: target.nome,
+        estadoAnterior: target.provincia,
+        novoEstado: 'Removido',
+        motivo: `Desativação de centro de provas para o concurso`,
+        operador: currentUser?.name || 'Dr. Alberto Chissano'
+      });
+      if (onNotify) onNotify('info', `Centro "${target.nome}" removido.`);
+    }
+  };
+
+  // 3. Temas e Cores
+  const handleApplyThemeColor = (cor) => {
+    setTemaCorSelecionada(cor);
+    document.documentElement.style.setProperty('--sernic-primary', cor);
+    document.documentElement.style.setProperty('--portal-primary', cor);
+    try {
+      localStorage.setItem('sernic_portal_theme_color', cor);
+    } catch {}
+    const updated = { ...definicoes, corDestaque: cor };
+    setDefinicoes(updated);
+    saveStoredDefinicoes(updated);
+    if (onNotify) onNotify('success', `Cor institucional aplicada.`);
+  };
+
+  const handleApplyThemeMode = (mode) => {
+    setModoTemaSelecionado(mode);
+    try {
+      localStorage.setItem('sernic_portal_theme', mode);
+      const bg = mode === 'preto' ? '#0f172a' : '#f3f4f6';
+      document.documentElement.style.setProperty('--dynamic-bg', bg);
+      document.documentElement.style.backgroundColor = bg;
+      document.body.style.backgroundColor = bg;
+    } catch {}
+    const updated = { ...definicoes, temaPadrao: mode };
+    setDefinicoes(updated);
+    saveStoredDefinicoes(updated);
+    if (onNotify) onNotify('info', `Modo alternado para: ${mode === 'preto' ? 'Modo Preto' : 'Modo Claro'}.`);
+  };
+
+  const handleApplyWatermarkOpacity = (nivel) => {
+    setOpacidadeMarcaAgua(nivel);
+    const updated = { ...definicoes, opacidadeMarcaAgua: nivel };
+    setDefinicoes(updated);
+    saveStoredDefinicoes(updated);
+    if (onNotify) onNotify('success', `Intensidade da marca d'água ajustada para "${nivel}".`);
+  };
+
+  // 4. Idioma e Regionalização
+  const handleSaveRegionalConfig = (e) => {
+    if (e) e.preventDefault();
+    const updated = {
+      ...definicoes,
+      idiomaPadrao: idiomaSelecionado,
+      fusoHorario: fusoHorarioSelecionado
+    };
+    setDefinicoes(updated);
+    saveStoredDefinicoes(updated);
+    addStoredAuditoria({
+      acao: 'Configuração Regional',
+      candidato: 'Idioma & Fuso',
+      estadoAnterior: definicoes.idiomaPadrao,
+      novoEstado: idiomaSelecionado,
+      motivo: `Atualização de parâmetros regionais: ${idiomaSelecionado.toUpperCase()} / ${fusoHorarioSelecionado}`,
+      operador: currentUser?.name || 'Dr. Alberto Chissano'
+    });
+    if (onNotify) onNotify('success', 'Configurações de Idioma e Fuso Horário guardadas com sucesso!');
+  };
+
+  // 5. Parâmetros Estatutários Gerais
+  const handleSaveParametrosGerais = (e) => {
+    if (e) e.preventDefault();
+    const updated = {
+      ...definicoes,
+      ...parametrosForm
+    };
+    setDefinicoes(updated);
+    saveStoredDefinicoes(updated);
+    addStoredAuditoria({
+      acao: 'Parâmetros Gerais do Concurso',
+      candidato: parametrosForm.codigoEdital,
+      estadoAnterior: definicoes.dataEncerramento,
+      novoEstado: parametrosForm.dataEncerramento,
+      motivo: `Atualização de prazos e critérios estatutários do concurso`,
+      operador: currentUser?.name || 'Dr. Alberto Chissano'
+    });
+    if (onNotify) onNotify('success', 'Parâmetros oficiais do concurso guardados com sucesso!');
+  };
+
+  // Helper de badges de status
+  const getBadgeStyle = (status) => {
+    switch (status) {
+      case 'Aprovada':
+        return { bg: '#dcfce7', color: '#15803d', border: '#bbf7d0', label: 'Aprovada no Concurso', icon: <Award size={14} /> };
+      case 'Admitida':
+        return { bg: '#dcfce7', color: '#15803d', border: '#bbf7d0', label: 'Admitida', icon: <CheckCircle2 size={14} /> };
+      case 'Convocada para provas':
+        return { bg: '#dbeafe', color: '#1e40af', border: '#bfdbfe', label: 'Convocada p/ Provas', icon: <Calendar size={14} /> };
+      case 'Excluída':
+        return { bg: '#fee2e2', color: '#c32026', border: '#fecaca', label: 'Excluída', icon: <XCircle size={14} /> };
+      case 'Em análise':
+      case 'Submetida':
+      default:
+        return { bg: '#fef3c7', color: '#92400e', border: '#fde68a', label: 'Em Análise Curricular', icon: <Clock size={14} /> };
+    }
+  };
+
+  return (
+    <div className="module-page-container gestor-portal-main">
+      {/* 1. CABEÇALHO DO PAINEL DO GESTOR COM IDENTIFICAÇÃO OFICIAL */}
+      <div className="gestor-hero-banner">
+        <div className="gestor-hero-top-info">
+          <div className="gestor-hero-badge-pill">
+            <ShieldCheck size={16} />
+            <span>ÁREA ADMINISTRATIVA RESTRITA • COMISSÃO NACIONAL DE RECRUTAMENTO</span>
+          </div>
+          <div className="gestor-session-user">
+            <div className="gestor-user-dot active" />
+            <span>Sessão: <strong>{currentUser?.name || 'Dr. Alberto Chissano'}</strong> ({currentUser?.cargo || 'Presidente do Júri'})</span>
+          </div>
+        </div>
+
+        <div className="gestor-hero-content-flex">
+          <div className="gestor-hero-titles">
+            <h2>
+              Plataforma de Gestão & Triagem do Concurso Público
+            </h2>
+            <p>
+              Serviço Nacional de Investigação Criminal • Direcção Geral • Direcção de Recursos Humanos.
+              Avaliação de candidaturas, conferência documental, deliberação da comissão e publicação oficial de editais.
+            </p>
+          </div>
+
+          <div className="gestor-hero-quick-actions">
+            <button
+              type="button"
+              className="gestor-action-btn secondary"
+              onClick={() => navigate('/portal-recrutamento')}
+              title="Ir para a visão pública do candidato"
+            >
+              <ExternalLink size={16} />
+              <span>Ver como Candidato</span>
+            </button>
+            <button
+              type="button"
+              className="gestor-action-btn primary"
+              onClick={() => {
+                reloadData();
+                if (onNotify) onNotify('info', 'Dados sincronizados com sucesso.');
+              }}
+              title="Actualizar dados da base de dados"
+            >
+              <RefreshCw size={16} />
+              <span>Sincronizar Base</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 2. ABAS DE NAVEGAÇÃO DO GESTOR (SEGMENTED CONTROL COM INDICADOR VERMELHO SERNIC) */}
+        <div className="gestor-segmented-tabs" role="tablist">
+          <button
+            type="button"
+            className={`gestor-tab-btn ${gestorTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setGestorTab('dashboard')}
+          >
+            <Layers size={17} />
+            <span>Painel Geral</span>
+            <span className="gestor-tab-counter">{stats.total}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`gestor-tab-btn ${gestorTab === 'inscritos' ? 'active' : ''}`}
+            onClick={() => setGestorTab('inscritos')}
+          >
+            <Users size={17} />
+            <span>Inscritos no Concurso</span>
+            <span className="gestor-tab-counter">{stats.total}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`gestor-tab-btn ${gestorTab === 'deliberacao' ? 'active' : ''}`}
+            onClick={() => setGestorTab('deliberacao')}
+          >
+            <FileSignature size={17} />
+            <span>Deliberação do Júri</span>
+            {stats.analise > 0 && (
+              <span className="gestor-tab-alert-badge">{stats.analise} pendentes</span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            className={`gestor-tab-btn ${gestorTab === 'pautas' ? 'active' : ''}`}
+            onClick={() => setGestorTab('pautas')}
+          >
+            <BookOpen size={17} />
+            <span>Pautas & Editais Oficiais</span>
+            <span className="gestor-tab-counter">{listas.length}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`gestor-tab-btn ${gestorTab === 'vagas' ? 'active' : ''}`}
+            onClick={() => setGestorTab('vagas')}
+          >
+            <Briefcase size={17} />
+            <span>Vagas & Quotas</span>
+            <span className="gestor-tab-counter">{INITIAL_VAGAS.length}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`gestor-tab-btn ${gestorTab === 'auditoria' ? 'active' : ''}`}
+            onClick={() => setGestorTab('auditoria')}
+          >
+            <History size={17} />
+            <span>Livro de Auditoria</span>
+            <span className="gestor-tab-counter">{auditoria.length}</span>
+          </button>
+
+          {/* 7. NOVO MÓDULO DE DEFINIÇÕES */}
+          <button
+            type="button"
+            className={`gestor-tab-btn ${gestorTab === 'definicoes' ? 'active' : ''}`}
+            onClick={() => setGestorTab('definicoes')}
+          >
+            <SlidersHorizontal size={17} />
+            <span>Definições do Concurso</span>
+            <span className="gestor-tab-counter">5</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ========================================================
+          ABA 1: DASHBOARD / PAINEL GERAL
+          ======================================================== */}
+      {gestorTab === 'dashboard' && (
+        <div className="gestor-tab-content fadeIn">
+          {/* CARDS DE KPIS */}
+          <div className="gestor-kpi-grid">
+            <div className="gestor-kpi-card">
+              <div className="gestor-kpi-header">
+                <span className="gestor-kpi-label">Total de Candidatos Inscritos</span>
+                <span className="gestor-kpi-icon-wrap primary"><Users size={20} /></span>
+              </div>
+              <div className="gestor-kpi-value">{stats.total}</div>
+              <div className="gestor-kpi-footer">
+                <span className="gestor-kpi-sub">Inscrições válidas registadas</span>
+              </div>
+            </div>
+
+            <div className="gestor-kpi-card">
+              <div className="gestor-kpi-header">
+                <span className="gestor-kpi-label">Candidatos Admitidos</span>
+                <span className="gestor-kpi-icon-wrap success"><CheckCircle2 size={20} /></span>
+              </div>
+              <div className="gestor-kpi-value text-success">{stats.admitidos}</div>
+              <div className="gestor-kpi-footer">
+                <span className="gestor-kpi-sub">{Math.round((stats.admitidos / (stats.total || 1)) * 100)}% do total de inscritos</span>
+              </div>
+            </div>
+
+            <div className="gestor-kpi-card">
+              <div className="gestor-kpi-header">
+                <span className="gestor-kpi-label">Convocados para Provas</span>
+                <span className="gestor-kpi-icon-wrap info"><Calendar size={20} /></span>
+              </div>
+              <div className="gestor-kpi-value text-info">{stats.convocados}</div>
+              <div className="gestor-kpi-footer">
+                <span className="gestor-kpi-sub">Com agendamento na ACIPOL</span>
+              </div>
+            </div>
+
+            <div className="gestor-kpi-card">
+              <div className="gestor-kpi-header">
+                <span className="gestor-kpi-label">Aprovados / Provimento</span>
+                <span className="gestor-kpi-icon-wrap success"><Award size={20} /></span>
+              </div>
+              <div className="gestor-kpi-value text-success">{stats.aprovados}</div>
+              <div className="gestor-kpi-footer">
+                <span className="gestor-kpi-sub">Apurados com nota final</span>
+              </div>
+            </div>
+
+            <div className="gestor-kpi-card">
+              <div className="gestor-kpi-header">
+                <span className="gestor-kpi-label">Candidaturas Excluídas</span>
+                <span className="gestor-kpi-icon-wrap danger"><XCircle size={20} /></span>
+              </div>
+              <div className="gestor-kpi-value text-danger">{stats.excluidos}</div>
+              <div className="gestor-kpi-footer">
+                <span className="gestor-kpi-sub">Com fundamentação legal</span>
+              </div>
+            </div>
+
+            <div className="gestor-kpi-card">
+              <div className="gestor-kpi-header">
+                <span className="gestor-kpi-label">Processos em Análise</span>
+                <span className="gestor-kpi-icon-wrap warning"><Clock size={20} /></span>
+              </div>
+              <div className="gestor-kpi-value text-warning">{stats.analise}</div>
+              <div className="gestor-kpi-footer">
+                <span className="gestor-kpi-sub">Aguardam deliberação do júri</span>
+              </div>
+            </div>
+          </div>
+
+          {/* SECÇÃO CENTRAL DE GRÁFICOS E ANÁLISE */}
+          <div className="gestor-dashboard-cols">
+            {/* Coluna 1: Distribuição por Vaga / Concorrência */}
+            <div className="gestor-panel-card">
+              <div className="gestor-panel-header">
+                <h3>
+                  <Briefcase size={18} color="#c32026" />
+                  Concorrência por Carreira / Aviso de Abertura
+                </h3>
+                <span className="gestor-panel-tag">Vagas vs Inscritos</span>
+              </div>
+              <div className="gestor-panel-body">
+                {INITIAL_VAGAS.map(vaga => {
+                  const inscritosCount = stats.porVaga[vaga.titulo] || 0;
+                  const percentVagas = Math.min(100, Math.round((inscritosCount / (vaga.vagas || 1)) * 100));
+                  const ratio = vaga.vagas > 0 ? (inscritosCount / vaga.vagas).toFixed(1) : '0';
+
+                  return (
+                    <div key={vaga.id} className="gestor-progress-item">
+                      <div className="gestor-progress-labels">
+                        <span className="vaga-name">{vaga.titulo}</span>
+                        <span className="vaga-numbers">
+                          <strong>{inscritosCount}</strong> inscritos / <strong>{vaga.vagas}</strong> vagas 
+                          <span className="ratio-tag">({ratio}:1)</span>
+                        </span>
+                      </div>
+                      <div className="gestor-progress-bar-bg">
+                        <div 
+                          className="gestor-progress-bar-fill" 
+                          style={{ width: `${Math.max(12, Math.min(100, percentVagas))}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Coluna 2: Distribuição por Província e Ações Rápidas */}
+            <div className="gestor-panel-card">
+              <div className="gestor-panel-header">
+                <h3>
+                  <MapPin size={18} color="#c32026" />
+                  Distribuição Territorial de Candidaturas
+                </h3>
+                <span className="gestor-panel-tag">Delegações Provinciais</span>
+              </div>
+              <div className="gestor-panel-body">
+                <div className="gestor-prov-grid">
+                  {Object.entries(stats.porProvincia).map(([prov, qtd]) => (
+                    <div key={prov} className="gestor-prov-chip">
+                      <span className="prov-name">{prov}</span>
+                      <span className="prov-count">{qtd}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="gestor-quick-card-banner">
+                  <h4>Comissão de Júri em Sessão</h4>
+                  <p>Existem <strong>{stats.analise}</strong> candidaturas pendentes que requerem parecer formal de admissão ou exclusão.</p>
+                  <button
+                    type="button"
+                    className="gestor-btn-primary-red"
+                    onClick={() => {
+                      const primeiroPendente = candidatos.find(c => c.status === 'Em análise' || c.status === 'Submetida');
+                      if (primeiroPendente) {
+                        iniciarDeliberacao(primeiroPendente);
+                      } else {
+                        setGestorTab('deliberacao');
+                      }
+                    }}
+                  >
+                    <FileSignature size={16} />
+                    <span>Abrir Triagem de Pendentes</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          ABA 2: INSCRITOS NO CONCURSO ("VER OS QUE SE INSCREVERAM")
+          ======================================================== */}
+      {gestorTab === 'inscritos' && (
+        <div className="gestor-tab-content fadeIn">
+          {/* BARRA DE FILTROS E BUSCA */}
+          <div className="gestor-toolbar-card">
+            <div className="gestor-search-input-wrap">
+              <Search size={18} className="search-icon" />
+              <input
+                type="text"
+                placeholder="Pesquisar por Nome, Número de BI, NUIT ou Código de Protocolo..."
+                value={buscaInscrito}
+                onChange={(e) => setBuscaInscrito(e.target.value)}
+                className="gestor-search-input"
+              />
+              {buscaInscrito && (
+                <button
+                  type="button"
+                  className="clear-search-btn"
+                  onClick={() => setBuscaInscrito('')}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <div className="gestor-filters-row">
+              <div className="gestor-filter-select-group">
+                <label>Carreira:</label>
+                <select value={filtroVaga} onChange={(e) => setFiltroVaga(e.target.value)}>
+                  <option value="todas">Todas as Carreiras</option>
+                  {INITIAL_VAGAS.map(v => (
+                    <option key={v.id} value={v.titulo}>{v.titulo}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="gestor-filter-select-group">
+                <label>Província:</label>
+                <select value={filtroProvincia} onChange={(e) => setFiltroProvincia(e.target.value)}>
+                  <option value="todas">Todas as Províncias</option>
+                  {PROVINCIAS_MOCAMBIQUE.map(p => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="gestor-filter-select-group">
+                <label>Estado:</label>
+                <select value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
+                  <option value="todos">Todos os Estados</option>
+                  <option value="Em análise">Em análise</option>
+                  <option value="Admitida">Admitida</option>
+                  <option value="Convocada para provas">Convocada para provas</option>
+                  <option value="Aprovada">Aprovada</option>
+                  <option value="Excluída">Excluída</option>
+                </select>
+              </div>
+
+              <div className="gestor-filter-select-group">
+                <label>Género:</label>
+                <select value={filtroGenero} onChange={(e) => setFiltroGenero(e.target.value)}>
+                  <option value="todos">Todos</option>
+                  <option value="Masculino">Masculino</option>
+                  <option value="Feminino">Feminino</option>
+                </select>
+              </div>
+
+              <div className="gestor-toolbar-actions">
+                <button
+                  type="button"
+                  className="gestor-btn-outline"
+                  onClick={handleExportCSV}
+                  title="Descarregar lista em formato CSV"
+                >
+                  <Download size={15} />
+                  <span>Exportar CSV</span>
+                </button>
+                <button
+                  type="button"
+                  className="gestor-btn-outline"
+                  onClick={() => window.print()}
+                  title="Imprimir listagem de inscritos"
+                >
+                  <Printer size={15} />
+                  <span>Imprimir</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* CONTADOR DE RESULTADOS */}
+          <div className="gestor-results-meta">
+            <span>A exibir <strong>{filteredCandidatos.length}</strong> de <strong>{candidatos.length}</strong> candidatos inscritos</span>
+            {(filtroVaga !== 'todas' || filtroProvincia !== 'todas' || filtroStatus !== 'todos' || filtroGenero !== 'todos' || buscaInscrito) && (
+              <button
+                type="button"
+                className="btn-reset-filters"
+                onClick={() => {
+                  setBuscaInscrito('');
+                  setFiltroVaga('todas');
+                  setFiltroProvincia('todas');
+                  setFiltroStatus('todos');
+                  setFiltroGenero('todos');
+                }}
+              >
+                Limpar filtros
+              </button>
+            )}
+          </div>
+
+          {/* TABELA DE INSCRITOS */}
+          <div className="gestor-table-wrapper">
+            <table className="gestor-table">
+              <thead>
+                <tr>
+                  <th>Candidato / Identificação</th>
+                  <th>Carreira Pretendida</th>
+                  <th>Província</th>
+                  <th>Data de Inscrição</th>
+                  <th>Estado da Candidatura</th>
+                  <th style={{ textAlign: 'center' }}>Ações de Gestão</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCandidatos.map(c => {
+                  const b = getBadgeStyle(c.status);
+                  return (
+                    <tr key={c.codigoCandidatura}>
+                      <td>
+                        <div className="candidato-cell">
+                          <div className={`candidato-avatar ${c.genero === 'Feminino' ? 'female' : 'male'}`}>
+                            {c.nomeCompleto.charAt(0)}
+                          </div>
+                          <div className="candidato-info">
+                            <span className="candidato-nome">{c.nomeCompleto}</span>
+                            <span className="candidato-sub">
+                              BI: <strong>{c.biNumero}</strong> • NUIT: {c.nuit} • {c.idade || 28} anos
+                            </span>
+                            <span className="candidato-protocolo">{c.codigoCandidatura}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="vaga-cell">
+                          <span className="vaga-title-table">{c.vagaTitulo}</span>
+                          <span className="vaga-carreira-sub">{c.carreira}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span className="provincia-tag">
+                          <MapPin size={13} />
+                          {c.provincia || 'Maputo Cidade'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="data-submissao">
+                          {c.dataSubmissao ? new Date(c.dataSubmissao).toLocaleDateString('pt-PT') : '2026-10-15'}
+                        </span>
+                      </td>
+                      <td>
+                        <span 
+                          className="gestor-status-pill"
+                          style={{ backgroundColor: b.bg, color: b.color, borderColor: b.border }}
+                        >
+                          {b.icon}
+                          <span>{b.label}</span>
+                        </span>
+                        {c.deliberacaoJuri?.notaFinal && (
+                          <div className="nota-pill">Nota: {c.deliberacaoJuri.notaFinal} val.</div>
+                        )}
+                      </td>
+                      <td>
+                        <div className="gestor-row-actions">
+                          <button
+                            type="button"
+                            className="btn-action-view"
+                            onClick={() => setSelectedDossier(c)}
+                            title="Ver Dossier Completo do Candidato"
+                          >
+                            <Eye size={15} />
+                            <span>Ver Dossier</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-action-deliberar"
+                            onClick={() => iniciarDeliberacao(c)}
+                            title="Deliberar: Admitir, Aprovar ou Excluir"
+                          >
+                            <FileSignature size={15} />
+                            <span>Deliberar</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+
+                {filteredCandidatos.length === 0 && (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '3rem' }}>
+                      <AlertCircle size={36} color="#94a3b8" style={{ margin: '0 auto 1rem' }} />
+                      <p style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--portal-text-main)' }}>
+                        Nenhum candidato encontrado com os filtros selecionados.
+                      </p>
+                      <p style={{ color: 'var(--portal-text-muted)', fontSize: '0.9rem' }}>
+                        Tente ajustar a sua pesquisa ou limpe os filtros aplicados.
+                      </p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          ABA 3: DELIBERAÇÃO DO JÚRI ("DECIDIR SE FICA ADMITIDO, PROVADO OU EXCLUIDO")
+          ======================================================== */}
+      {gestorTab === 'deliberacao' && (
+        <div className="gestor-tab-content fadeIn">
+          <div className="deliberacao-container-grid">
+            {/* LADO ESQUERDO: SELEÇÃO DE CANDIDATO */}
+            <div className="deliberacao-sidebar-card">
+              <div className="deliberacao-sidebar-header">
+                <h3>
+                  <Users size={17} color="#c32026" />
+                  Candidatos à Avaliação do Júri
+                </h3>
+                <span className="sidebar-count">{candidatos.length} totais</span>
+              </div>
+
+              <div className="deliberacao-candidatos-list">
+                {candidatos.map(c => {
+                  const b = getBadgeStyle(c.status);
+                  const isSelected = deliberandoCandidato?.codigoCandidatura === c.codigoCandidatura;
+
+                  return (
+                    <div
+                      key={c.codigoCandidatura}
+                      className={`deliberacao-candidato-item ${isSelected ? 'selected' : ''}`}
+                      onClick={() => {
+                        setDeliberandoCandidato(c);
+                        setNovoEstado(c.status === 'Submetida' ? 'Admitida' : c.status);
+                        setParecerJuri(c.deliberacaoJuri?.parecer || '');
+                        if (c.deliberacaoJuri?.motivoExclusao) {
+                          setMotivoExclusao(c.deliberacaoJuri.motivoExclusao);
+                        }
+                        if (c.deliberacaoJuri?.notaFinal) {
+                          setNotaFinal(c.deliberacaoJuri.notaFinal);
+                        }
+                      }}
+                    >
+                      <div className="item-top">
+                        <span className="item-name">{c.nomeCompleto}</span>
+                        <span 
+                          className="item-status-dot" 
+                          style={{ backgroundColor: b.color }} 
+                          title={b.label}
+                        />
+                      </div>
+                      <div className="item-sub">
+                        <span>{c.vagaTitulo}</span>
+                      </div>
+                      <div className="item-meta">
+                        <span className="item-protocolo">{c.codigoCandidatura}</span>
+                        <span className="item-status-text" style={{ color: b.color }}>{b.label}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* LADO DIREITO: ESTAÇÃO FORMAL DE DELIBERAÇÃO */}
+            <div className="deliberacao-main-panel">
+              {deliberandoCandidato ? (
+                <div className="deliberacao-form-card">
+                  {/* CABEÇALHO DO CANDIDATO SELECIONADO */}
+                  <div className="deliberacao-candidate-header">
+                    <div className="candidate-summary-left">
+                      <div className="candidate-big-avatar">
+                        {deliberandoCandidato.nomeCompleto.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="candidate-status-flex">
+                          <h2>{deliberandoCandidato.nomeCompleto}</h2>
+                          {(() => {
+                            const b = getBadgeStyle(deliberandoCandidato.status);
+                            return (
+                              <span 
+                                className="gestor-status-pill"
+                                style={{ backgroundColor: b.bg, color: b.color, borderColor: b.border }}
+                              >
+                                {b.icon}
+                                <span>{b.label}</span>
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        <p className="candidate-summary-sub">
+                          Protocolo: <strong>{deliberandoCandidato.codigoCandidatura}</strong> • 
+                          BI: <strong>{deliberandoCandidato.biNumero}</strong> • 
+                          Idade: <strong>{deliberandoCandidato.idade || 28} anos</strong> • 
+                          Província: <strong>{deliberandoCandidato.provincia || 'Maputo'}</strong>
+                        </p>
+                        <p className="candidate-vaga-text">
+                          Candidatura a: <strong>{deliberandoCandidato.vagaTitulo}</strong>
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="btn-view-dossier-small"
+                      onClick={() => setSelectedDossier(deliberandoCandidato)}
+                    >
+                      <Eye size={15} />
+                      <span>Abrir Dossier</span>
+                    </button>
+                  </div>
+
+                  {/* FORMULÁRIO DE DELIBERAÇÃO FORMAL */}
+                  <form onSubmit={handleGravarDeliberacao} className="deliberacao-form-body">
+                    <div className="deliberacao-choice-title">
+                      <FileSignature size={18} color="#c32026" />
+                      <span>Selecione a Decisão Formal da Comissão de Júri:</span>
+                    </div>
+
+                    {/* BOTÕES DE DECISÃO RÁPIDA (ADMITIDO, CONVOCADO, APROVADO, EXCLUÍDO, ANÁLISE) */}
+                    <div className="deliberacao-options-grid">
+                      {/* OPÇÃO 1: ADMITIDO */}
+                      <label 
+                        className={`deliberacao-radio-card option-admitido ${novoEstado === 'Admitida' ? 'checked' : ''}`}
+                        onClick={() => {
+                          setNovoEstado('Admitida');
+                          if (!parecerJuri) setParecerJuri('Candidatura cumpre integralmente os requisitos do Edital e validação documental.');
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="estadoDeliberacao"
+                          value="Admitida"
+                          checked={novoEstado === 'Admitida'}
+                          onChange={() => {}}
+                        />
+                        <div className="radio-content">
+                          <div className="radio-header">
+                            <CheckCircle2 size={20} className="radio-icon" />
+                            <strong>ADMITIR CANDIDATO</strong>
+                          </div>
+                          <p>Homologado na triagem documental. Cumpre os requisitos de idade, habilitações e idoneidade.</p>
+                        </div>
+                      </label>
+
+                      {/* OPÇÃO 2: CONVOCADO PARA PROVAS */}
+                      <label 
+                        className={`deliberacao-radio-card option-convocado ${novoEstado === 'Convocada para provas' ? 'checked' : ''}`}
+                        onClick={() => {
+                          setNovoEstado('Convocada para provas');
+                          if (!parecerJuri) setParecerJuri('Convocado formalmente para a fase de provas escritas e de aptidão.');
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="estadoDeliberacao"
+                          value="Convocada para provas"
+                          checked={novoEstado === 'Convocada para provas'}
+                          onChange={() => {}}
+                        />
+                        <div className="radio-content">
+                          <div className="radio-header">
+                            <Calendar size={20} className="radio-icon" />
+                            <strong>CONVOCAR PARA PROVAS</strong>
+                          </div>
+                          <p>Convocatória oficial com data, hora e local para realização de exames escritos ou físicos.</p>
+                        </div>
+                      </label>
+
+                      {/* OPÇÃO 3: APROVADO / PROVIMENTO */}
+                      <label 
+                        className={`deliberacao-radio-card option-aprovado ${novoEstado === 'Aprovada' ? 'checked' : ''}`}
+                        onClick={() => {
+                          setNovoEstado('Aprovada');
+                          if (!parecerJuri) setParecerJuri('Candidato aprovado em todas as etapas de avaliação com mérito para provimento de vaga.');
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="estadoDeliberacao"
+                          value="Aprovada"
+                          checked={novoEstado === 'Aprovada'}
+                          onChange={() => {}}
+                        />
+                        <div className="radio-content">
+                          <div className="radio-header">
+                            <Award size={20} className="radio-icon" />
+                            <strong>APROVAR NO CONCURSO</strong>
+                          </div>
+                          <p>Apurado definitivamente para ingresso na carreira. Atribuição de nota final de provimento.</p>
+                        </div>
+                      </label>
+
+                      {/* OPÇÃO 4: EXCLUÍDO */}
+                      <label 
+                        className={`deliberacao-radio-card option-excluido ${novoEstado === 'Excluída' ? 'checked' : ''}`}
+                        onClick={() => {
+                          setNovoEstado('Excluída');
+                          if (!parecerJuri) setParecerJuri('Candidatura não admitida nos termos do EGFAE e regulamento do concurso.');
+                        }}
+                      >
+                        <input
+                          type="radio"
+                          name="estadoDeliberacao"
+                          value="Excluída"
+                          checked={novoEstado === 'Excluída'}
+                          onChange={() => {}}
+                        />
+                        <div className="radio-content">
+                          <div className="radio-header">
+                            <XCircle size={20} className="radio-icon" />
+                            <strong>EXCLUIR / NÃO ADMITIR</strong>
+                          </div>
+                          <p>Exclusão fundamentada. Exige a indicação formal do motivo legal e despacho do júri.</p>
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* CAMPOS ESPECÍFICOS: CONVOCAÇÃO PARA PROVAS */}
+                    {novoEstado === 'Convocada para provas' && (
+                      <div className="deliberacao-extra-box info-box">
+                        <div className="extra-box-title">
+                          <Calendar size={17} />
+                          <span>Parâmetros da Convocatória Oficial para Exames</span>
+                        </div>
+                        <div className="extra-box-grid">
+                          <div className="form-field">
+                            <label>Tipo de Prova / Exame:</label>
+                            <select value={tipoProva} onChange={(e) => setTipoProva(e.target.value)}>
+                              <option value="Prova Escrita de Conhecimentos">Prova Escrita de Conhecimentos</option>
+                              <option value="Provas de Aptidão Física e Psicotécnicas">Provas de Aptidão Física e Psicotécnicas</option>
+                              <option value="Inspecção Médica e Junta de Saúde">Inspecção Médica e Junta de Saúde</option>
+                              <option value="Prova Prática Laboratorial de Criminalística">Prova Prática Laboratorial de Criminalística</option>
+                              <option value="Entrevista Técnica de Especialidade">Entrevista Técnica de Especialidade</option>
+                            </select>
+                          </div>
+
+                          <div className="form-field">
+                            <label>Data e Hora do Evento:</label>
+                            <input
+                              type="text"
+                              value={eventoData}
+                              onChange={(e) => setEventoData(e.target.value)}
+                              placeholder="Ex: 15 de Novembro de 2026 às 08h00"
+                            />
+                          </div>
+
+                          <div className="form-field full-width">
+                            <label>Local Oficial da Prova:</label>
+                            <input
+                              type="text"
+                              value={eventoLocal}
+                              onChange={(e) => setEventoLocal(e.target.value)}
+                              placeholder="Ex: Academia de Ciências Policiais (ACIPOL) - Michafutene, Maputo"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* CAMPOS ESPECÍFICOS: APROVAÇÃO COM NOTA FINAL */}
+                    {novoEstado === 'Aprovada' && (
+                      <div className="deliberacao-extra-box success-box">
+                        <div className="extra-box-title">
+                          <Award size={17} />
+                          <span>Classificação e Provimento de Vaga</span>
+                        </div>
+                        <div className="extra-box-grid">
+                          <div className="form-field">
+                            <label>Nota Final Ponderada (0 a 20 valores):</label>
+                            <input
+                              type="number"
+                              step="0.1"
+                              min="10"
+                              max="20"
+                              value={notaFinal}
+                              onChange={(e) => setNotaFinal(e.target.value)}
+                              style={{ fontWeight: 800, fontSize: '1.2rem', color: '#15803d' }}
+                            />
+                          </div>
+                          <div className="form-field">
+                            <label>Destino de Colocação Sugerido:</label>
+                            <input
+                              type="text"
+                              defaultValue={`Delegação Provincial de ${deliberandoCandidato.provincia || 'Maputo'}`}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* CAMPOS ESPECÍFICOS: EXCLUSÃO COM FUNDAMENTAÇÃO LEGAL */}
+                    {novoEstado === 'Excluída' && (
+                      <div className="deliberacao-extra-box danger-box">
+                        <div className="extra-box-title">
+                          <XCircle size={17} />
+                          <span>Fundamentação Jurídica Obrigatória para Exclusão</span>
+                        </div>
+                        <div className="extra-box-grid">
+                          <div className="form-field full-width">
+                            <label>Motivo Legal Canónico (EGFAE e Regulamento do Concurso SERNIC):</label>
+                            <select 
+                              value={motivoExclusao} 
+                              onChange={(e) => setMotivoExclusao(e.target.value)}
+                              className="select-danger"
+                            >
+                              <option value="Art. 35 do EGFAE - Idade superior a 35 anos à data limite">
+                                Art. 35 do EGFAE - Idade superior a 35 anos à data limite do Edital
+                              </option>
+                              <option value="Falta de Certificado de Habilitações autenticado ou sem homologação">
+                                Falta de Certificado de Habilitações autenticado ou sem homologação ministerial
+                              </option>
+                              <option value="Registo Criminal não conforme ou existência de antecedentes desabonadores">
+                                Registo Criminal não conforme ou existência de antecedentes desabonadores
+                              </option>
+                              <option value="Não cumprimento da altura mínima obrigatória (1.65m masculino / 1.60m feminino)">
+                                Não cumprimento da altura mínima obrigatória (1.65m masculino / 1.60m feminino)
+                              </option>
+                              <option value="Documento de identificação (BI/Passaporte) caducado ou ilegível">
+                                Documento de identificação (BI/Passaporte) caducado ou ilegível
+                              </option>
+                              <option value="Falta de Atestado Médico ou inaptidão física/mental comprovada">
+                                Falta de Atestado Médico ou inaptidão física/mental comprovada
+                              </option>
+                              <option value="Não comparência injustificada às provas ou exames convocados">
+                                Não comparência injustificada às provas ou exames convocados
+                              </option>
+                              <option value="Média curricular inferior à nota de corte do aviso de abertura">
+                                Média curricular inferior à nota de corte do aviso de abertura
+                              </option>
+                              <option value="Outro fundamento legal com descrição detalhada">
+                                Outro fundamento legal com descrição detalhada
+                              </option>
+                            </select>
+                          </div>
+
+                          {motivoExclusao === 'Outro fundamento legal com descrição detalhada' && (
+                            <div className="form-field full-width">
+                              <label>Descreva o Fundamento Jurídico Específico:</label>
+                              <input
+                                type="text"
+                                placeholder="Indique a disposição legal e o facto concreto que fundamenta a exclusão..."
+                                value={outroMotivo}
+                                onChange={(e) => setOutroMotivo(e.target.value)}
+                                required
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* PARECER E OBSERVAÇÕES FORMAIS DA COMISSÃO DE JÚRI */}
+                    <div className="form-field full-width" style={{ marginTop: '1.25rem' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}>
+                        <FileCheck size={16} color="#c32026" />
+                        Parecer Oficial e Despacho da Comissão de Júri:
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={parecerJuri}
+                        onChange={(e) => setParecerJuri(e.target.value)}
+                        placeholder="Insira as observações oficiais, termos de homologação ou notas para o dossier do candidato..."
+                        className="gestor-textarea"
+                      />
+                    </div>
+
+                    {/* BOTÃO DE CONFIRMAÇÃO */}
+                    <div className="deliberacao-submit-row">
+                      <div className="deliberacao-auditor-info">
+                        <ShieldCheck size={16} color="#15803d" />
+                        <span>A decisão será registada sob a credencial de: <strong>{currentUser?.name || 'Dr. Alberto Chissano'}</strong></span>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="btn-salvar-deliberacao-red"
+                      >
+                        <FileSignature size={18} />
+                        <span>Registar Deliberação Oficial do Júri</span>
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              ) : (
+                <div className="deliberacao-empty-state">
+                  <FileSignature size={48} color="#94a3b8" />
+                  <h3>Nenhum Candidato Selecionado</h3>
+                  <p>Selecione um candidato na lista à esquerda para abrir a estação de deliberação da comissão de júri.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          ABA 4: PAUTAS E EDITAIS OFICIAIS DO CONCURSO
+          ======================================================== */}
+      {gestorTab === 'pautas' && (
+        <div className="gestor-tab-content fadeIn">
+          <div className="pautas-header-bar">
+            <div>
+              <h3>Pautas e Editais Oficiais Publicados</h3>
+              <p>Documentos oficiais homologados pela comissão para consulta pública e afixação institucional.</p>
+            </div>
+            <button
+              type="button"
+              className="gestor-btn-primary-red"
+              onClick={() => setIsNovoEditalModalOpen(true)}
+            >
+              <FilePlus2 size={16} />
+              <span>Publicar Novo Edital Oficial</span>
+            </button>
+          </div>
+
+          <div className="pautas-cards-grid">
+            {listas.map(lista => (
+              <div key={lista.id} className="pauta-gestor-card">
+                <div className="pauta-gestor-top">
+                  <span className={`pauta-tipo-tag tipo-${lista.tipo.toLowerCase()}`}>
+                    {lista.tipo}
+                  </span>
+                  <span className="pauta-data">Publicado: {lista.dataPublicacao}</span>
+                </div>
+
+                <h4 className="pauta-titulo">{lista.tituloLista}</h4>
+                <p className="pauta-vaga-ref">{lista.vagaTitulo} • {lista.edital}</p>
+
+                <div className="pauta-stats-row">
+                  <div className="pauta-stat-chip">
+                    <Users size={14} />
+                    <span><strong>{lista.totalCandidatos}</strong> Candidatos</span>
+                  </div>
+                  <div className="pauta-stat-chip">
+                    <FileText size={14} />
+                    <span>{lista.arquivoNome} ({lista.arquivoTamanho})</span>
+                  </div>
+                </div>
+
+                {lista.observacoes && (
+                  <p className="pauta-obs-text">
+                    <strong>Nota da Comissão:</strong> {lista.observacoes}
+                  </p>
+                )}
+
+                <div className="pauta-actions-footer">
+                  <button
+                    type="button"
+                    className="pauta-btn-print"
+                    onClick={() => setSelectedPautaPrint(lista)}
+                  >
+                    <Printer size={15} />
+                    <span>Ver Edital Timbrado</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="pauta-btn-download"
+                    onClick={() => {
+                      if (onNotify) onNotify('success', `A descarregar arquivo oficial ${lista.arquivoNome}...`);
+                    }}
+                  >
+                    <Download size={15} />
+                    <span>Baixar PDF</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          ABA 5: VAGAS E QUOTAS DO CONCURSO
+          ======================================================== */}
+      {gestorTab === 'vagas' && (
+        <div className="gestor-tab-content fadeIn">
+          <div className="vagas-gestor-header">
+            <div>
+              <h3>Quotas e Editais Oficiais Autorizados</h3>
+              <p>Quadro de vagas fixado pelo Ministério da Economia e Finanças para o Concurso SERNIC 2026.</p>
+            </div>
+            <div className="total-vagas-badge">
+              Total Autorizado: <strong>300 Vagas</strong>
+            </div>
+          </div>
+
+          <div className="vagas-gestor-grid">
+            {INITIAL_VAGAS.map(vaga => {
+              const countInscritos = candidatos.filter(c => c.vagaTitulo === vaga.titulo).length;
+              const ratio = vaga.vagas > 0 ? (countInscritos / vaga.vagas).toFixed(1) : '0';
+
+              return (
+                <div key={vaga.id} className="vaga-gestor-card">
+                  <div className="vaga-gestor-top">
+                    <span className="vaga-edital-cod">{vaga.codigoEdital}</span>
+                    <span className={`vaga-status-chip ${vaga.status === 'Aberto' ? 'aberto' : 'fechado'}`}>
+                      {vaga.status}
+                    </span>
+                  </div>
+
+                  <h4>{vaga.titulo}</h4>
+                  <p className="vaga-carreira-desc">{vaga.carreira}</p>
+
+                  <div className="vaga-metrics-grid">
+                    <div className="vaga-metric-box">
+                      <span className="label">Vagas Oficiais</span>
+                      <strong className="value red">{vaga.vagas}</strong>
+                    </div>
+                    <div className="vaga-metric-box">
+                      <span className="label">Inscritos</span>
+                      <strong className="value">{countInscritos}</strong>
+                    </div>
+                    <div className="vaga-metric-box">
+                      <span className="label">Concorrência</span>
+                      <strong className="value gold">{ratio} : 1</strong>
+                    </div>
+                  </div>
+
+                  <div className="vaga-details-box">
+                    <div className="detail-line">
+                      <MapPin size={14} color="#64748b" />
+                      <span>{vaga.local}</span>
+                    </div>
+                    <div className="detail-line">
+                      <Calendar size={14} color="#64748b" />
+                      <span>Prazo: {vaga.dataLimite}</span>
+                    </div>
+                  </div>
+
+                  <div className="vaga-gestor-footer">
+                    <button
+                      type="button"
+                      className="btn-ver-edital-action"
+                      onClick={() => navigate('/portal-recrutamento/recrutamento')}
+                    >
+                      <span>Ver Aviso de Abertura Completo</span>
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          ABA 6: LIVRO DE AUDITORIA & REGISTO DE ATAS
+          ======================================================== */}
+      {gestorTab === 'auditoria' && (
+        <div className="gestor-tab-content fadeIn">
+          <div className="auditoria-header-bar">
+            <div>
+              <h3>Livro de Registo e Auditoria do Júri</h3>
+              <p>Rastreabilidade legal: todas as deliberações e publicações são gravadas com assinatura e timestamp.</p>
+            </div>
+            <button
+              type="button"
+              className="gestor-btn-outline"
+              onClick={() => window.print()}
+            >
+              <Printer size={15} />
+              <span>Imprimir Livro de Atas</span>
+            </button>
+          </div>
+
+          <div className="auditoria-table-wrap">
+            <table className="auditoria-table">
+              <thead>
+                <tr>
+                  <th>Ref.</th>
+                  <th>Data & Hora</th>
+                  <th>Operador / Júri</th>
+                  <th>Tipo de Ação</th>
+                  <th>Alvo / Candidato</th>
+                  <th>Estado Anterior → Novo</th>
+                  <th>Fundamentação / Parecer</th>
+                </tr>
+              </thead>
+              <tbody>
+                {auditoria.map(item => (
+                  <tr key={item.id}>
+                    <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#c32026' }}>{item.id}</td>
+                    <td>{item.dataHora}</td>
+                    <td><strong>{item.operador}</strong></td>
+                    <td><span className="auditoria-tag">{item.acao}</span></td>
+                    <td>{item.candidato}</td>
+                    <td>
+                      <span className="old-state">{item.estadoAnterior}</span>
+                      <span className="arrow-state">→</span>
+                      <span className="new-state">{item.novoEstado}</span>
+                    </td>
+                    <td style={{ fontSize: '0.85rem' }}>{item.motivo}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          ABA 7: MÓDULO DE DEFINIÇÕES DO CONCURSO (SOLICITADO)
+          ======================================================== */}
+      {gestorTab === 'definicoes' && (
+        <div className="gestor-tab-content fadeIn definicoes-tab-container">
+          {/* CABEÇALHO DO MÓDULO DE DEFINIÇÕES */}
+          <div className="definicoes-header-banner">
+            <div className="definicoes-header-left">
+              <div className="definicoes-icon-badge">
+                <SlidersHorizontal size={24} color="#ffffff" />
+              </div>
+              <div>
+                <h3>Módulo Central de Definições & Parâmetros do Concurso</h3>
+                <p>
+                  Gestão integrada de cursos aceites, centros de realização de testes, cores e temas visuais, idioma oficial e prazos estatutários do SERNIC 2026.
+                </p>
+              </div>
+            </div>
+
+            <div className="definicoes-header-actions">
+              <button
+                type="button"
+                className="gestor-btn-outline"
+                onClick={reloadData}
+                title="Recarregar e sincronizar definições"
+              >
+                <RefreshCw size={15} />
+                <span>Recarregar Base</span>
+              </button>
+            </div>
+          </div>
+
+          {/* SUB-ABAS DE NAVEGAÇÃO INTERNA */}
+          <div className="definicoes-subtabs-bar">
+            <button
+              type="button"
+              className={`definicoes-subtab-btn ${definicoesSubTab === 'cursos' ? 'active' : ''}`}
+              onClick={() => setDefinicoesSubTab('cursos')}
+            >
+              <GraduationCap size={16} />
+              <span>Cursos Homologados</span>
+              <span className="definicoes-tab-count">{cursos.length}</span>
+            </button>
+
+            <button
+              type="button"
+              className={`definicoes-subtab-btn ${definicoesSubTab === 'locais' ? 'active' : ''}`}
+              onClick={() => setDefinicoesSubTab('locais')}
+            >
+              <MapPin size={16} />
+              <span>Centros & Locais de Testes</span>
+              <span className="definicoes-tab-count">{locais.length}</span>
+            </button>
+
+            <button
+              type="button"
+              className={`definicoes-subtab-btn ${definicoesSubTab === 'temas' ? 'active' : ''}`}
+              onClick={() => setDefinicoesSubTab('temas')}
+            >
+              <Palette size={16} />
+              <span>Aparência & Cores dos Temas</span>
+            </button>
+
+            <button
+              type="button"
+              className={`definicoes-subtab-btn ${definicoesSubTab === 'idioma' ? 'active' : ''}`}
+              onClick={() => setDefinicoesSubTab('idioma')}
+            >
+              <Globe size={16} />
+              <span>Idioma & Regionalização</span>
+            </button>
+
+            <button
+              type="button"
+              className={`definicoes-subtab-btn ${definicoesSubTab === 'geral' ? 'active' : ''}`}
+              onClick={() => setDefinicoesSubTab('geral')}
+            >
+              <Settings size={16} />
+              <span>Parâmetros Gerais do Concurso</span>
+            </button>
+          </div>
+
+          {/* ========================================================
+              SUB-ABA 1: GESTÃO DE CURSOS HOMOLOGADOS
+              ======================================================== */}
+          {definicoesSubTab === 'cursos' && (
+            <div className="definicoes-panel-body fadeIn">
+              <div className="definicoes-panel-top">
+                <div className="definicoes-filters-group">
+                  <div className="definicoes-search-box">
+                    <Search size={16} />
+                    <input
+                      type="text"
+                      placeholder="Pesquisar curso por nome, carreira ou código..."
+                      value={buscaCurso}
+                      onChange={(e) => setBuscaCurso(e.target.value)}
+                    />
+                    {buscaCurso && (
+                      <button type="button" onClick={() => setBuscaCurso('')} className="btn-clear-search">
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+
+                  <select
+                    className="definicoes-select"
+                    value={filtroGrauCurso}
+                    onChange={(e) => setFiltroGrauCurso(e.target.value)}
+                  >
+                    <option value="todos">Todos os Graus Académicos</option>
+                    <option value="Licenciatura">Licenciatura</option>
+                    <option value="Mestrado">Mestrado</option>
+                    <option value="Nível Médio">Nível Médio (12ª Classe)</option>
+                  </select>
+                </div>
+
+                <button
+                  type="button"
+                  className="gestor-btn-primary-red"
+                  onClick={handleOpenNovoCurso}
+                >
+                  <Plus size={16} />
+                  <span>Homologar Novo Curso</span>
+                </button>
+              </div>
+
+              {/* TABELA DE CURSOS */}
+              <div className="definicoes-table-wrap">
+                <table className="definicoes-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '100px' }}>Código</th>
+                      <th>Designação do Curso</th>
+                      <th>Grau Académico</th>
+                      <th>Carreira SERNIC Alocada</th>
+                      <th style={{ width: '120px' }}>Média Mínima</th>
+                      <th style={{ width: '130px' }}>Estado</th>
+                      <th style={{ width: '140px', textAlign: 'center' }}>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCursos.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>
+                          Nenhum curso encontrado com os filtros aplicados.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredCursos.map((c) => (
+                        <tr key={c.id}>
+                          <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#c32026' }}>
+                            {c.id}
+                          </td>
+                          <td>
+                            <strong>{c.nome}</strong>
+                          </td>
+                          <td>
+                            <span className="grau-badge">{c.grau}</span>
+                          </td>
+                          <td>
+                            <span className="carreira-text">{c.carreira}</span>
+                          </td>
+                          <td>
+                            <span className="nota-min-badge">{c.notaMinima} Val.</span>
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className={`status-toggle-btn ${c.status === 'Activo' ? 'is-active' : 'is-inactive'}`}
+                              onClick={() => handleToggleStatusCurso(c.id)}
+                              title="Clique para alternar o estado do curso"
+                            >
+                              {c.status === 'Activo' ? (
+                                <>
+                                  <Check size={13} />
+                                  <span>Activo</span>
+                                </>
+                              ) : (
+                                <>
+                                  <X size={13} />
+                                  <span>Inactivo</span>
+                                </>
+                              )}
+                            </button>
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            <div className="definicoes-row-actions">
+                              <button
+                                type="button"
+                                className="action-icon-btn edit"
+                                onClick={() => handleEditCurso(c)}
+                                title="Editar dados do curso"
+                              >
+                                <Edit3 size={15} />
+                              </button>
+                              <button
+                                type="button"
+                                className="action-icon-btn delete"
+                                onClick={() => handleDeleteCurso(c.id)}
+                                title="Remover curso da lista homologada"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================
+              SUB-ABA 2: LOCAIS & CENTROS DE TESTES
+              ======================================================== */}
+          {definicoesSubTab === 'locais' && (
+            <div className="definicoes-panel-body fadeIn">
+              <div className="definicoes-panel-top">
+                <div>
+                  <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1.1rem', fontWeight: 800 }}>
+                    Centros Oficiais de Realização de Exames e Testes
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '0.86rem', color: '#64748b' }}>
+                    Gestão dos locais onde serão realizadas as provas escritas, testes de aptidão física, inspeções médicas e perícias laboratoriais.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className="gestor-btn-primary-red"
+                  onClick={handleOpenNovoLocal}
+                >
+                  <Building size={16} />
+                  <span>Cadastrar Centro de Exames</span>
+                </button>
+              </div>
+
+              {/* GRID DE LOCAIS */}
+              <div className="locais-cards-grid">
+                {locais.map((loc) => (
+                  <div key={loc.id} className="local-center-card">
+                    <div className="local-card-header">
+                      <div className="local-card-icon">
+                        <MapPin size={20} color="#c32026" />
+                      </div>
+                      <div className="local-card-title-wrap">
+                        <div className="local-card-provincia-badge">{loc.provincia}</div>
+                        <h5>{loc.nome}</h5>
+                      </div>
+                    </div>
+
+                    <div className="local-card-details">
+                      <div className="local-detail-line">
+                        <strong>Cidade / Endereço:</strong>
+                        <span>{loc.cidade} • {loc.endereco}</span>
+                      </div>
+
+                      <div className="local-detail-line">
+                        <strong>Capacidade de Candidatos:</strong>
+                        <span className="capacidade-badge">
+                          <Users size={14} style={{ display: 'inline', marginRight: '4px' }} />
+                          {loc.capacidade} Candidatos
+                        </span>
+                      </div>
+
+                      <div className="local-detail-line">
+                        <strong>Data Prevista:</strong>
+                        <span>{loc.dataPrevista}</span>
+                      </div>
+
+                      <div className="local-detail-line">
+                        <strong>Responsável SERNIC:</strong>
+                        <span>{loc.responsavel || 'Comissão Provincial de Júri'}</span>
+                      </div>
+
+                      <div className="local-provas-tags">
+                        <strong>Tipos de Provas:</strong>
+                        <div className="provas-tags-container">
+                          {loc.tiposProva?.map((tp, idx) => (
+                            <span key={idx} className="prova-tag-pill">{tp}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="local-card-footer">
+                      <button
+                        type="button"
+                        className="gestor-btn-secondary"
+                        style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}
+                        onClick={() => handleEditLocal(loc)}
+                      >
+                        <Edit3 size={14} />
+                        <span>Editar</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="gestor-btn-outline danger"
+                        style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem' }}
+                        onClick={() => handleDeleteLocal(loc.id)}
+                      >
+                        <Trash2 size={14} />
+                        <span>Eliminar</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================
+              SUB-ABA 3: CORES DOS TEMAS & APARÊNCIA
+              ======================================================== */}
+          {definicoesSubTab === 'temas' && (
+            <div className="definicoes-panel-body fadeIn">
+              <div className="temas-config-wrapper">
+                {/* 1. SELEÇÃO DA COR PRIMÁRIA DE DESTAQUE */}
+                <div className="config-card">
+                  <div className="config-card-header">
+                    <Palette size={20} color="#c32026" />
+                    <div>
+                      <h4>Cor de Destaque Institucional</h4>
+                      <p>Escolha a paleta oficial que define os botões, cabeçalhos e indicadores do portal.</p>
+                    </div>
+                  </div>
+
+                  <div className="theme-color-palette-grid">
+                    {[
+                      { nome: 'Vermelho SERNIC (Oficial)', cor: '#c32026', desc: 'Identidade Constitucional SERNIC' },
+                      { nome: 'Dourado República', cor: '#c59b27', desc: 'Emblema & Brasão Nacional' },
+                      { nome: 'Azul Marinho Forense', cor: '#1e3a8a', desc: 'Polícia Científica e Investigação' },
+                      { nome: 'Verde Moçambique', cor: '#059669', desc: 'Cores da Bandeira Nacional' },
+                      { nome: 'Bordo Nobre', cor: '#881337', desc: 'Procuradoria-Geral da República' },
+                      { nome: 'Grafite Tático', cor: '#334155', desc: 'Forças Especiais e Operações' },
+                      { nome: 'Púrpura Criminológica', cor: '#6b21a8', desc: 'Inteligência Forense Digital' }
+                    ].map((paleta) => (
+                      <div
+                        key={paleta.cor}
+                        className={`theme-color-card ${temaCorSelecionada === paleta.cor ? 'selected' : ''}`}
+                        onClick={() => handleApplyThemeColor(paleta.cor)}
+                      >
+                        <div className="color-swatch-circle" style={{ backgroundColor: paleta.cor }}>
+                          {temaCorSelecionada === paleta.cor && <Check size={16} color="#ffffff" />}
+                        </div>
+                        <div className="color-swatch-info">
+                          <strong>{paleta.nome}</strong>
+                          <span>{paleta.desc}</span>
+                          <code>{paleta.cor}</code>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="custom-color-row">
+                    <label>Ou selecione uma cor personalizada:</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                      <input
+                        type="color"
+                        value={temaCorSelecionada}
+                        onChange={(e) => handleApplyThemeColor(e.target.value)}
+                        className="custom-color-input"
+                      />
+                      <span style={{ fontWeight: 700, fontFamily: 'monospace' }}>{temaCorSelecionada}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. MODO CLARO / PRETO */}
+                <div className="config-card">
+                  <div className="config-card-header">
+                    <Sun size={20} color="#eab308" />
+                    <div>
+                      <h4>Modo de Visualização & Contraste</h4>
+                      <p>Alterne entre o Modo Claro (alta nitidez para impressão) e o Modo Preto (alto contraste tático).</p>
+                    </div>
+                  </div>
+
+                  <div className="theme-modes-choice-grid">
+                    <div
+                      className={`theme-mode-choice-card ${modoTemaSelecionado === 'claro' ? 'active' : ''}`}
+                      onClick={() => handleApplyThemeMode('claro')}
+                    >
+                      <div className="mode-choice-icon light">
+                        <Sun size={24} color="#eab308" />
+                      </div>
+                      <h5>Modo Claro (Padrão Institucional)</h5>
+                      <p>Fundo suave cinza (#f3f4f6), cartões brancos nítidos e máxima legibilidade para expediente diurno.</p>
+                      {modoTemaSelecionado === 'claro' && <span className="active-badge-pill">Activo</span>}
+                    </div>
+
+                    <div
+                      className={`theme-mode-choice-card ${modoTemaSelecionado === 'preto' ? 'active' : ''}`}
+                      onClick={() => handleApplyThemeMode('preto')}
+                    >
+                      <div className="mode-choice-icon dark">
+                        <Moon size={24} color="#38bdf8" />
+                      </div>
+                      <h5>Modo Preto / Escuro (Tático Noturno)</h5>
+                      <p>Fundo midnight dark (#0f172a), cartões de contraste profundo e conforto visual para salas de controle.</p>
+                      {modoTemaSelecionado === 'preto' && <span className="active-badge-pill">Activo</span>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. OPACIDADE DA MARCA D'ÁGUA SERNIC */}
+                <div className="config-card">
+                  <div className="config-card-header">
+                    <ShieldCheck size={20} color="#c59b27" />
+                    <div>
+                      <h4>Intensidade da Marca d'Água Oficial do SERNIC no Fundo</h4>
+                      <p>Ajuste o nível de transparência da marca d'água oficial posicionada no centro e nas laterais da página.</p>
+                    </div>
+                  </div>
+
+                  <div className="watermark-levels-grid">
+                    {[
+                      { id: 'suave', label: 'Suave & Discreta', opacity: '5%', desc: 'Ideal para leitura prolongada' },
+                      { id: 'normal', label: 'Equilibrada (Padrão)', opacity: '8%', desc: 'Visibilidade institucional balanceada' },
+                      { id: 'nitida', label: 'Realçada & Nítida', opacity: '15%', desc: 'Maior destaque ao emblema oficial' }
+                    ].map((lvl) => (
+                      <div
+                        key={lvl.id}
+                        className={`watermark-level-card ${opacidadeMarcaAgua === lvl.id ? 'active' : ''}`}
+                        onClick={() => handleApplyWatermarkOpacity(lvl.id)}
+                      >
+                        <strong>{lvl.label}</strong>
+                        <span className="opacity-val">{lvl.opacity}</span>
+                        <p>{lvl.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================
+              SUB-ABA 4: IDIOMA & REGIONALIZAÇÃO
+              ======================================================== */}
+          {definicoesSubTab === 'idioma' && (
+            <div className="definicoes-panel-body fadeIn">
+              <form onSubmit={handleSaveRegionalConfig} className="config-card regional-card">
+                <div className="config-card-header">
+                  <Globe size={20} color="#c32026" />
+                  <div>
+                    <h4>Idioma Oficial e Regionalização do SERNIC</h4>
+                    <p>Defina o padrão de língua, fuso horário legal e formatação monetária do concurso.</p>
+                  </div>
+                </div>
+
+                <div className="regional-settings-grid">
+                  <div className="form-group-custom">
+                    <label>Idioma Oficial do Sistema</label>
+                    <select
+                      className="definicoes-select full"
+                      value={idiomaSelecionado}
+                      onChange={(e) => setIdiomaSelecionado(e.target.value)}
+                    >
+                      <option value="pt">🇲🇿 Português (Moçambique) — Idioma Oficial Constitucional</option>
+                      <option value="en">🇬🇧 English (SADC / International Protocols)</option>
+                    </select>
+                    <small>Define o idioma padrão das mensagens, cabeçalhos e termos jurídicos do portal.</small>
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Fuso Horário Oficial do Concurso</label>
+                    <select
+                      className="definicoes-select full"
+                      value={fusoHorarioSelecionado}
+                      onChange={(e) => setFusoHorarioSelecionado(e.target.value)}
+                    >
+                      <option value="CAT (UTC+2) - Maputo">Central Africa Time (CAT / UTC+2) — Maputo</option>
+                      <option value="UTC (GMT)">UTC — Tempo Universal Coordenado</option>
+                    </select>
+                    <small>Todas as horas das convocações, prazos e atas oficiais regem-se pelo horário de Maputo.</small>
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Padrão Monetário</label>
+                    <input
+                      type="text"
+                      className="definicoes-input"
+                      value="Metical de Moçambique (MZN)"
+                      disabled
+                    />
+                    <small>Moeda legal em conformidade com as finanças públicas e o EGFAE.</small>
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Formato Oficial de Datas</label>
+                    <input
+                      type="text"
+                      className="definicoes-input"
+                      value="DD/MM/AAAA (exemplo: 15/11/2026)"
+                      disabled
+                    />
+                    <small>Formato legal utilizado nas pautas e publicações no Boletim da República.</small>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+                  <button type="submit" className="gestor-btn-primary-red">
+                    <Save size={16} />
+                    <span>Guardar Configurações Regionais</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* ========================================================
+              SUB-ABA 5: PARÂMETROS GERAIS DO CONCURSO
+              ======================================================== */}
+          {definicoesSubTab === 'geral' && (
+            <div className="definicoes-panel-body fadeIn">
+              <form onSubmit={handleSaveParametrosGerais} className="config-card">
+                <div className="config-card-header">
+                  <SlidersHorizontal size={20} color="#c32026" />
+                  <div>
+                    <h4>Parâmetros Estatutários & Prazos Oficiais do Concurso</h4>
+                    <p>Configuração das datas limites, requisitos de elegibilidade física e estatutária nos termos do EGFAE.</p>
+                  </div>
+                </div>
+
+                <div className="parametros-grid-fields">
+                  <div className="form-group-custom">
+                    <label>Título Oficial do Concurso</label>
+                    <input
+                      type="text"
+                      className="definicoes-input"
+                      value={parametrosForm.tituloConcurso}
+                      onChange={(e) => setParametrosForm({ ...parametrosForm, tituloConcurso: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Código do Aviso / Edital de Abertura</label>
+                    <input
+                      type="text"
+                      className="definicoes-input"
+                      value={parametrosForm.codigoEdital}
+                      onChange={(e) => setParametrosForm({ ...parametrosForm, codigoEdital: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Data de Abertura das Inscrições</label>
+                    <input
+                      type="date"
+                      className="definicoes-input"
+                      value={parametrosForm.dataAbertura}
+                      onChange={(e) => setParametrosForm({ ...parametrosForm, dataAbertura: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Data de Encerramento Oficial</label>
+                    <input
+                      type="date"
+                      className="definicoes-input"
+                      value={parametrosForm.dataEncerramento}
+                      onChange={(e) => setParametrosForm({ ...parametrosForm, dataEncerramento: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Idade Mínima de Ingresso (anos)</label>
+                    <input
+                      type="number"
+                      className="definicoes-input"
+                      value={parametrosForm.idadeMinima}
+                      onChange={(e) => setParametrosForm({ ...parametrosForm, idadeMinima: Number(e.target.value) })}
+                      min="18"
+                      max="30"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Idade Máxima Geral (EGFAE)</label>
+                    <input
+                      type="number"
+                      className="definicoes-input"
+                      value={parametrosForm.idadeMaximaGeral}
+                      onChange={(e) => setParametrosForm({ ...parametrosForm, idadeMaximaGeral: Number(e.target.value) })}
+                      min="25"
+                      max="45"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Idade Máxima para Especialistas Forenses</label>
+                    <input
+                      type="number"
+                      className="definicoes-input"
+                      value={parametrosForm.idadeMaximaEspecialistas}
+                      onChange={(e) => setParametrosForm({ ...parametrosForm, idadeMaximaEspecialistas: Number(e.target.value) })}
+                      min="30"
+                      max="50"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Prazo para Reclamações e Recursos (Dias Úteis)</label>
+                    <input
+                      type="number"
+                      className="definicoes-input"
+                      value={parametrosForm.prazoRecursoDias}
+                      onChange={(e) => setParametrosForm({ ...parametrosForm, prazoRecursoDias: Number(e.target.value) })}
+                      min="1"
+                      max="30"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Altura Mínima Masculina (Metros)</label>
+                    <input
+                      type="text"
+                      className="definicoes-input"
+                      value={parametrosForm.alturaMinimaHomem}
+                      onChange={(e) => setParametrosForm({ ...parametrosForm, alturaMinimaHomem: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Altura Mínima Feminina (Metros)</label>
+                    <input
+                      type="text"
+                      className="definicoes-input"
+                      value={parametrosForm.alturaMinimaMulher}
+                      onChange={(e) => setParametrosForm({ ...parametrosForm, alturaMinimaMulher: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="notificacoes-toggles-section">
+                  <h5>Canais de Notificação Automática aos Candidatos</h5>
+                  
+                  <label className="checkbox-toggle-label">
+                    <input
+                      type="checkbox"
+                      checked={parametrosForm.notificacoesSmsAtivas}
+                      onChange={(e) => setParametrosForm({ ...parametrosForm, notificacoesSmsAtivas: e.target.checked })}
+                    />
+                    <span>
+                      <strong>Notificações por SMS Institucional</strong>
+                      <small>Envia código de confirmação e convocatórias diretamente para o telefone do candidato.</small>
+                    </span>
+                  </label>
+
+                  <label className="checkbox-toggle-label">
+                    <input
+                      type="checkbox"
+                      checked={parametrosForm.notificacoesEmailAtivas}
+                      onChange={(e) => setParametrosForm({ ...parametrosForm, notificacoesEmailAtivas: e.target.checked })}
+                    />
+                    <span>
+                      <strong>Notificações por Correio Electrónico Oficial</strong>
+                      <small>Envia comprovativo em PDF e resultados de deliberação para o e-mail cadastrado.</small>
+                    </span>
+                  </label>
+                </div>
+
+                <div style={{ marginTop: '1.8rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                  <button type="submit" className="gestor-btn-primary-red">
+                    <Save size={16} />
+                    <span>Guardar Parâmetros Oficiais do Concurso</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================
+          MODAL 1: DOSSIER COMPLETO DO CANDIDATO
+          ======================================================== */}
+      {selectedDossier && (
+        <div className="gestor-modal-overlay fadeIn">
+          <div className="gestor-modal-card dossier-modal">
+            {/* CABEÇALHO DO DOSSIER */}
+            <div className="dossier-modal-header">
+              <div className="dossier-header-left">
+                <div className="dossier-avatar">
+                  {selectedDossier.nomeCompleto.charAt(0)}
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <h3>{selectedDossier.nomeCompleto}</h3>
+                    {(() => {
+                      const b = getBadgeStyle(selectedDossier.status);
+                      return (
+                        <span 
+                          className="gestor-status-pill"
+                          style={{ backgroundColor: b.bg, color: b.color, borderColor: b.border }}
+                        >
+                          {b.icon}
+                          <span>{b.label}</span>
+                        </span>
+                      );
+                    })()}
+                  </div>
+                  <p className="dossier-header-sub">
+                    Protocolo: <strong>{selectedDossier.codigoCandidatura}</strong> • 
+                    Vaga: <strong>{selectedDossier.vagaTitulo}</strong>
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setSelectedDossier(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* CONTEÚDO DO DOSSIER */}
+            <div className="dossier-modal-body">
+              {/* BLOCO 1: DADOS PESSOAIS */}
+              <div className="dossier-section-block">
+                <h4 className="dossier-sec-title">
+                  <UserCheck size={16} color="#c32026" />
+                  1. Dados Pessoais & Identificação Civil
+                </h4>
+                <div className="dossier-data-grid">
+                  <div className="data-item">
+                    <span className="label">Nome Completo:</span>
+                    <span className="val">{selectedDossier.nomeCompleto}</span>
+                  </div>
+                  <div className="data-item">
+                    <span className="label">Bilhete de Identidade (BI):</span>
+                    <span className="val">{selectedDossier.biNumero}</span>
+                  </div>
+                  <div className="data-item">
+                    <span className="label">NUIT:</span>
+                    <span className="val">{selectedDossier.nuit}</span>
+                  </div>
+                  <div className="data-item">
+                    <span className="label">Data de Nascimento / Idade:</span>
+                    <span className="val">{selectedDossier.dataNascimento || '1998-05-14'} ({selectedDossier.idade || 28} anos)</span>
+                  </div>
+                  <div className="data-item">
+                    <span className="label">Género / Estado Civil:</span>
+                    <span className="val">{selectedDossier.genero || 'Masculino'} • {selectedDossier.estadoCivil || 'Solteiro(a)'}</span>
+                  </div>
+                  <div className="data-item">
+                    <span className="label">Filiação:</span>
+                    <span className="val">{selectedDossier.filiacaoPai || 'Carlos Alberto'} e {selectedDossier.filiacaoMae || 'Amélia Rosa'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* BLOCO 2: CONTACTO E RESIDÊNCIA */}
+              <div className="dossier-section-block">
+                <h4 className="dossier-sec-title">
+                  <MapPin size={16} color="#c32026" />
+                  2. Contacto & Delegação Provincial de Candidatura
+                </h4>
+                <div className="dossier-data-grid">
+                  <div className="data-item">
+                    <span className="label">Telefone:</span>
+                    <span className="val">{selectedDossier.telefone || '+258 84 123 4567'}</span>
+                  </div>
+                  <div className="data-item">
+                    <span className="label">E-mail:</span>
+                    <span className="val">{selectedDossier.email || 'candidato@gmail.com'}</span>
+                  </div>
+                  <div className="data-item">
+                    <span className="label">Província / Distrito:</span>
+                    <span className="val">{selectedDossier.provincia || 'Maputo Cidade'} ({selectedDossier.distrito || 'KaMpfumo'})</span>
+                  </div>
+                  <div className="data-item">
+                    <span className="label">Morada de Residência:</span>
+                    <span className="val">{selectedDossier.morada || 'Bairro Central, Maputo'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* BLOCO 3: HABILITAÇÕES LITERÁRIAS */}
+              <div className="dossier-section-block">
+                <h4 className="dossier-sec-title">
+                  <GraduationCap size={16} color="#c32026" />
+                  3. Habilitações Literárias & Formação Académica
+                </h4>
+                <div className="dossier-data-grid">
+                  <div className="data-item">
+                    <span className="label">Grau Académico:</span>
+                    <span className="val">{selectedDossier.habilitacoes?.grau || 'Licenciatura'}</span>
+                  </div>
+                  <div className="data-item">
+                    <span className="label">Curso / Especialidade:</span>
+                    <span className="val">{selectedDossier.habilitacoes?.curso || 'Direito e Ciências Criminais'}</span>
+                  </div>
+                  <div className="data-item">
+                    <span className="label">Instituição de Ensino:</span>
+                    <span className="val">{selectedDossier.habilitacoes?.instituicao || 'Universidade Eduardo Mondlane (UEM)'}</span>
+                  </div>
+                  <div className="data-item">
+                    <span className="label">Ano de Conclusão / Média:</span>
+                    <span className="val">{selectedDossier.habilitacoes?.anoConclusao || 2022} • Média Final: <strong>{selectedDossier.habilitacoes?.mediaFinal || '16.5'} valores</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              {/* BLOCO 4: DOCUMENTOS ANEXADOS & CONFERÊNCIA */}
+              <div className="dossier-section-block">
+                <h4 className="dossier-sec-title">
+                  <FileCheck size={16} color="#c32026" />
+                  4. Conferência dos Documentos Oficiais Submetidos
+                </h4>
+                <div className="dossier-docs-list">
+                  {(selectedDossier.documentos || [
+                    { id: 'doc-bi', tipo: 'Bilhete de Identidade Autenticado', status: 'Validado', tamanho: '1.2 MB' },
+                    { id: 'doc-cert', tipo: 'Certificado de Habilitações Literárias', status: 'Validado', tamanho: '2.4 MB' },
+                    { id: 'doc-crim', tipo: 'Certidão de Registo Criminal', status: 'Validado', tamanho: '850 KB' },
+                    { id: 'doc-med', tipo: 'Atestado Médico de Aptidão Física/Mental', status: 'Validado', tamanho: '920 KB' },
+                    { id: 'doc-mil', tipo: 'Declaração de Serviço Militar', status: 'Validado', tamanho: '1.1 MB' },
+                    { id: 'doc-cv', tipo: 'Curriculum Vitae e Carta de Motivação', status: 'Validado', tamanho: '1.8 MB' }
+                  ]).map((doc, idx) => (
+                    <div key={doc.id || idx} className="dossier-doc-card">
+                      <div className="doc-icon-wrap">
+                        <FileText size={22} color="#c32026" />
+                      </div>
+                      <div className="doc-meta-info">
+                        <span className="doc-name">{doc.tipo}</span>
+                        <span className="doc-size-status">
+                          {doc.tamanho || '1.5 MB'} • 
+                          <strong className={doc.status === 'Validado' ? 'text-success' : (doc.status === 'Rejeitado' ? 'text-danger' : 'text-warning')}>
+                            {doc.status}
+                          </strong>
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn-preview-doc"
+                        onClick={() => setPreviewDoc({ doc, candidato: selectedDossier })}
+                      >
+                        <Eye size={14} />
+                        <span>Visualizar</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* BLOCO 5: HISTÓRICO E DELIBERAÇÃO ATUAL */}
+              {selectedDossier.historico && (
+                <div className="dossier-section-block">
+                  <h4 className="dossier-sec-title">
+                    <History size={16} color="#c32026" />
+                    5. Histórico Cronológico do Processo
+                  </h4>
+                  <div className="dossier-timeline">
+                    {selectedDossier.historico.map((h, i) => (
+                      <div key={i} className="timeline-item">
+                        <div className="timeline-marker" />
+                        <div className="timeline-content">
+                          <span className="timeline-date">{h.data}</span>
+                          <strong className="timeline-stage">{h.etapa}</strong>
+                          <p className="timeline-desc">{h.descricao}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* RODAPÉ DO DOSSIER */}
+            <div className="dossier-modal-footer">
+              <button
+                type="button"
+                className="gestor-btn-outline"
+                onClick={() => window.print()}
+              >
+                <Printer size={15} />
+                <span>Imprimir Ficha Completa</span>
+              </button>
+
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button
+                  type="button"
+                  className="gestor-btn-secondary"
+                  onClick={() => setSelectedDossier(null)}
+                >
+                  Fechar
+                </button>
+                <button
+                  type="button"
+                  className="gestor-btn-primary-red"
+                  onClick={() => iniciarDeliberacao(selectedDossier)}
+                >
+                  <FileSignature size={16} />
+                  <span>Deliberar este Candidato</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          MODAL 2: PRÉ-VISUALIZAÇÃO DE DOCUMENTO OFICIAL
+          ======================================================== */}
+      {previewDoc && (
+        <div className="gestor-modal-overlay fadeIn" style={{ zIndex: 1200 }}>
+          <div className="gestor-modal-card doc-preview-modal">
+            <div className="dossier-modal-header">
+              <div>
+                <h3>Visualização de Documento Anexado</h3>
+                <p>{previewDoc.doc.tipo} • Candidato: {previewDoc.candidato.nomeCompleto}</p>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setPreviewDoc(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="doc-preview-body">
+              <div className="document-sheet">
+                <div className="doc-sheet-header">
+                  <img src={sernicLogo} alt="SERNIC" className="doc-sheet-logo" />
+                  <h4>REPÚBLICA DE MOÇAMBIQUE</h4>
+                  <h5>MINISTÉRIO DO INTERIOR • SERNIC</h5>
+                  <p>CONCURSO PÚBLICO DE INGRESSO 2026</p>
+                </div>
+
+                <div className="doc-sheet-content">
+                  <div className="doc-sheet-title">{previewDoc.doc.tipo.toUpperCase()}</div>
+                  <div className="doc-sheet-watermark">CONFERIDO PELO JÚRI</div>
+
+                  <p><strong>Titular:</strong> {previewDoc.candidato.nomeCompleto}</p>
+                  <p><strong>N.º de BI:</strong> {previewDoc.candidato.biNumero}</p>
+                  <p><strong>Protocolo de Inscrição:</strong> {previewDoc.candidato.codigoCandidatura}</p>
+                  <p><strong>Carreira:</strong> {previewDoc.candidato.vagaTitulo}</p>
+                  <p><strong>Data de Homologação:</strong> {new Date().toLocaleDateString('pt-PT')}</p>
+
+                  <div className="doc-simulated-text">
+                    [Cópia digitalizada do documento original conforme submetido pelo candidato através da plataforma eletrónica de inscrições do SERNIC. Documento com autenticação notarial conferida nos termos do EGFAE.]
+                  </div>
+                </div>
+
+                <div className="doc-sheet-stamp">
+                  <div className="stamp-circle">
+                    <span>SERNIC • DRH</span>
+                    <span>CONFERIDO</span>
+                    <span>2026</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="dossier-modal-footer">
+              <button
+                type="button"
+                className="gestor-btn-primary-red"
+                onClick={() => setPreviewDoc(null)}
+              >
+                Fechar Visualização
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          MODAL 3: PUBLICAR NOVO EDITAL OFICIAL
+          ======================================================== */}
+      {isNovoEditalModalOpen && (
+        <div className="gestor-modal-overlay fadeIn">
+          <div className="gestor-modal-card novo-edital-modal">
+            <div className="dossier-modal-header">
+              <div>
+                <h3>Publicação Oficial de Pauta / Edital</h3>
+                <p>O edital ficará imediatamente disponível para consulta pública e download pelos candidatos.</p>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setIsNovoEditalModalOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handlePublicarEdital} className="novo-edital-form">
+              <div className="form-field full-width">
+                <label>Título Oficial do Edital:</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Edital n.º 05 - Relação de Candidatos Admitidos às Provas Escritas"
+                  value={novoEditalData.tituloLista}
+                  onChange={(e) => setNovoEditalData({ ...novoEditalData, tituloLista: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div className="extra-box-grid">
+                <div className="form-field">
+                  <label>Tipo de Lista:</label>
+                  <select
+                    value={novoEditalData.tipo}
+                    onChange={(e) => setNovoEditalData({ ...novoEditalData, tipo: e.target.value })}
+                  >
+                    <option value="Admitidos">Admitidos</option>
+                    <option value="Convocados">Convocados para Provas</option>
+                    <option value="Aprovados">Aprovados / Classificação Final</option>
+                    <option value="Excluídos">Excluídos / Não Admitidos</option>
+                  </select>
+                </div>
+
+                <div className="form-field">
+                  <label>Carreira / Aviso Associado:</label>
+                  <select
+                    value={novoEditalData.vagaTitulo}
+                    onChange={(e) => setNovoEditalData({ ...novoEditalData, vagaTitulo: e.target.value })}
+                  >
+                    <option value="Todas as Carreiras">Todas as Carreiras</option>
+                    {INITIAL_VAGAS.map(v => (
+                      <option key={v.id} value={v.titulo}>{v.titulo}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-field full-width">
+                <label>Instruções / Observações Oficiais para os Candidatos:</label>
+                <textarea
+                  rows={3}
+                  value={novoEditalData.observacoes}
+                  onChange={(e) => setNovoEditalData({ ...novoEditalData, observacoes: e.target.value })}
+                  placeholder="Ex: Os candidatos convocados devem comparecer munidos de esferográfica azul e documento original..."
+                  className="gestor-textarea"
+                />
+              </div>
+
+              <div className="dossier-modal-footer" style={{ padding: 0, marginTop: '1.5rem' }}>
+                <button
+                  type="button"
+                  className="gestor-btn-secondary"
+                  onClick={() => setIsNovoEditalModalOpen(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="gestor-btn-primary-red"
+                >
+                  <FilePlus2 size={16} />
+                  <span>Publicar Edital Oficial Agora</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          MODAL 4: VISUALIZAÇÃO E IMPRESSÃO DE EDITAL TIMBRADO
+          ======================================================== */}
+      {selectedPautaPrint && (
+        <div className="gestor-modal-overlay fadeIn">
+          <div className="gestor-modal-card pauta-timbrada-modal">
+            <div className="dossier-modal-header">
+              <div>
+                <h3>Edital Oficial do Concurso Público</h3>
+                <p>Documento Timbrado • Direcção Geral do SERNIC</p>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setSelectedPautaPrint(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="pauta-sheet-body">
+              <div className="pauta-official-sheet">
+                <div className="official-sheet-top">
+                  <img src={sernicLogo} alt="SERNIC" className="sheet-logo" />
+                  <h4>REPÚBLICA DE MOÇAMBIQUE</h4>
+                  <h5>PROCURADORIA-GERAL DA REPÚBLICA</h5>
+                  <h6>SERVIÇO NACIONAL DE INVESTIGAÇÃO CRIMINAL</h6>
+                  <p>DIRECÇÃO GERAL • DIRECÇÃO DE RECURSOS HUMANOS</p>
+                  <div className="sheet-divider" />
+                  <h3 className="sheet-edital-title">{selectedPautaPrint.tituloLista}</h3>
+                  <span className="sheet-edital-subtitle">{selectedPautaPrint.edital} • {selectedPautaPrint.vagaTitulo}</span>
+                </div>
+
+                <div className="sheet-body-text">
+                  <p>
+                    Em cumprimento ao estabelecido no Estatuto Geral dos Funcionários e Agentes do Estado (EGFAE) e no Regulamento do SERNIC, torna-se pública a presente relação de candidatos referentes ao Concurso Público de Ingresso 2026.
+                  </p>
+
+                  <div className="sheet-sample-table">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>N.º</th>
+                          <th>Protocolo</th>
+                          <th>Nome do Candidato</th>
+                          <th>Província</th>
+                          <th>Classificação / Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {candidatos.slice(0, 6).map((c, i) => (
+                          <tr key={c.codigoCandidatura}>
+                            <td>{i + 1}</td>
+                            <td>{c.codigoCandidatura}</td>
+                            <td>{c.nomeCompleto}</td>
+                            <td>{c.provincia || 'Maputo'}</td>
+                            <td><strong>{selectedPautaPrint.tipo}</strong></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <p className="sheet-notes">
+                    <strong>Observações:</strong> {selectedPautaPrint.observacoes}
+                  </p>
+                </div>
+
+                <div className="sheet-signatures">
+                  <div className="signature-box">
+                    <div className="signature-line" />
+                    <span>O Presidente do Júri</span>
+                    <strong>Dr. Alberto Chissano</strong>
+                  </div>
+
+                  <div className="stamp-official-seal">
+                    <div className="seal-inner">
+                      <span>SERNIC</span>
+                      <span>DIRECÇÃO GERAL</span>
+                      <span>MAPUTO</span>
+                    </div>
+                  </div>
+
+                  <div className="signature-box">
+                    <div className="signature-line" />
+                    <span>A Vogal da Comissão</span>
+                    <strong>Dra. Elsa Manjate</strong>
+                  </div>
+                </div>
+
+                <div className="sheet-footer-date">
+                  Maputo, {selectedPautaPrint.dataPublicacao || new Date().toLocaleDateString('pt-PT')}
+                </div>
+              </div>
+            </div>
+
+            <div className="dossier-modal-footer">
+              <button
+                type="button"
+                className="gestor-btn-primary-red"
+                onClick={() => window.print()}
+              >
+                <Printer size={15} />
+                <span>Imprimir Edital Oficial</span>
+              </button>
+              <button
+                type="button"
+                className="gestor-btn-secondary"
+                onClick={() => setSelectedPautaPrint(null)}
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          MODAL DE CURSO (HOMOLOGAR NOVO OU EDITAR)
+          ======================================================== */}
+      {isCursoModalOpen && (
+        <div className="gestor-modal-overlay fadeIn">
+          <div className="gestor-modal-card definicoes-modal">
+            <div className="dossier-modal-header">
+              <div className="dossier-header-left">
+                <div className="dossier-modal-avatar">
+                  <GraduationCap size={24} />
+                </div>
+                <div>
+                  <h3>{editingCurso ? 'Editar Curso Homologado' : 'Homologar Novo Curso para o Concurso'}</h3>
+                  <span className="dossier-protocolo">
+                    {editingCurso ? editingCurso.id : 'Novo Cadastro • Concurso SERNIC 2026'}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="dossier-close-btn"
+                onClick={() => setIsCursoModalOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCurso} className="dossier-modal-body">
+              <div className="form-group-custom">
+                <label>Designação Oficial do Curso</label>
+                <input
+                  type="text"
+                  className="definicoes-input"
+                  placeholder="Exemplo: Licenciatura em Direito ou Ciências Policiais"
+                  value={cursoForm.nome}
+                  onChange={(e) => setCursoForm({ ...cursoForm, nome: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group-custom">
+                  <label>Grau Académico Exigido</label>
+                  <select
+                    className="definicoes-select full"
+                    value={cursoForm.grau}
+                    onChange={(e) => setCursoForm({ ...cursoForm, grau: e.target.value })}
+                  >
+                    <option value="Licenciatura">Licenciatura</option>
+                    <option value="Mestrado">Mestrado</option>
+                    <option value="Nível Médio">Nível Médio (12ª Classe)</option>
+                    <option value="Bacharelato">Bacharelato</option>
+                  </select>
+                </div>
+
+                <div className="form-group-custom">
+                  <label>Nota Mínima de Candidatura (Valores)</label>
+                  <input
+                    type="text"
+                    className="definicoes-input"
+                    placeholder="14.0"
+                    value={cursoForm.notaMinima}
+                    onChange={(e) => setCursoForm({ ...cursoForm, notaMinima: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="form-group-custom">
+                <label>Carreira SERNIC Alocada</label>
+                <select
+                  className="definicoes-select full"
+                  value={cursoForm.carreira}
+                  onChange={(e) => setCursoForm({ ...cursoForm, carreira: e.target.value })}
+                >
+                  <option value="Investigação Criminal e Instrução Processual">Investigação Criminal e Instrução Processual</option>
+                  <option value="Polícia Científica (Laboratório Forense)">Polícia Científica (Laboratório Forense)</option>
+                  <option value="Inteligência Digital e Cibercrime">Inteligência Digital e Cibercrime</option>
+                  <option value="Medicina Legal e Toxicologia Forense">Medicina Legal e Toxicologia Forense</option>
+                  <option value="Corpo Técnico Operativo e Apoio">Corpo Técnico Operativo e Apoio</option>
+                </select>
+              </div>
+
+              <div className="form-group-custom">
+                <label>Estado de Homologação</label>
+                <select
+                  className="definicoes-select full"
+                  value={cursoForm.status}
+                  onChange={(e) => setCursoForm({ ...cursoForm, status: e.target.value })}
+                >
+                  <option value="Activo">Activo (Aceite no Concurso)</option>
+                  <option value="Inactivo">Inactivo (Suspenso)</option>
+                </select>
+              </div>
+
+              <div className="dossier-modal-footer" style={{ marginTop: '1.5rem' }}>
+                <button type="submit" className="gestor-btn-primary-red">
+                  <Save size={15} />
+                  <span>Guardar Curso</span>
+                </button>
+                <button
+                  type="button"
+                  className="gestor-btn-secondary"
+                  onClick={() => setIsCursoModalOpen(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          MODAL DE LOCAL DE TESTES (CADASTRAR NOVO OU EDITAR)
+          ======================================================== */}
+      {isLocalModalOpen && (
+        <div className="gestor-modal-overlay fadeIn">
+          <div className="gestor-modal-card definicoes-modal">
+            <div className="dossier-modal-header">
+              <div className="dossier-header-left">
+                <div className="dossier-modal-avatar">
+                  <Building size={24} />
+                </div>
+                <div>
+                  <h3>{editingLocal ? 'Editar Centro de Testes' : 'Cadastrar Centro de Realização de Testes'}</h3>
+                  <span className="dossier-protocolo">
+                    {editingLocal ? editingLocal.id : 'Novo Local Oficial de Provas'}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="dossier-close-btn"
+                onClick={() => setIsLocalModalOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveLocal} className="dossier-modal-body">
+              <div className="form-group-custom">
+                <label>Nome Oficial da Instituição / Centro</label>
+                <input
+                  type="text"
+                  className="definicoes-input"
+                  placeholder="Exemplo: Academia de Ciências Policiais (ACIPOL) - Michafutene"
+                  value={localForm.nome}
+                  onChange={(e) => setLocalForm({ ...localForm, nome: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group-custom">
+                  <label>Província</label>
+                  <select
+                    className="definicoes-select full"
+                    value={localForm.provincia}
+                    onChange={(e) => setLocalForm({ ...localForm, provincia: e.target.value })}
+                  >
+                    {PROVINCIAS_MOCAMBIQUE.map((prov) => (
+                      <option key={prov} value={prov}>{prov}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group-custom">
+                  <label>Cidade / Distrito</label>
+                  <input
+                    type="text"
+                    className="definicoes-input"
+                    placeholder="Ex: Maputo, Beira, Nampula..."
+                    value={localForm.cidade}
+                    onChange={(e) => setLocalForm({ ...localForm, cidade: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-group-custom">
+                <label>Endereço Detalhado / Instalações</label>
+                <input
+                  type="text"
+                  className="definicoes-input"
+                  placeholder="Ex: Av. Vladimir Lenine, Pavilhão Principal, Bloco C"
+                  value={localForm.endereco}
+                  onChange={(e) => setLocalForm({ ...localForm, endereco: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group-custom">
+                  <label>Capacidade Máxima de Candidatos</label>
+                  <input
+                    type="number"
+                    className="definicoes-input"
+                    value={localForm.capacidade}
+                    onChange={(e) => setLocalForm({ ...localForm, capacidade: Number(e.target.value) })}
+                    min="10"
+                    max="5000"
+                    required
+                  />
+                </div>
+
+                <div className="form-group-custom">
+                  <label>Data & Hora Prevista das Provas</label>
+                  <input
+                    type="text"
+                    className="definicoes-input"
+                    placeholder="15 de Novembro de 2026 às 08h00"
+                    value={localForm.dataPrevista}
+                    onChange={(e) => setLocalForm({ ...localForm, dataPrevista: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-group-custom">
+                <label>Oficial Responsável / Contacto SERNIC</label>
+                <input
+                  type="text"
+                  className="definicoes-input"
+                  placeholder="Ex: Inspetor Chefe Manhique (+258 84 321 0001)"
+                  value={localForm.responsavel}
+                  onChange={(e) => setLocalForm({ ...localForm, responsavel: e.target.value })}
+                />
+              </div>
+
+              <div className="dossier-modal-footer" style={{ marginTop: '1.5rem' }}>
+                <button type="submit" className="gestor-btn-primary-red">
+                  <Save size={15} />
+                  <span>Guardar Centro</span>
+                </button>
+                <button
+                  type="button"
+                  className="gestor-btn-secondary"
+                  onClick={() => setIsLocalModalOpen(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
