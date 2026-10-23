@@ -449,9 +449,9 @@ export default function PortalLayout({
                     onClick={() => {
                       if (onDefinicoesSubTabChange) onDefinicoesSubTabChange('cursos');
                     }}
-                    title="Cursos Homologados"
+                    aria-label="Cursos Homologados"
                   >
-                    <GraduationCap size={15} />
+                    <GraduationCap size={16} />
                     <span>Cursos Homologados</span>
                     <span className="portal-sidebar-sub-badge">10</span>
                   </button>
@@ -462,9 +462,9 @@ export default function PortalLayout({
                     onClick={() => {
                       if (onDefinicoesSubTabChange) onDefinicoesSubTabChange('locais');
                     }}
-                    title="Centros & Locais de Testes"
+                    aria-label="Centros & Locais de Testes"
                   >
-                    <MapPin size={15} />
+                    <MapPin size={16} />
                     <span>Centros & Locais</span>
                     <span className="portal-sidebar-sub-badge">6</span>
                   </button>
@@ -475,9 +475,9 @@ export default function PortalLayout({
                     onClick={() => {
                       if (onDefinicoesSubTabChange) onDefinicoesSubTabChange('temas');
                     }}
-                    title="Aparência & Cores dos Temas"
+                    aria-label="Aparência & Cores dos Temas"
                   >
-                    <Palette size={15} />
+                    <Palette size={16} />
                     <span>Aparência & Cores</span>
                   </button>
 
@@ -487,9 +487,9 @@ export default function PortalLayout({
                     onClick={() => {
                       if (onDefinicoesSubTabChange) onDefinicoesSubTabChange('idioma');
                     }}
-                    title="Idioma & Regionalização"
+                    aria-label="Idioma & Regionalização"
                   >
-                    <Globe size={15} />
+                    <Globe size={16} />
                     <span>Idioma & Regionalização</span>
                   </button>
 
@@ -499,9 +499,9 @@ export default function PortalLayout({
                     onClick={() => {
                       if (onDefinicoesSubTabChange) onDefinicoesSubTabChange('geral');
                     }}
-                    title="Parâmetros Gerais do Concurso"
+                    aria-label="Parâmetros Gerais do Concurso"
                   >
-                    <Settings size={15} />
+                    <Settings size={16} />
                     <span>Parâmetros Gerais</span>
                   </button>
                 </div>

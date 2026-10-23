@@ -10,7 +10,9 @@
 }
 
 :root {
-  --font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
   --transition-speed: 0.25s;
   --bg-transition: background-color 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   
@@ -27,6 +29,8 @@ html {
   min-height: 100%;
   background-color: var(--dynamic-bg, #c32026);
   transition: var(--bg-transition);
+  text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -38,6 +42,12 @@ body {
   background-color: var(--dynamic-bg, #c32026);
   transition: var(--bg-transition);
   zoom: 0.8; /* Escala padrão de 80% solicitada pelo utilizador */
+  letter-spacing: -0.01em;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.025em;
 }
 
 /* ========================================================
