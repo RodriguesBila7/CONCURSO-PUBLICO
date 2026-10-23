@@ -57,12 +57,12 @@ export default function CandidaturaModule({
 
   // Form State
   const [formData, setFormData] = useState({
-    // Passo 1: Dados Pessoais
-    nomeCompleto: currentUser ? currentUser.name : '',
-    nuit: currentUser ? currentUser.nuit : '',
+    // Passo 1: Dados Pessoais (Padrão em Letras Maiúsculas)
+    nomeCompleto: currentUser ? (currentUser.name || '').toUpperCase() : '',
+    nuit: currentUser ? (currentUser.nuit || '').toUpperCase() : '',
     biNumero: '',
     biDataEmissao: '',
-    biLocalEmissao: 'Maputo',
+    biLocalEmissao: 'MAPUTO',
     dataNascimento: '',
     genero: 'Masculino',
     estadoCivil: 'Solteiro(a)',
@@ -107,12 +107,23 @@ export default function CandidaturaModule({
 
   const [errors, setErrors] = useState({});
 
-  // Manipular alteração de inputs de texto
+  // Manipular alteração de inputs de texto com padrão em MAIÚSCULAS (UPPERCASE)
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    let processedValue = value;
+
+    if (type === 'checkbox') {
+      processedValue = checked;
+    } else if (name === 'email') {
+      processedValue = value.toLowerCase();
+    } else if (typeof value === 'string' && type !== 'date') {
+      // Conversão padrão automática para letras maiúsculas conforme edital oficial
+      processedValue = value.toUpperCase();
+    }
+
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: processedValue
     }));
 
     if (errors[name]) {
@@ -573,6 +584,12 @@ export default function CandidaturaModule({
         </div>
       </div>
 
+      {/* AVISO DO PADRÃO OFICIAL EM LETRAS MAIÚSCULAS */}
+      <div className="form-uppercase-banner">
+        <Sparkles size={15} color="#c59b27" />
+        <span><strong>PADRÃO OFICIAL:</strong> O preenchimento deste formulário é convertido automaticamente para letras maiúsculas.</span>
+      </div>
+
       {/* 3. CONTEÚDO DE CADA ETAPA */}
       <div>
         {/* ETAPA 1: DADOS PESSOAIS */}
@@ -589,7 +606,7 @@ export default function CandidaturaModule({
                   type="text"
                   name="nomeCompleto"
                   className={`form-input ${errors.nomeCompleto ? 'error' : ''}`}
-                  placeholder="Ex: Armando Carlos Mondlane"
+                  placeholder="EX: ARMANDO CARLOS MONDLANE"
                   value={formData.nomeCompleto}
                   onChange={handleChange}
                 />
@@ -603,7 +620,7 @@ export default function CandidaturaModule({
                   name="nuit"
                   maxLength={9}
                   className={`form-input ${errors.nuit ? 'error' : ''}`}
-                  placeholder="Ex: 100234567"
+                  placeholder="EX: 100234567"
                   value={formData.nuit}
                   onChange={handleChange}
                 />
@@ -617,7 +634,7 @@ export default function CandidaturaModule({
                   name="biNumero"
                   maxLength={13}
                   className={`form-input ${errors.biNumero ? 'error' : ''}`}
-                  placeholder="Ex: 110100234567M"
+                  placeholder="EX: 110100234567M"
                   value={formData.biNumero}
                   onChange={handleChange}
                 />
@@ -716,7 +733,7 @@ export default function CandidaturaModule({
                   type="text"
                   name="cursoNome"
                   className={`form-input ${errors.cursoNome ? 'error' : ''}`}
-                  placeholder="Ex: Direito, Ciências Policiais, Engenharia Informática..."
+                  placeholder="EX: DIREITO, CIÊNCIAS POLICIAIS, INFORMÁTICA..."
                   value={formData.cursoNome}
                   onChange={handleChange}
                 />
@@ -729,7 +746,7 @@ export default function CandidaturaModule({
                   type="text"
                   name="instituicaoEnsino"
                   className={`form-input ${errors.instituicaoEnsino ? 'error' : ''}`}
-                  placeholder="Ex: UEM, ACIPOL, ISCISA, UDM..."
+                  placeholder="EX: UEM, ACIPOL, ISCISA, UDM..."
                   value={formData.instituicaoEnsino}
                   onChange={handleChange}
                 />
@@ -813,7 +830,7 @@ export default function CandidaturaModule({
                   type="text"
                   name="distritoResidencia"
                   className={`form-input ${errors.distritoResidencia ? 'error' : ''}`}
-                  placeholder="Ex: KaMpfumo, Matola, Beira, Nampula..."
+                  placeholder="EX: KAMPUFUMO, MATOLA, BEIRA, NAMPULA..."
                   value={formData.distritoResidencia}
                   onChange={handleChange}
                 />
@@ -826,7 +843,7 @@ export default function CandidaturaModule({
                   type="text"
                   name="moradaCompleta"
                   className="form-input"
-                  placeholder="Ex: Bairro Central, Rua das Flores n.º 45"
+                  placeholder="EX: BAIRRO CENTRAL, RUA DAS FLORES N.º 45"
                   value={formData.moradaCompleta}
                   onChange={handleChange}
                 />

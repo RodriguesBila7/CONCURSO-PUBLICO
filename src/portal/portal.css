@@ -7308,4 +7308,31 @@
   border: 1px solid #a7f3d0;
 }
 
+/* ========================================================
+   PADRÃO OFICIAL DE LETRAS MAIÚSCULAS NO FORMULÁRIO
+   ======================================================== */
+.form-input:not([type="email"]):not([type="date"]):not([type="password"]) {
+  text-transform: uppercase;
+}
+
+.form-uppercase-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: rgba(197, 155, 39, 0.12);
+  border: 1px solid rgba(197, 155, 39, 0.4);
+  padding: 0.7rem 1.1rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  color: var(--portal-text-main);
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.portal-theme-preto .form-uppercase-banner {
+  background: rgba(197, 155, 39, 0.16);
+  border-color: rgba(197, 155, 39, 0.5);
+}
+
+
 
