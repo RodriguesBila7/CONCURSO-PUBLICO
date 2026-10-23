@@ -266,6 +266,11 @@ export default function PortalLayout({
         <div className={`portal-sidebar-wrapper ${isSidebarCollapsed ? 'collapsed' : ''}`}>
           {/* BARRA LATERAL ESQUERDA (ESTRITAMENTE CONTEXTUAL: CANDIDATO vs GESTOR) */}
           <aside className={`portal-sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`} aria-label="Menu Lateral do Portal">
+            {/* MARCA DE ÁGUA OFICIAL NO FUNDO DA BARRA LATERAL ESQUERDA (LOGÓTIPO SERNIC NO LADO ESQUERDO) */}
+            <div className="portal-sidebar-watermark" aria-hidden="true">
+              <img src={sernicLogo} alt="" />
+            </div>
+
             {/* Cartão de Contexto do Perfil */}
           <div className="portal-sidebar-context">
             <div className={`portal-sidebar-context-icon ${isGestorRoute ? 'is-gestor' : 'is-candidato'}`}>

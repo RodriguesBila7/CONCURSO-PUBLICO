@@ -130,13 +130,13 @@
   filter: drop-shadow(0 0 60px rgba(0, 0, 0, 0.85));
 }
 
-/* Marcas de Água Oficiais Laterais nas Áreas Indicadas (Esquerda e Direita) */
+/* Marcas de Água Oficiais Laterais nas Áreas Indicadas (Esquerda e Direita - Perfeitamente Visíveis) */
 .portal-watermark-lateral {
   position: fixed;
   top: 50%;
   transform: translateY(-50%);
-  width: 440px;
-  height: 440px;
+  width: 480px;
+  height: 480px;
   pointer-events: none;
   z-index: 0;
   display: flex;
@@ -147,25 +147,65 @@
 }
 
 .portal-watermark-lateral.left {
-  left: -90px;
+  left: 20px;
 }
 
 .portal-watermark-lateral.right {
-  right: -90px;
+  right: -80px;
 }
 
 .portal-watermark-lateral img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  opacity: 0.085;
-  filter: drop-shadow(0 0 40px rgba(195, 32, 38, 0.22));
+  opacity: 0.12;
+  filter: drop-shadow(0 0 45px rgba(195, 32, 38, 0.28));
   transition: opacity 0.4s ease;
 }
 
 .portal-theme-preto .portal-watermark-lateral img {
-  opacity: 0.11;
-  filter: drop-shadow(0 0 50px rgba(0, 0, 0, 0.8));
+  opacity: 0.16;
+  filter: drop-shadow(0 0 55px rgba(0, 0, 0, 0.9));
+}
+
+/* MARCA DE ÁGUA OFICIAL NO FUNDO DA BARRA LATERAL ESQUERDA (GARANTINDO QUE NUNCA FIQUE SUMIDO NO LADO ESQUERDO) */
+.portal-sidebar-watermark {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 280px;
+  height: 280px;
+  pointer-events: none;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  opacity: 0.12;
+  transition: opacity 0.3s ease, width 0.3s ease, height 0.3s ease;
+}
+
+.portal-sidebar-watermark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 30px rgba(195, 32, 38, 0.3));
+}
+
+.portal-sidebar.collapsed .portal-sidebar-watermark {
+  width: 140px;
+  height: 140px;
+  opacity: 0.15;
+  bottom: 90px;
+}
+
+.portal-theme-preto .portal-sidebar-watermark {
+  opacity: 0.15;
+}
+
+.portal-theme-preto .portal-sidebar-watermark img {
+  filter: drop-shadow(0 0 35px rgba(0, 0, 0, 0.9));
 }
 
 /* Faixa Superior Institucional Edge-to-Edge */
@@ -3923,7 +3963,7 @@
   z-index: 999999 !important;
   padding: 1.25rem 1rem !important;
   box-sizing: border-box !important;
-  overflow: hidden !important; /* Bloqueia rolagem do container externo para a janela nunca sumir */
+  overflow: visible !important; /* Permite arrastar livremente pela tela sem limitação de corte */
   animation: portalModalFadeIn 0.22s ease-out !important;
 
   /* Cores sólidas padrão para todos os elementos filhos */
@@ -3971,11 +4011,11 @@
   position: relative !important;
   box-sizing: border-box !important;
   margin: auto !important;
-  width: min(calc(740px + 7cm), 92vw);
-  max-width: 92vw;
-  height: min(calc(460px + 7cm), 82vh);
-  min-height: min(360px, 75vh);
-  max-height: 84vh !important;
+  width: min(calc(760px + 7cm), 96vw);
+  max-width: 96vw;
+  height: min(calc(490px + 7cm), 92vh);
+  min-height: min(380px, 80vh);
+  max-height: 94vh;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
@@ -4019,12 +4059,12 @@
 }
 
 /* Dimensões Específicas Ampliadas de Sub-Abas (+7cm horizontal e +7cm vertical) */
-.dossier-modal { width: min(calc(920px + 7cm), 94vw); height: min(calc(520px + 7cm), 84vh); max-height: 86vh !important; }
-.novo-edital-modal { width: min(calc(680px + 7cm), 94vw); height: min(calc(500px + 7cm), 84vh); max-height: 86vh !important; }
-.pauta-timbrada-modal { width: min(calc(880px + 7cm), 94vw); height: min(calc(540px + 7cm), 84vh); max-height: 86vh !important; }
-.doc-preview-modal { width: min(calc(720px + 7cm), 94vw); height: min(calc(500px + 7cm), 84vh); max-height: 86vh !important; }
-.definicoes-modal { width: min(calc(640px + 7cm), 94vw); height: min(calc(460px + 7cm), 84vh); max-height: 86vh !important; }
-.comprovativo-print-modal { width: min(calc(820px + 7cm), 94vw); height: min(calc(520px + 7cm), 84vh); max-height: 86vh !important; }
+.dossier-modal { width: min(calc(940px + 7cm), 96vw); height: min(calc(540px + 7cm), 92vh); max-height: 94vh !important; }
+.novo-edital-modal { width: min(calc(700px + 7cm), 96vw); height: min(calc(520px + 7cm), 92vh); max-height: 94vh !important; }
+.pauta-timbrada-modal { width: min(calc(900px + 7cm), 96vw); height: min(calc(560px + 7cm), 92vh); max-height: 94vh !important; }
+.doc-preview-modal { width: min(calc(740px + 7cm), 96vw); height: min(calc(520px + 7cm), 92vh); max-height: 94vh !important; }
+.definicoes-modal { width: min(calc(660px + 7cm), 96vw); height: min(calc(480px + 7cm), 92vh); max-height: 94vh !important; }
+.comprovativo-print-modal { width: min(calc(840px + 7cm), 96vw); height: min(calc(540px + 7cm), 92vh); max-height: 94vh !important; }
 
 /* ========================================================
    CONTROLO DE MOVIMENTO E EXTENSÃO DE REDIMENSIONAMENTO (SUB-ABAS)

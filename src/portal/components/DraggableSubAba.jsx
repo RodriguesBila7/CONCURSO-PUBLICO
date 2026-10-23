@@ -73,40 +73,19 @@ export default function DraggableSubAba({
     const onMouseMove = (e) => {
       const dx = e.clientX - dragStartRef.current.mouseX;
       const dy = e.clientY - dragStartRef.current.mouseY;
+      const { posX, posY } = dragStartRef.current;
 
-      const viewportW = window.innerWidth;
-      const viewportH = window.innerHeight;
-      const { baseTop, baseBottom, baseLeft, baseRight, posX, posY } = dragStartRef.current;
-
-      // Limites calculados para que a sub-aba NUNCA suma da tela em qualquer direção:
-      // 1. Ao arrastar para cima: o topo NUNCA passa de 15px do topo da tela
-      const minY = 15 - baseTop;
-      
-      // 2. Ao arrastar para baixo: o FUNDO da sub-aba NUNCA ultrapassa a borda inferior da tela!
-      // (baseBottom + newY <= viewportH - 15 => newY <= viewportH - 15 - baseBottom)
-      // Garante que o rodapé e conteúdo da sub-aba fiquem 100% visíveis, sem afundar ou sumir
-      let maxY = (viewportH - 15) - baseBottom;
-      if (maxY < minY) {
-        maxY = minY;
-      }
-
-      // 3. Limites laterais: a sub-aba NUNCA sai pelas laterais esquerda ou direita da tela
-      const minX = 15 - baseLeft;
-      let maxX = (viewportW - 15) - baseRight;
-      if (maxX < minX) {
-        maxX = minX;
-      }
-
-      const clampedX = Math.min(maxX, Math.max(minX, posX + dx));
-      const clampedY = Math.min(maxY, Math.max(minY, posY + dy));
+      // Movimentação livre sem limitação rígida de tela (conforme solicitado pelo utilizador)
+      const newX = posX + dx;
+      const newY = posY + dy;
 
       setPosition({
-        x: clampedX,
-        y: clampedY
+        x: newX,
+        y: newY
       });
 
       if (cardRef.current) {
-        cardRef.current.style.transform = `translate3d(${clampedX}px, ${clampedY}px, 0)`;
+        cardRef.current.style.transform = `translate3d(${newX}px, ${newY}px, 0)`;
       }
     };
 
@@ -166,36 +145,7 @@ export default function DraggableSubAba({
     };
   }, [isResizing]);
 
-  // Garantir que a sub-aba nunca fique fora da tela caso o utilizador redimensione o navegador
-  useEffect(() => {
-    const handleWindowResize = () => {
-      if (!cardRef.current) return;
-      const rect = cardRef.current.getBoundingClientRect();
-      const viewportW = window.innerWidth;
-      const viewportH = window.innerHeight;
 
-      if (rect.bottom > viewportH - 15) {
-        const overflowY = rect.bottom - (viewportH - 15);
-        setPosition((prev) => {
-          const nextY = prev.y - overflowY;
-          if (cardRef.current) cardRef.current.style.transform = `translate3d(${prev.x}px, ${nextY}px, 0)`;
-          return { ...prev, y: nextY };
-        });
-      }
-
-      if (rect.right > viewportW - 15) {
-        const overflowX = rect.right - (viewportW - 15);
-        setPosition((prev) => {
-          const nextX = prev.x - overflowX;
-          if (cardRef.current) cardRef.current.style.transform = `translate3d(${nextX}px, ${prev.y}px, 0)`;
-          return { ...prev, x: nextX };
-        });
-      }
-    };
-
-    window.addEventListener('resize', handleWindowResize);
-    return () => window.removeEventListener('resize', handleWindowResize);
-  }, []);
 
   // Duplo clique na barra de movimentação para recentralizar a janela
   const handleResetPosition = () => {
