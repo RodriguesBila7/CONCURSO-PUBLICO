@@ -5631,6 +5631,238 @@
   background: transparent;
 }
 
+/* ========================================================
+   SUBMENU LATERAL DE DEFINIÇÕES DO CONCURSO (BARRA LATERAL)
+   ======================================================== */
+.portal-sidebar-submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-left: 0.8rem;
+  margin-top: 0.35rem;
+  margin-bottom: 0.5rem;
+  border-left: 2px solid var(--portal-border, #cbd5e1);
+  margin-left: 1.15rem;
+}
+
+.portal-theme-preto .portal-sidebar-submenu {
+  border-left-color: #2c3c52;
+}
+
+.portal-sidebar-sub-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.52rem 0.8rem;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--portal-text-sub, #64748b);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.portal-sidebar-sub-btn:hover {
+  background-color: var(--portal-card-inner, #f1f5f9);
+  color: #c32026;
+  border-color: var(--portal-border, #e2e8f0);
+}
+
+.portal-theme-preto .portal-sidebar-sub-btn:hover {
+  color: #fca5a5;
+  background-color: #1e293b;
+}
+
+.portal-sidebar-sub-btn.active {
+  background: rgba(195, 32, 38, 0.1) !important;
+  color: #c32026 !important;
+  border-color: rgba(195, 32, 38, 0.35) !important;
+  font-weight: 800 !important;
+}
+
+.portal-theme-preto .portal-sidebar-sub-btn.active {
+  background: rgba(195, 32, 38, 0.22) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(195, 32, 38, 0.45) !important;
+}
+
+.portal-sidebar-sub-badge {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  background-color: var(--portal-border, #e2e8f0);
+  color: var(--portal-text-sub, #475569);
+}
+
+.portal-sidebar-sub-btn.active .portal-sidebar-sub-badge {
+  background-color: #c32026;
+  color: #ffffff;
+}
+
+/* ========================================================
+   CRUD DE PALETAS DE CORES & TEMAS (GESTÃO DE APARÊNCIA)
+   ======================================================== */
+.theme-crud-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--portal-border);
+}
+
+.theme-color-crud-card {
+  background-color: var(--portal-card-bg);
+  border: 1px solid var(--portal-border);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.9rem;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.theme-color-crud-card:hover {
+  border-color: #c32026;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+
+.theme-color-crud-card.selected {
+  border-color: #c32026;
+  background-color: rgba(195, 32, 38, 0.03);
+  box-shadow: 0 0 0 2px rgba(195, 32, 38, 0.2);
+}
+
+.portal-theme-preto .theme-color-crud-card.selected {
+  background-color: rgba(195, 32, 38, 0.12);
+}
+
+.theme-card-top-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+
+.theme-category-tag {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  background-color: var(--portal-card-inner, #f1f5f9);
+  color: var(--portal-text-muted);
+  border: 1px solid var(--portal-border);
+  display: inline-block;
+  margin-bottom: 0.2rem;
+}
+
+.theme-active-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  background-color: #22c55e;
+  color: #ffffff;
+  margin-left: auto;
+}
+
+.theme-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--portal-border);
+}
+
+.theme-btn-activate {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.42rem 0.75rem;
+  border-radius: 7px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  border: 1px solid var(--portal-border);
+  background: var(--portal-card-inner, #f8fafc);
+  color: var(--portal-text-main);
+  transition: all 0.2s ease;
+}
+
+.theme-btn-activate:hover {
+  background: #c32026;
+  color: #ffffff;
+  border-color: #c32026;
+}
+
+.theme-btn-activate.is-active {
+  background: #22c55e;
+  color: #ffffff;
+  border-color: #22c55e;
+  cursor: default;
+}
+
+.theme-btn-icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: transparent;
+  border: 1px solid var(--portal-border);
+  color: var(--portal-text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.theme-btn-icon-action:hover {
+  border-color: #c32026;
+  color: #c32026;
+  background-color: rgba(195, 32, 38, 0.08);
+}
+
+.theme-btn-icon-action.danger:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background-color: #fee2e2;
+}
+
+.definicoes-section-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding: 0.9rem 1.25rem;
+  background-color: var(--portal-card-inner, #f8fafc);
+  border: 1px solid var(--portal-border, #e2e8f0);
+  border-radius: 12px;
+}
+
+.portal-theme-preto .definicoes-section-indicator {
+  background-color: #121c2c;
+  border-color: #24344d;
+}
+
 .theme-modes-choice-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));

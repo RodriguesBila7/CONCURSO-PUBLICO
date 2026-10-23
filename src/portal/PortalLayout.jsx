@@ -23,7 +23,11 @@ import {
   History,
   SlidersHorizontal,
   UserCheck,
-  CheckCircle2
+  CheckCircle2,
+  GraduationCap,
+  Palette,
+  Globe,
+  Settings
 } from 'lucide-react';
 import sernicLogo from '../assets/sernic-logo.png';
 import './portal.css';
@@ -35,7 +39,9 @@ export default function PortalLayout({
   currentUser, 
   onLogout,
   gestorTab = 'dashboard',
-  onGestorTabChange 
+  onGestorTabChange,
+  definicoesSubTab = 'cursos',
+  onDefinicoesSubTabChange
 }) {
   // Estado do Tema (Claro / Preto - baseado na Imagem 2 e Imagem 3)
   const [portalTheme, setPortalTheme] = useState(() => {
@@ -410,16 +416,99 @@ export default function PortalLayout({
 
               <div className="portal-sidebar-group-title" style={{ marginTop: '0.8rem' }}>CONFIGURAÇÃO DO SISTEMA</div>
 
-              {/* NOVO MÓDULO DE DEFINIÇÕES SOLICITADO */}
+              {/* MÓDULO CENTRAL DE DEFINIÇÕES NA BARRA LATERAL */}
               <button
                 type="button"
                 className={`portal-sidebar-btn ${gestorTab === 'definicoes' ? 'active' : ''}`}
-                onClick={() => handleSelectGestorTab('definicoes')}
+                onClick={() => {
+                  handleSelectGestorTab('definicoes');
+                  if (onDefinicoesSubTabChange && !definicoesSubTab) {
+                    onDefinicoesSubTabChange('cursos');
+                  }
+                }}
                 title="Definições: Cursos, Locais de Provas, Cores dos Temas, Idioma e Parâmetros"
               >
                 <SlidersHorizontal size={18} className="sidebar-btn-icon" />
                 <span className="sidebar-btn-text">Definições do Concurso</span>
+                <ChevronDown 
+                  size={14} 
+                  style={{ 
+                    marginLeft: 'auto', 
+                    transform: gestorTab === 'definicoes' ? 'rotate(180deg)' : 'none',
+                    transition: 'transform 0.2s ease'
+                  }} 
+                />
               </button>
+
+              {/* AS 5 OPÇÕES DEMONSTRADAS NA IMAGEM DIRETAMENTE NA PARTE LATERAL */}
+              <div className="portal-sidebar-submenu">
+                <button
+                  type="button"
+                  className={`portal-sidebar-sub-btn ${gestorTab === 'definicoes' && definicoesSubTab === 'cursos' ? 'active' : ''}`}
+                  onClick={() => {
+                    handleSelectGestorTab('definicoes');
+                    if (onDefinicoesSubTabChange) onDefinicoesSubTabChange('cursos');
+                  }}
+                  title="Cursos Homologados"
+                >
+                  <GraduationCap size={15} />
+                  <span>Cursos Homologados</span>
+                  <span className="portal-sidebar-sub-badge">10</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`portal-sidebar-sub-btn ${gestorTab === 'definicoes' && definicoesSubTab === 'locais' ? 'active' : ''}`}
+                  onClick={() => {
+                    handleSelectGestorTab('definicoes');
+                    if (onDefinicoesSubTabChange) onDefinicoesSubTabChange('locais');
+                  }}
+                  title="Centros & Locais de Testes"
+                >
+                  <MapPin size={15} />
+                  <span>Centros & Locais</span>
+                  <span className="portal-sidebar-sub-badge">6</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`portal-sidebar-sub-btn ${gestorTab === 'definicoes' && definicoesSubTab === 'temas' ? 'active' : ''}`}
+                  onClick={() => {
+                    handleSelectGestorTab('definicoes');
+                    if (onDefinicoesSubTabChange) onDefinicoesSubTabChange('temas');
+                  }}
+                  title="Aparência & Cores dos Temas"
+                >
+                  <Palette size={15} />
+                  <span>Aparência & Cores</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`portal-sidebar-sub-btn ${gestorTab === 'definicoes' && definicoesSubTab === 'idioma' ? 'active' : ''}`}
+                  onClick={() => {
+                    handleSelectGestorTab('definicoes');
+                    if (onDefinicoesSubTabChange) onDefinicoesSubTabChange('idioma');
+                  }}
+                  title="Idioma & Regionalização"
+                >
+                  <Globe size={15} />
+                  <span>Idioma & Regionalização</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`portal-sidebar-sub-btn ${gestorTab === 'definicoes' && definicoesSubTab === 'geral' ? 'active' : ''}`}
+                  onClick={() => {
+                    handleSelectGestorTab('definicoes');
+                    if (onDefinicoesSubTabChange) onDefinicoesSubTabChange('geral');
+                  }}
+                  title="Parâmetros Gerais do Concurso"
+                >
+                  <Settings size={15} />
+                  <span>Parâmetros Gerais</span>
+                </button>
+              </div>
             </nav>
           )}
 

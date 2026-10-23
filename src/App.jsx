@@ -280,11 +280,23 @@ export default function App() {
   const [gestorTab, setGestorTab] = useState(() => {
     if (typeof window !== 'undefined' && window.location.hash) {
       const h = window.location.hash.replace('#', '');
+      if (h.startsWith('definicoes-')) return 'definicoes';
       if (['dashboard', 'inscritos', 'deliberacao', 'pautas', 'vagas', 'auditoria', 'definicoes'].includes(h)) {
         return h;
       }
     }
     return 'dashboard';
+  });
+
+  const [definicoesSubTab, setDefinicoesSubTab] = useState(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const h = window.location.hash.replace('#', '');
+      if (h.startsWith('definicoes-')) {
+        const sub = h.replace('definicoes-', '');
+        if (['cursos', 'locais', 'temas', 'idioma', 'geral'].includes(sub)) return sub;
+      }
+    }
+    return 'cursos';
   });
 
   const handleGestorTabChange = (tab) => {
@@ -294,11 +306,25 @@ export default function App() {
     }
   };
 
+  const handleDefinicoesSubTabChange = (subTab) => {
+    setDefinicoesSubTab(subTab);
+    setGestorTab('definicoes');
+    if (typeof window !== 'undefined') {
+      window.location.hash = `definicoes-${subTab}`;
+    }
+  };
+
   useEffect(() => {
     const handleHashSync = () => {
       if (typeof window !== 'undefined' && window.location.hash) {
         const h = window.location.hash.replace('#', '');
-        if (['dashboard', 'inscritos', 'deliberacao', 'pautas', 'vagas', 'auditoria', 'definicoes'].includes(h)) {
+        if (h.startsWith('definicoes-')) {
+          setGestorTab('definicoes');
+          const sub = h.replace('definicoes-', '');
+          if (['cursos', 'locais', 'temas', 'idioma', 'geral'].includes(sub)) {
+            setDefinicoesSubTab(sub);
+          }
+        } else if (['dashboard', 'inscritos', 'deliberacao', 'pautas', 'vagas', 'auditoria', 'definicoes'].includes(h)) {
           setGestorTab(h);
         }
       }
@@ -319,6 +345,8 @@ export default function App() {
           onLogout={handleLogout}
           gestorTab={gestorTab}
           onGestorTabChange={handleGestorTabChange}
+          definicoesSubTab={definicoesSubTab}
+          onDefinicoesSubTabChange={handleDefinicoesSubTabChange}
         />
       );
     } else if (currentPath === '/portal-recrutamento' || currentPath === '/portal-recrutamento/') {
@@ -365,6 +393,8 @@ export default function App() {
         onLogout={handleLogout}
         gestorTab={gestorTab}
         onGestorTabChange={handleGestorTabChange}
+        definicoesSubTab={definicoesSubTab}
+        onDefinicoesSubTabChange={handleDefinicoesSubTabChange}
       >
         {portalContent}
 

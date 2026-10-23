@@ -75,7 +75,12 @@ import {
   saveStoredVagas,
   createStoredVaga,
   updateStoredVaga,
-  deleteStoredVaga
+  deleteStoredVaga,
+  getStoredPaletasCores,
+  saveStoredPaletasCores,
+  createStoredPaleta,
+  updateStoredPaleta,
+  deleteStoredPaleta
 } from '../mockData';
 import sernicLogo from '../../assets/sernic-logo.png';
 import DraggableSubAba from '../components/DraggableSubAba';
@@ -86,7 +91,9 @@ export default function GestorPortalModule({
   onNotify, 
   onLogout,
   gestorTab: propGestorTab,
-  onGestorTabChange 
+  onGestorTabChange,
+  definicoesSubTab: propDefinicoesSubTab,
+  onDefinicoesSubTabChange
 }) {
   // Aba ativa do Gestor:
   // 'dashboard' | 'inscritos' | 'deliberacao' | 'pautas' | 'vagas' | 'auditoria' | 'definicoes'
@@ -131,6 +138,7 @@ export default function GestorPortalModule({
     setCursos(getStoredCursos());
     setLocais(getStoredLocais());
     setDefinicoes(getStoredDefinicoes());
+    setPaletasCores(getStoredPaletasCores());
     if (onNotify) {
       onNotify('success', 'Base de dados do concurso sincronizada com sucesso!');
     }
@@ -143,6 +151,7 @@ export default function GestorPortalModule({
       setCandidatos(getStoredCandidaturas());
       setListas(getStoredListasPublicadas());
       setAuditoria(getStoredAuditoria());
+      setPaletasCores(getStoredPaletasCores());
     };
     window.addEventListener('sernic-vagas-updated', handleSync);
     window.addEventListener('storage', handleSync);
@@ -155,8 +164,26 @@ export default function GestorPortalModule({
   // ========================================================
   // ESTADOS DO MÓDULO "DEFINIÇÕES DO SISTEMA"
   // ========================================================
-  // Sub-abas: 'cursos' | 'locais' | 'temas' | 'idioma' | 'geral'
-  const [definicoesSubTab, setDefinicoesSubTab] = useState('cursos');
+  // Sub-abas geridas a partir da Barra Lateral: 'cursos' | 'locais' | 'temas' | 'idioma' | 'geral'
+  const [internalDefinicoesSubTab, setInternalDefinicoesSubTab] = useState('cursos');
+  const definicoesSubTab = propDefinicoesSubTab || internalDefinicoesSubTab;
+  const setDefinicoesSubTab = (tab) => {
+    if (onDefinicoesSubTabChange) {
+      onDefinicoesSubTabChange(tab);
+    }
+    setInternalDefinicoesSubTab(tab);
+  };
+
+  // CRUD DE PALETAS DE CORES & TEMAS INSTITUCIONAIS
+  const [paletasCores, setPaletasCores] = useState(() => getStoredPaletasCores());
+  const [isPaletaModalOpen, setIsPaletaModalOpen] = useState(false);
+  const [editingPaleta, setEditingPaleta] = useState(null);
+  const [paletaForm, setPaletaForm] = useState({
+    nome: '',
+    cor: '#c32026',
+    desc: '',
+    categoria: 'Institucional'
+  });
 
   // Filtros de busca de cursos
   const [buscaCurso, setBuscaCurso] = useState('');
@@ -802,7 +829,92 @@ export default function GestorPortalModule({
     }
   };
 
-  // 3. Temas e Cores
+  // 3. CRUD DE PALETAS DE CORES & TEMAS INSTITUCIONAIS
+  const handleOpenNovaPaleta = () => {
+    setEditingPaleta(null);
+    setPaletaForm({
+      nome: '',
+      cor: '#c32026',
+      desc: '',
+      categoria: 'Institucional'
+    });
+    setIsPaletaModalOpen(true);
+  };
+
+  const handleOpenEditPaleta = (p) => {
+    setEditingPaleta(p);
+    setPaletaForm({
+      nome: p.nome,
+      cor: p.cor,
+      desc: p.desc || '',
+      categoria: p.categoria || 'Institucional'
+    });
+    setIsPaletaModalOpen(true);
+  };
+
+  const handleSavePaleta = (e) => {
+    if (e) e.preventDefault();
+    if (!paletaForm.nome.trim()) {
+      if (onNotify) onNotify('error', 'Indique o nome oficial da paleta de cores.');
+      return;
+    }
+    if (!paletaForm.cor.trim()) {
+      if (onNotify) onNotify('error', 'Selecione ou insira um código hexadecimal de cor válido.');
+      return;
+    }
+
+    if (editingPaleta) {
+      updateStoredPaleta(editingPaleta.id, paletaForm);
+      setPaletasCores(getStoredPaletasCores());
+      setIsPaletaModalOpen(false);
+      if (temaCorSelecionada === editingPaleta.cor) {
+        handleApplyThemeColor(paletaForm.cor);
+      }
+      addStoredAuditoria({
+        acao: 'Edição de Paleta de Cores',
+        candidato: paletaForm.nome,
+        estadoAnterior: editingPaleta.cor,
+        novoEstado: paletaForm.cor,
+        motivo: `Atualização de parâmetros visuais da paleta ${editingPaleta.id}`,
+        operador: currentUser?.name || 'Dr. Alberto Chissano'
+      });
+      if (onNotify) onNotify('success', `Paleta "${paletaForm.nome}" atualizada com sucesso!`);
+    } else {
+      const created = createStoredPaleta(paletaForm);
+      setPaletasCores(getStoredPaletasCores());
+      setIsPaletaModalOpen(false);
+      addStoredAuditoria({
+        acao: 'Criação de Paleta de Cores',
+        candidato: created.nome,
+        estadoAnterior: 'N/A',
+        novoEstado: created.cor,
+        motivo: `Criação da paleta ${created.id} - ${created.categoria}`,
+        operador: currentUser?.name || 'Dr. Alberto Chissano'
+      });
+      if (onNotify) onNotify('success', `Nova paleta "${created.nome}" homologada com sucesso!`);
+    }
+  };
+
+  const handleDeletePaleta = (id) => {
+    const target = paletasCores.find(p => p.id === id);
+    if (!target) return;
+    deleteStoredPaleta(id);
+    setPaletasCores(getStoredPaletasCores());
+    if (temaCorSelecionada === target.cor) {
+      handleApplyThemeColor('#c32026');
+    }
+    addStoredAuditoria({
+      acao: 'Eliminação de Paleta de Cores',
+      candidato: target.nome,
+      estadoAnterior: target.cor,
+      novoEstado: 'Eliminada',
+      motivo: `Revogação da paleta institucional ${target.id}`,
+      operador: currentUser?.name || 'Dr. Alberto Chissano'
+    });
+    if (onNotify) onNotify('info', `Paleta "${target.nome}" eliminada do sistema.`);
+  };
+
+  // 3.2 Aplicar Cor Institucional / Modo / Marca d'água
   const handleApplyThemeColor = (cor) => {
     setTemaCorSelecionada(cor);
     document.documentElement.style.setProperty('--sernic-primary', cor);
@@ -2005,54 +2117,27 @@ export default function GestorPortalModule({
             </div>
           </div>
 
-          {/* SUB-ABAS DE NAVEGAÇÃO INTERNA */}
-          <div className="definicoes-subtabs-bar">
-            <button
-              type="button"
-              className={`definicoes-subtab-btn ${definicoesSubTab === 'cursos' ? 'active' : ''}`}
-              onClick={() => setDefinicoesSubTab('cursos')}
-            >
-              <GraduationCap size={16} />
-              <span>Cursos Homologados</span>
-              <span className="definicoes-tab-count">{cursos.length}</span>
-            </button>
-
-            <button
-              type="button"
-              className={`definicoes-subtab-btn ${definicoesSubTab === 'locais' ? 'active' : ''}`}
-              onClick={() => setDefinicoesSubTab('locais')}
-            >
-              <MapPin size={16} />
-              <span>Centros & Locais de Testes</span>
-              <span className="definicoes-tab-count">{locais.length}</span>
-            </button>
-
-            <button
-              type="button"
-              className={`definicoes-subtab-btn ${definicoesSubTab === 'temas' ? 'active' : ''}`}
-              onClick={() => setDefinicoesSubTab('temas')}
-            >
-              <Palette size={16} />
-              <span>Aparência & Cores dos Temas</span>
-            </button>
-
-            <button
-              type="button"
-              className={`definicoes-subtab-btn ${definicoesSubTab === 'idioma' ? 'active' : ''}`}
-              onClick={() => setDefinicoesSubTab('idioma')}
-            >
-              <Globe size={16} />
-              <span>Idioma & Regionalização</span>
-            </button>
-
-            <button
-              type="button"
-              className={`definicoes-subtab-btn ${definicoesSubTab === 'geral' ? 'active' : ''}`}
-              onClick={() => setDefinicoesSubTab('geral')}
-            >
-              <Settings size={16} />
-              <span>Parâmetros Gerais do Concurso</span>
-            </button>
+          {/* INDICADOR DA SECÇÃO DE DEFINIÇÃO ATIVA (CONTROLADA PELA BARRA LATERAL) */}
+          <div className="definicoes-section-indicator">
+            <div className="vaga-form-section-badge" style={{ width: '32px', height: '32px' }}>
+              {definicoesSubTab === 'cursos' && <GraduationCap size={16} />}
+              {definicoesSubTab === 'locais' && <MapPin size={16} />}
+              {definicoesSubTab === 'temas' && <Palette size={16} />}
+              {definicoesSubTab === 'idioma' && <Globe size={16} />}
+              {definicoesSubTab === 'geral' && <Settings size={16} />}
+            </div>
+            <div>
+              <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>
+                {definicoesSubTab === 'cursos' && 'Cursos Homologados para Ingresso no SERNIC'}
+                {definicoesSubTab === 'locais' && 'Centros de Exame & Locais de Provas Oficiais'}
+                {definicoesSubTab === 'temas' && 'Paletas de Cores, Temas Visuais & Aparência (CRUD)'}
+                {definicoesSubTab === 'idioma' && 'Configurações de Idioma Oficial & Fuso Horário'}
+                {definicoesSubTab === 'geral' && 'Parâmetros Gerais Estatutários do Concurso'}
+              </h4>
+              <span style={{ fontSize: '0.78rem', color: 'var(--portal-text-muted)' }}>
+                Opção selecionada e gerida diretamente através do menu na Barra Lateral
+              </span>
+            </div>
           </div>
 
           {/* ========================================================
@@ -2288,50 +2373,126 @@ export default function GestorPortalModule({
           )}
 
           {/* ========================================================
-              SUB-ABA 3: CORES DOS TEMAS & APARÊNCIA
+              SUB-ABA 3: CORES DOS TEMAS & APARÊNCIA (CRUD COMPLETO)
               ======================================================== */}
           {definicoesSubTab === 'temas' && (
             <div className="definicoes-panel-body fadeIn">
               <div className="temas-config-wrapper">
-                {/* 1. SELEÇÃO DA COR PRIMÁRIA DE DESTAQUE */}
+                {/* 1. CRUD COMPLETO DE PALETAS DE CORES & TEMAS */}
                 <div className="config-card">
-                  <div className="config-card-header">
-                    <Palette size={20} color="#c32026" />
-                    <div>
-                      <h4>Cor de Destaque Institucional</h4>
-                      <p>Escolha a paleta oficial que define os botões, cabeçalhos e indicadores do portal.</p>
-                    </div>
-                  </div>
-
-                  <div className="theme-color-palette-grid">
-                    {[
-                      { nome: 'Vermelho SERNIC (Oficial)', cor: '#c32026', desc: 'Identidade Constitucional SERNIC' },
-                      { nome: 'Dourado República', cor: '#c59b27', desc: 'Emblema & Brasão Nacional' },
-                      { nome: 'Azul Marinho Forense', cor: '#1e3a8a', desc: 'Polícia Científica e Investigação' },
-                      { nome: 'Verde Moçambique', cor: '#059669', desc: 'Cores da Bandeira Nacional' },
-                      { nome: 'Bordo Nobre', cor: '#881337', desc: 'Procuradoria-Geral da República' },
-                      { nome: 'Grafite Tático', cor: '#334155', desc: 'Forças Especiais e Operações' },
-                      { nome: 'Púrpura Criminológica', cor: '#6b21a8', desc: 'Inteligência Forense Digital' }
-                    ].map((paleta) => (
-                      <div
-                        key={paleta.cor}
-                        className={`theme-color-card ${temaCorSelecionada === paleta.cor ? 'selected' : ''}`}
-                        onClick={() => handleApplyThemeColor(paleta.cor)}
-                      >
-                        <div className="color-swatch-circle" style={{ backgroundColor: paleta.cor }}>
-                          {temaCorSelecionada === paleta.cor && <Check size={16} color="#ffffff" />}
-                        </div>
-                        <div className="color-swatch-info">
-                          <strong>{paleta.nome}</strong>
-                          <span>{paleta.desc}</span>
-                          <code>{paleta.cor}</code>
-                        </div>
+                  <div className="theme-crud-header">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                      <div className="vaga-form-section-badge" style={{ backgroundColor: '#c32026' }}>
+                        <Palette size={18} color="#ffffff" />
                       </div>
-                    ))}
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>
+                          Gestão de Paletas de Cores & Temas Visuais (CRUD)
+                        </h4>
+                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.82rem', color: 'var(--portal-text-muted)' }}>
+                          Adicione novas paletas corporativas, edite combinações de cores e ative temas em tempo real no portal.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="gestor-btn-primary-red"
+                      onClick={handleOpenNovaPaleta}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', padding: '0.55rem 1.1rem' }}
+                    >
+                      <Plus size={16} />
+                      <span>Homologar Nova Paleta de Cores</span>
+                    </button>
                   </div>
 
-                  <div className="custom-color-row">
-                    <label>Ou selecione uma cor personalizada:</label>
+                  {/* GRID DO CRUD DE PALETAS */}
+                  <div className="theme-color-palette-grid">
+                    {paletasCores.map((paleta) => {
+                      const isAtivo = temaCorSelecionada.toLowerCase() === paleta.cor.toLowerCase();
+                      return (
+                        <div
+                          key={paleta.id}
+                          className={`theme-color-crud-card ${isAtivo ? 'selected' : ''}`}
+                        >
+                          <div className="theme-card-top-row">
+                            <div 
+                              className="color-swatch-circle" 
+                              style={{ backgroundColor: paleta.cor }}
+                              title={`Cor: ${paleta.cor}`}
+                            >
+                              {isAtivo && <Check size={18} color="#ffffff" strokeWidth={3} />}
+                            </div>
+
+                            <div style={{ flex: 1, overflow: 'hidden' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                <span className="theme-category-tag">{paleta.categoria || 'Institucional'}</span>
+                                {isAtivo && (
+                                  <span className="theme-active-tag">
+                                    <CheckCircle2 size={12} />
+                                    <span>Activo</span>
+                                  </span>
+                                )}
+                              </div>
+                              <strong style={{ display: 'block', fontSize: '0.92rem', color: 'var(--portal-text-main)', marginTop: '0.2rem' }}>
+                                {paleta.nome}
+                              </strong>
+                              <span style={{ display: 'block', fontSize: '0.78rem', color: 'var(--portal-text-muted)', lineHeight: 1.4, marginTop: '0.2rem' }}>
+                                {paleta.desc}
+                              </span>
+                              <code style={{ display: 'inline-block', fontSize: '0.76rem', color: paleta.cor, fontWeight: 800, marginTop: '0.35rem' }}>
+                                {paleta.cor}
+                              </code>
+                            </div>
+                          </div>
+
+                          {/* AÇÕES DO CRUD: ACTIVAR / EDITAR / ELIMINAR */}
+                          <div className="theme-card-actions">
+                            <button
+                              type="button"
+                              className={`theme-btn-activate ${isAtivo ? 'is-active' : ''}`}
+                              onClick={() => handleApplyThemeColor(paleta.cor)}
+                              title={isAtivo ? 'Este tema está atualmente em vigor no portal' : 'Aplicar esta cor a todo o portal SERNIC'}
+                            >
+                              {isAtivo ? (
+                                <>
+                                  <Check size={14} />
+                                  <span>Tema em Vigor</span>
+                                </>
+                              ) : (
+                                <span>Activar no Portal</span>
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              className="theme-btn-icon-action"
+                              onClick={() => handleOpenEditPaleta(paleta)}
+                              title="Editar designação, código de cor ou categoria desta paleta"
+                            >
+                              <Edit3 size={14} />
+                            </button>
+
+                            {paletasCores.length > 1 && (
+                              <button
+                                type="button"
+                                className="theme-btn-icon-action danger"
+                                onClick={() => handleDeletePaleta(paleta.id)}
+                                title="Eliminar esta paleta do sistema"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="custom-color-row" style={{ marginTop: '1.25rem' }}>
+                    <label style={{ fontWeight: 700, color: 'var(--portal-text-main)' }}>
+                      Aplicar cor hexadecimal direta (teste rápido):
+                    </label>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                       <input
                         type="color"
@@ -2339,7 +2500,9 @@ export default function GestorPortalModule({
                         onChange={(e) => handleApplyThemeColor(e.target.value)}
                         className="custom-color-input"
                       />
-                      <span style={{ fontWeight: 700, fontFamily: 'monospace' }}>{temaCorSelecionada}</span>
+                      <span style={{ fontWeight: 800, fontFamily: 'monospace', color: 'var(--portal-text-main)' }}>
+                        {temaCorSelecionada}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -3469,6 +3632,149 @@ export default function GestorPortalModule({
                   type="button"
                   className="gestor-btn-secondary"
                   onClick={() => setIsLocalModalOpen(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </DraggableSubAba>
+        </div>,
+        document.body
+      )}
+
+      {/* ========================================================
+          MODAL DE PALETA DE CORES & TEMAS (HOMOLOGAR NOVA OU EDITAR)
+          ======================================================== */}
+      {isPaletaModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="gestor-modal-overlay fadeIn" onClick={() => setIsPaletaModalOpen(false)}>
+          <DraggableSubAba className="gestor-modal-card definicoes-modal" moveHandleLabel="Mover Paleta de Cores">
+            <div className="dossier-modal-header">
+              <div className="dossier-header-left">
+                <div className="dossier-modal-avatar">
+                  <Palette size={24} />
+                </div>
+                <div>
+                  <h3>{editingPaleta ? 'Editar Paleta de Cores' : 'Homologar Nova Paleta de Cores & Tema'}</h3>
+                  <span className="dossier-protocolo">
+                    {editingPaleta ? `${editingPaleta.id} • ${editingPaleta.nome}` : 'Novo Registro Visual • Identidade Institucional SERNIC'}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="dossier-close-btn"
+                onClick={() => setIsPaletaModalOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePaleta} className="dossier-modal-body">
+              <div className="form-group-custom">
+                <label>Nome Oficial da Paleta</label>
+                <input
+                  type="text"
+                  className="definicoes-input"
+                  placeholder="Ex: Verde Esperança Moçambique ou Dourado Presidencial"
+                  value={paletaForm.nome}
+                  onChange={(e) => setPaletaForm({ ...paletaForm, nome: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1rem' }}>
+                <div className="form-group-custom">
+                  <label>Código Hexadecimal da Cor</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <input
+                      type="color"
+                      className="custom-color-input"
+                      value={paletaForm.cor && paletaForm.cor.startsWith('#') && paletaForm.cor.length === 7 ? paletaForm.cor : '#c32026'}
+                      onChange={(e) => setPaletaForm({ ...paletaForm, cor: e.target.value })}
+                      style={{ width: '46px', height: '40px', padding: 2, cursor: 'pointer', borderRadius: '6px' }}
+                    />
+                    <input
+                      type="text"
+                      className="definicoes-input"
+                      placeholder="#c32026"
+                      value={paletaForm.cor}
+                      onChange={(e) => setPaletaForm({ ...paletaForm, cor: e.target.value })}
+                      style={{ fontFamily: 'monospace', fontWeight: 700 }}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group-custom">
+                  <label>Categoria de Aplicação</label>
+                  <select
+                    className="definicoes-select full"
+                    value={paletaForm.categoria}
+                    onChange={(e) => setPaletaForm({ ...paletaForm, categoria: e.target.value })}
+                  >
+                    <option value="Institucional">Institucional</option>
+                    <option value="Nacional">Nacional / Soberania</option>
+                    <option value="Forense">Polícia Forense & Científica</option>
+                    <option value="Operacional">Operações & Tático</option>
+                    <option value="Inteligência">Inteligência & Cibercrime</option>
+                    <option value="Personalizado">Personalizado</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-group-custom">
+                <label>Descrição & Finalidade de Uso</label>
+                <textarea
+                  className="definicoes-textarea"
+                  rows={3}
+                  placeholder="Ex: Paleta destinada às publicações solenes da Direcção Geral e materiais do concurso."
+                  value={paletaForm.desc}
+                  onChange={(e) => setPaletaForm({ ...paletaForm, desc: e.target.value })}
+                />
+              </div>
+
+              {/* LIVE PREVIEW BOX */}
+              <div style={{ 
+                marginTop: '0.5rem', 
+                padding: '0.85rem 1rem', 
+                borderRadius: '8px', 
+                backgroundColor: 'var(--portal-bg-secondary)', 
+                border: '1px solid var(--portal-border-color)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.85rem'
+              }}>
+                <div style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  backgroundColor: paletaForm.cor,
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
+                  border: '2px solid #ffffff',
+                  flexShrink: 0
+                }} />
+                <div>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--portal-text-muted)', display: 'block' }}>
+                    Pré-visualização do destaque cromático:
+                  </span>
+                  <strong style={{ fontSize: '0.9rem', color: 'var(--portal-text-main)' }}>
+                    {paletaForm.nome || 'Nome da paleta...'}
+                  </strong>
+                  <span style={{ fontSize: '0.76rem', color: paletaForm.cor, fontWeight: 700, marginLeft: '0.5rem' }}>
+                    ({paletaForm.cor})
+                  </span>
+                </div>
+              </div>
+
+              <div className="dossier-modal-footer" style={{ marginTop: '1.5rem' }}>
+                <button type="submit" className="gestor-btn-primary-red">
+                  <Save size={15} />
+                  <span>{editingPaleta ? 'Salvar Alterações' : 'Homologar Paleta'}</span>
+                </button>
+                <button
+                  type="button"
+                  className="gestor-btn-secondary"
+                  onClick={() => setIsPaletaModalOpen(false)}
                 >
                   Cancelar
                 </button>

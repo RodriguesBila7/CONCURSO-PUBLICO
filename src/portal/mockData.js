@@ -1421,3 +1421,68 @@ export function saveStoredDefinicoes(defs) {
   return defs;
 }
 
+// ========================================================
+// GESTÃO DE PALETAS DE CORES & TEMAS (CRUD)
+// ========================================================
+export const INITIAL_PALETAS_CORES = [
+  { id: 'PAL-01', nome: 'Vermelho SERNIC (Oficial)', cor: '#c32026', desc: 'Identidade Constitucional SERNIC', categoria: 'Oficial' },
+  { id: 'PAL-02', nome: 'Dourado República', cor: '#c59b27', desc: 'Emblema & Brasão Nacional', categoria: 'Institucional' },
+  { id: 'PAL-03', nome: 'Azul Marinho Forense', cor: '#1e3a8a', desc: 'Polícia Científica e Investigação', categoria: 'Forense' },
+  { id: 'PAL-04', nome: 'Verde Moçambique', cor: '#059669', desc: 'Cores da Bandeira Nacional', categoria: 'Nacional' },
+  { id: 'PAL-05', nome: 'Bordo Nobre', cor: '#881337', desc: 'Procuradoria-Geral da República', categoria: 'Justiça' },
+  { id: 'PAL-06', nome: 'Grafite Tático', cor: '#334155', desc: 'Forças Especiais e Operações', categoria: 'Tático' },
+  { id: 'PAL-07', nome: 'Púrpura Criminológica', cor: '#6b21a8', desc: 'Inteligência Forense Digital', categoria: 'Cibercrime' }
+];
+
+const STORAGE_KEY_PALETAS = 'sernic_paletas_cores_v1';
+
+export function getStoredPaletasCores() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_PALETAS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {}
+  try {
+    localStorage.setItem(STORAGE_KEY_PALETAS, JSON.stringify(INITIAL_PALETAS_CORES));
+  } catch {}
+  return INITIAL_PALETAS_CORES;
+}
+
+export function saveStoredPaletasCores(list) {
+  try {
+    localStorage.setItem(STORAGE_KEY_PALETAS, JSON.stringify(list));
+  } catch (e) {}
+  return list;
+}
+
+export function createStoredPaleta(paleta) {
+  const current = getStoredPaletasCores();
+  const nextNum = current.length + 1;
+  const newPaleta = {
+    id: paleta.id || `PAL-${String(nextNum).padStart(2, '0')}`,
+    nome: paleta.nome || 'Nova Paleta de Cores',
+    cor: paleta.cor || '#c32026',
+    desc: paleta.desc || 'Paleta personalizada pelo utilizador',
+    categoria: paleta.categoria || 'Personalizado'
+  };
+  const updated = [newPaleta, ...current];
+  saveStoredPaletasCores(updated);
+  return newPaleta;
+}
+
+export function updateStoredPaleta(id, updates) {
+  const current = getStoredPaletasCores();
+  const updated = current.map(p => p.id === id ? { ...p, ...updates } : p);
+  saveStoredPaletasCores(updated);
+  return updated.find(p => p.id === id);
+}
+
+export function deleteStoredPaleta(id) {
+  const current = getStoredPaletasCores();
+  const filtered = current.filter(p => p.id !== id);
+  saveStoredPaletasCores(filtered);
+  return filtered;
+}
+
