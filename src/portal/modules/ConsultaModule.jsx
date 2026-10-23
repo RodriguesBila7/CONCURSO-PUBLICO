@@ -20,7 +20,9 @@ import {
   INITIAL_LISTAS_PUBLICADAS,
   getStoredCandidaturas,
   getStoredListasPublicadas,
-  getCandidatePhotoUrl
+  getCandidatePhotoUrl,
+  detectCandidateGender,
+  getGenderText
 } from '../mockData';
 import DraggableSubAba from '../components/DraggableSubAba';
 
@@ -86,21 +88,42 @@ export default function ConsultaModule() {
     setSearchError('');
   };
 
-  // Obter classe e ícone do estado de acordo com as 3 fases oficiais do concurso
-  const getStatusBadge = (status) => {
+  // Obter classe e ícone do estado com flexão inteligente de gênero (Convocada / Convocado)
+  const getStatusBadge = (status, candidate) => {
+    const isFem = detectCandidateGender(candidate) === 'Feminino';
     switch (status) {
       case 'Admitido':
       case 'Admitida':
       case 'Aprovada':
-        return { bg: '#dcfce7', color: '#15803d', icon: <Award size={16} />, label: '3ª Fase: Admitido(a) - Provimento Efetivo' };
+        return { 
+          bg: '#dcfce7', 
+          color: '#15803d', 
+          icon: <Award size={16} />, 
+          label: isFem ? '3ª Fase: Admitida - Provimento Efetivo' : '3ª Fase: Admitido - Provimento Efetivo' 
+        };
       case 'Aprovado (Suplente)':
-        return { bg: '#fef9c3', color: '#854d0e', icon: <CheckCircle2 size={16} />, label: '3ª Fase: Aprovado(a) - Suplente (Lista de Reserva)' };
+        return { 
+          bg: '#fef9c3', 
+          color: '#854d0e', 
+          icon: <CheckCircle2 size={16} />, 
+          label: isFem ? '3ª Fase: Aprovada - Suplente (Lista de Reserva)' : '3ª Fase: Aprovado - Suplente (Lista de Reserva)' 
+        };
       case 'Entrevista Profissional':
       case 'Convocada para provas':
-        return { bg: '#dbeafe', color: '#1e40af', icon: <Calendar size={16} />, label: '2ª Fase: Convocado(a) para Entrevista Profissional' };
+        return { 
+          bg: '#dbeafe', 
+          color: '#1e40af', 
+          icon: <Calendar size={16} />, 
+          label: isFem ? '2ª Fase: Convocada para Entrevista Profissional' : '2ª Fase: Convocado para Entrevista Profissional' 
+        };
       case 'Excluído':
       case 'Excluída':
-        return { bg: '#fee2e2', color: '#c32026', icon: <XCircle size={16} />, label: 'Candidatura Excluída do Concurso' };
+        return { 
+          bg: '#fee2e2', 
+          color: '#c32026', 
+          icon: <XCircle size={16} />, 
+          label: isFem ? 'Candidata Excluída do Concurso' : 'Candidato Excluído do Concurso' 
+        };
       case 'Em Análise Documental':
       case 'Em análise':
       case 'Submetida':
@@ -271,8 +294,8 @@ export default function ConsultaModule() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
                       <span 
                         style={{ 
-                          backgroundColor: getStatusBadge(searchResult.status).bg, 
-                          color: getStatusBadge(searchResult.status).color,
+                          backgroundColor: getStatusBadge(searchResult.status, searchResult).bg, 
+                          color: getStatusBadge(searchResult.status, searchResult).color,
                           padding: '0.25rem 0.75rem',
                           borderRadius: '9999px',
                           fontSize: '0.8rem',
@@ -282,14 +305,14 @@ export default function ConsultaModule() {
                           gap: '0.35rem'
                         }}
                       >
-                        {getStatusBadge(searchResult.status).icon}
-                        {getStatusBadge(searchResult.status).label}
+                        {getStatusBadge(searchResult.status, searchResult).icon}
+                        {getStatusBadge(searchResult.status, searchResult).label}
                       </span>
                       <span style={{ fontSize: '0.84rem', color: '#64748b' }}>
                         Protocolo: <strong>{searchResult.codigoCandidatura}</strong>
                       </span>
                       <span className="biometric-chip-verified">
-                        <ShieldCheck size={12} /> Foto Homologada (IA 98%)
+                        <ShieldCheck size={12} /> Foto Homologada ({detectCandidateGender(searchResult) === 'Feminino' ? 'Candidata' : 'Candidato'})
                       </span>
                     </div>
 
@@ -364,9 +387,9 @@ export default function ConsultaModule() {
                       {searchResult.status === 'Em Análise Documental' || searchResult.status === 'Em análise' || searchResult.status === 'Submetida' 
                         ? 'Aguardando 1ª Fase' 
                         : searchResult.status === 'Entrevista Profissional' || searchResult.status === 'Convocada para provas' 
-                        ? 'Convocado' 
+                        ? (detectCandidateGender(searchResult) === 'Feminino' ? 'Convocada' : 'Convocado') 
                         : (searchResult.status === 'Excluído' || searchResult.status === 'Excluída') && searchResult.faseAtual === 2 
-                        ? 'Não Apurado' 
+                        ? 'Não Apurada' 
                         : 'Concluída ✓'}
                     </span>
                   </div>
@@ -385,22 +408,29 @@ export default function ConsultaModule() {
                     <span className="timeline-label">3ª Fase: Resultado Final</span>
                     <span className="timeline-subtext">
                       {searchResult.status === 'Admitido' || searchResult.status === 'Admitida' || searchResult.status === 'Aprovada'
-                        ? 'Admitido(a) 🎉'
+                        ? (detectCandidateGender(searchResult) === 'Feminino' ? 'Admitida 🎉' : 'Admitido 🎉')
                         : searchResult.status === 'Aprovado (Suplente)'
-                        ? 'Suplente (Reserva)'
+                        ? (detectCandidateGender(searchResult) === 'Feminino' ? 'Suplente (Reserva)' : 'Suplente (Reserva)')
                         : searchResult.status === 'Excluído' || searchResult.status === 'Excluída'
-                        ? 'Excluído'
+                        ? (detectCandidateGender(searchResult) === 'Feminino' ? 'Excluída' : 'Excluído')
                         : 'Aguardando'}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* DETALHES ESPECÍFICOS DO ESTADO ATUAL */}
+              {/* DETALHES ESPECÍFICOS DO ESTADO ATUAL (COM FLEXÃO INTELIGENTE DE GÊNERO) */}
               <div style={{ backgroundColor: 'var(--portal-card-inner)', border: '1px solid var(--portal-border)', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.6rem' }}>
                   <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--portal-text-main)', margin: 0 }}>
-                    {searchResult.detalhesFase?.titulo || 'Informações da sua Candidatura'}
+                    {(searchResult.status === 'Entrevista Profissional' || searchResult.status === 'Convocada para provas')
+                      ? (detectCandidateGender(searchResult) === 'Feminino' ? 'Convocada para 2ª Fase: Entrevista Profissional' : 'Convocado para 2ª Fase: Entrevista Profissional')
+                      : (searchResult.status === 'Admitido' || searchResult.status === 'Admitida' || searchResult.status === 'Aprovada')
+                      ? (detectCandidateGender(searchResult) === 'Feminino' ? 'Candidata Admitida - Provimento Efetivo de Vaga' : 'Candidato Admitido - Provimento Efetivo de Vaga')
+                      : (searchResult.status === 'Aprovado (Suplente)')
+                      ? (detectCandidateGender(searchResult) === 'Feminino' ? 'Aprovada na Entrevista - Candidata Suplente (Lista de Reserva)' : 'Aprovado na Entrevista - Candidato Suplente (Lista de Reserva)')
+                      : (searchResult.detalhesFase?.titulo || 'Informações da sua Candidatura')
+                    }
                   </h4>
                   {searchResult.deliberacaoJuri?.notaFinal && (
                     <span style={{ fontSize: '0.85rem', fontWeight: 800, padding: '0.2rem 0.65rem', borderRadius: '6px', background: 'rgba(22, 163, 74, 0.1)', color: '#16a34a', border: '1px solid rgba(22, 163, 74, 0.25)' }}>
@@ -410,7 +440,12 @@ export default function ConsultaModule() {
                 </div>
 
                 <p style={{ fontSize: '0.92rem', color: 'var(--portal-text-muted)', lineHeight: 1.6, marginBottom: '1.2rem' }}>
-                  {searchResult.detalhesFase?.mensagemComissao}
+                  {(searchResult.status === 'Entrevista Profissional' || searchResult.status === 'Convocada para provas')
+                    ? (detectCandidateGender(searchResult) === 'Feminino'
+                        ? 'Parabéns! A sua candidatura foi aprovada na 1ª Fase de Avaliação Documental. Foi formalmente convocada para a 2ª Fase: Entrevista Profissional perante a Comissão de Júri.'
+                        : 'Parabéns! A sua candidatura foi aprovada na 1ª Fase de Avaliação Documental. Foi formalmente convocado para a 2ª Fase: Entrevista Profissional perante a Comissão de Júri.')
+                    : (searchResult.detalhesFase?.mensagemComissao || '')
+                  }
                 </p>
 
                 {/* Se Convocado para Entrevista: Informações de data e local */}
@@ -443,10 +478,12 @@ export default function ConsultaModule() {
                       <Award size={22} color="#15803d" style={{ flexShrink: 0 }} />
                       <div>
                         <strong style={{ fontSize: '0.92rem', color: '#15803d', display: 'block' }}>
-                          Candidato Admitido com Sucesso!
+                          {detectCandidateGender(searchResult) === 'Feminino' ? 'Candidata Admitida com Sucesso!' : 'Candidato Admitido com Sucesso!'}
                         </strong>
                         <p style={{ fontSize: '0.85rem', color: '#166534', margin: '0.2rem 0 0 0', lineHeight: 1.4 }}>
-                          Parabéns! Concluiu todas as fases com aproveitamento e foi selecionado para ocupar a vaga. Em breve receberá orientações sobre a posse e início de funções.
+                          {detectCandidateGender(searchResult) === 'Feminino'
+                            ? 'Parabéns! Concluiu todas as fases com aproveitamento e foi selecionada para ocupar a vaga. Em breve receberá orientações sobre a posse e início de funções.'
+                            : 'Parabéns! Concluiu todas as fases com aproveitamento e foi selecionado para ocupar a vaga. Em breve receberá orientações sobre a posse e início de funções.'}
                         </p>
                       </div>
                     </div>
@@ -454,16 +491,18 @@ export default function ConsultaModule() {
                 )}
 
                 {/* Se Aprovado como Suplente */}
-                {searchResult.status === 'Aprovado (Suplente)' && (
+                {(searchResult.status === 'Aprovado (Suplente)' || searchResult.status === 'Aprovada (Suplente)') && (
                   <div style={{ backgroundColor: 'rgba(217, 119, 6, 0.08)', border: '1px solid rgba(217, 119, 6, 0.3)', padding: '1rem 1.25rem', borderRadius: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                       <CheckCircle2 size={22} color="#b45309" style={{ flexShrink: 0 }} />
                       <div>
                         <strong style={{ fontSize: '0.92rem', color: '#b45309', display: 'block' }}>
-                          Aprovado como Suplente (Lista de Reserva)
+                          {detectCandidateGender(searchResult) === 'Feminino' ? 'Aprovada como Suplente (Lista de Reserva)' : 'Aprovado como Suplente (Lista de Reserva)'}
                         </strong>
                         <p style={{ fontSize: '0.85rem', color: '#92400e', margin: '0.2rem 0 0 0', lineHeight: 1.4 }}>
-                          Passou na entrevista com nota positiva. Ficou registado na lista de suplentes e poderá ser convocado caso surjam novas vagas ou algum candidato admitido desista.
+                          {detectCandidateGender(searchResult) === 'Feminino'
+                            ? 'Passou na entrevista com nota positiva. Ficou registada na lista de suplentes e poderá ser convocada caso surjam novas vagas ou algum candidato admitido desista.'
+                            : 'Passou na entrevista com nota positiva. Ficou registado na lista de suplentes e poderá ser convocado caso surjam novas vagas ou algum candidato admitido desista.'}
                         </p>
                       </div>
                     </div>
@@ -498,19 +537,33 @@ export default function ConsultaModule() {
                     Histórico do Processo
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                    {searchResult.historico.map((h, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.85rem', padding: '0.5rem 0', borderBottom: '1px solid var(--portal-border)' }}>
-                        <span style={{ fontSize: '0.78rem', color: 'var(--portal-text-muted)', width: '90px', flexShrink: 0 }}>
-                          {h.data}
-                        </span>
-                        <strong style={{ color: 'var(--portal-text-main)', width: '180px', flexShrink: 0 }}>
-                          {h.etapa}
-                        </strong>
-                        <span style={{ color: 'var(--portal-text-muted)' }}>
-                          {h.descricao}
-                        </span>
-                      </div>
-                    ))}
+                    {searchResult.historico.map((h, i) => {
+                      const isFem = detectCandidateGender(searchResult) === 'Feminino';
+                      let desc = h.descricao || '';
+                      let etapa = h.etapa || '';
+                      if (isFem) {
+                        desc = desc
+                          .replace(/Convocado para a Entrevista/g, 'Convocada para a Entrevista')
+                          .replace(/Convocado para Entrevista/g, 'Convocada para Entrevista')
+                          .replace(/Candidato Admitido/g, 'Candidata Admitida')
+                          .replace(/Aprovado na Entrevista/g, 'Aprovada na Entrevista');
+                        etapa = etapa
+                          .replace(/Candidato Admitido/g, 'Candidata Admitida');
+                      }
+                      return (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.85rem', padding: '0.5rem 0', borderBottom: '1px solid var(--portal-border)' }}>
+                          <span style={{ fontSize: '0.78rem', color: 'var(--portal-text-muted)', width: '90px', flexShrink: 0 }}>
+                            {h.data}
+                          </span>
+                          <strong style={{ color: 'var(--portal-text-main)', width: '180px', flexShrink: 0 }}>
+                            {etapa}
+                          </strong>
+                          <span style={{ color: 'var(--portal-text-muted)' }}>
+                            {desc}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

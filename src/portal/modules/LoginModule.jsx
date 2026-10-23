@@ -27,7 +27,8 @@ import {
   validarTelefoneMZ, 
   PROVINCIAS_MOCAMBIQUE,
   INITIAL_CANDIDATURAS_CONSULTA,
-  getStoredCandidaturas 
+  getStoredCandidaturas,
+  detectCandidateGender 
 } from '../mockData';
 
 export default function LoginModule({ 
@@ -322,26 +323,27 @@ export default function LoginModule({
                           </div>
 
                           {(() => {
+                            const isFem = detectCandidateGender(c) === 'Feminino';
                             let badgeBg = '#f1f5f9';
                             let badgeColor = '#475569';
                             let badgeLabel = '1ª Fase: Em Análise Documental';
 
-                            if (c.status === 'Entrevista Profissional' || c.status === 'Convocada para provas') {
+                            if (c.status === 'Entrevista Profissional' || c.status === 'Convocada para provas' || c.status === 'Convocado' || c.status === 'Convocada') {
                               badgeBg = '#dbeafe';
                               badgeColor = '#1d4ed8';
-                              badgeLabel = '2ª Fase: Entrevista Profissional';
+                              badgeLabel = isFem ? '2ª Fase: Convocada' : '2ª Fase: Convocado';
                             } else if (c.status === 'Admitido' || c.status === 'Admitida') {
                               badgeBg = '#dcfce7';
                               badgeColor = '#15803d';
-                              badgeLabel = '3ª Fase: Admitido(a)';
-                            } else if (c.status === 'Aprovado (Suplente)') {
+                              badgeLabel = isFem ? '3ª Fase: Admitida' : '3ª Fase: Admitido';
+                            } else if (c.status === 'Aprovado (Suplente)' || c.status === 'Aprovada (Suplente)') {
                               badgeBg = '#fef3c7';
                               badgeColor = '#b45309';
-                              badgeLabel = '3ª Fase: Suplente (Reserva)';
+                              badgeLabel = isFem ? '3ª Fase: Suplente (Aprovada)' : '3ª Fase: Suplente (Aprovado)';
                             } else if (c.status === 'Excluído' || c.status === 'Excluída') {
                               badgeBg = '#fee2e2';
                               badgeColor = '#c32026';
-                              badgeLabel = 'Candidatura Excluída';
+                              badgeLabel = isFem ? 'Excluída' : 'Excluído';
                             }
 
                             return (
@@ -408,7 +410,9 @@ export default function LoginModule({
                       <span style={{ fontSize: '0.75rem', color: 'var(--portal-text-muted)' }}>20 Outubro 2026</span>
                     </div>
                     <p style={{ fontSize: '0.85rem', color: 'var(--portal-text-muted)', lineHeight: 1.5 }}>
-                      O candidato foi convocado para a realização da prova de conhecimentos gerais a ter lugar na Academia de Ciências Policiais (ACIPOL), Maputo, no dia 15 de Novembro de 2026, às 08h00.
+                      {userCandidaturas?.[0] && detectCandidateGender(userCandidaturas[0]) === 'Feminino'
+                        ? 'A candidata foi convocada para a realização da prova de conhecimentos gerais a ter lugar na Academia de Ciências Policiais (ACIPOL), Maputo, no dia 15 de Novembro de 2026, às 08h00.'
+                        : 'O candidato foi convocado para a realização da prova de conhecimentos gerais a ter lugar na Academia de Ciências Policiais (ACIPOL), Maputo, no dia 15 de Novembro de 2026, às 08h00.'}
                     </p>
                   </div>
 

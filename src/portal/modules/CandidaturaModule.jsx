@@ -16,7 +16,8 @@ import {
   Sparkles,
   Sun,
   Camera,
-  Eye
+  Eye,
+  UserCheck
 } from 'lucide-react';
 import { 
   INITIAL_VAGAS, 
@@ -107,7 +108,7 @@ export default function CandidaturaModule({
 
   const [errors, setErrors] = useState({});
 
-  // Manipular alteração de inputs de texto com padrão em MAIÚSCULAS (UPPERCASE)
+  // Manipular alteração de inputs de texto com padrão em MAIÚSCULAS e detecção de GÊNERO
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     let processedValue = value;
@@ -116,15 +117,32 @@ export default function CandidaturaModule({
       processedValue = checked;
     } else if (name === 'email') {
       processedValue = value.toLowerCase();
+    } else if (name === 'genero') {
+      processedValue = value;
     } else if (typeof value === 'string' && type !== 'date') {
       // Conversão padrão automática para letras maiúsculas conforme edital oficial
       processedValue = value.toUpperCase();
     }
 
-    setFormData(prev => ({
-      ...prev,
-      [name]: processedValue
-    }));
+    setFormData(prev => {
+      const next = { ...prev, [name]: processedValue };
+      // Inteligência de Gênero: alterna fotos do catálogo oficial e validação facial
+      if (name === 'genero') {
+        const isFeminino = processedValue === 'Feminino';
+        const newGender = isFeminino ? 'Feminino' : 'Masculino';
+        next.genero = newGender;
+        next.fotoPreviewUrl = getCandidatePhotoUrl(newGender, 0);
+        next.docsAnexados = {
+          ...next.docsAnexados,
+          fotoDoc: {
+            name: `Fotografia_Biometrica_${newGender.toUpperCase()}.jpg`,
+            size: '1.4 MB',
+            date: 'Recente'
+          }
+        };
+      }
+      return next;
+    });
 
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
@@ -318,7 +336,7 @@ export default function CandidaturaModule({
         dataEvento: 'Conforme calendário oficial do Edital',
         local: `Delegação Provincial do SERNIC (${formData.provinciaResidencia})`,
         observacoes: 'A comissão de júri está a conferir a autenticidade e validade jurídica dos documentos submetidos.',
-        mensagemComissao: 'O seu processo de candidatura foi recebido e encontra-se na 1ª Fase de Avaliação Documental. Se aprovado, passará à 2ª Fase: Entrevista Profissional.'
+        mensagemComissao: `O seu processo de candidatura foi recebido e encontra-se na 1ª Fase de Avaliação Documental. Se aprovad${formData.genero === 'Feminino' ? 'a' : 'o'}, passará à 2ª Fase: Entrevista Profissional (como ${formData.genero === 'Feminino' ? 'convocada' : 'convocado'}).`
       },
       deliberacaoJuri: {
         decisao: 'Em Análise Documental',
@@ -994,6 +1012,10 @@ export default function CandidaturaModule({
                     </p>
 
                     <div className="biometric-checks-pills">
+                      <div className="bio-check-pill success">
+                        <UserCheck size={13} color="#2563eb" />
+                        <span>Gênero IA: <strong>{formData.genero === 'Feminino' ? 'Feminino (Mulher • Convocada)' : 'Masculino (Homem • Convocado)'}</strong></span>
+                      </div>
                       <div className="bio-check-pill success">
                         <Sun size={13} color="#f59e0b" />
                         <span>Iluminação: <strong>97% Equilibrada (Sem sombras)</strong></span>

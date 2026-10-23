@@ -262,6 +262,80 @@ export function getDefaultValidacaoFacial(status = 'Em análise') {
   };
 }
 
+export function detectCandidateGender(candidato) {
+  if (!candidato) return 'Masculino';
+  
+  // 1. Verificação direta pelo campo genero
+  if (typeof candidato.genero === 'string') {
+    const g = candidato.genero.trim().toLowerCase();
+    if (g === 'feminino' || g === 'f' || g === 'mulher') return 'Feminino';
+    if (g === 'masculino' || g === 'm' || g === 'homem') return 'Masculino';
+  }
+
+  // 2. Inteligência por correspondência de foto no catálogo
+  if (candidato.fotoUrl) {
+    if (CANDIDATO_PHOTOS_FEMALE.includes(candidato.fotoUrl)) return 'Feminino';
+    if (CANDIDATO_PHOTOS_MALE.includes(candidato.fotoUrl)) return 'Masculino';
+  }
+
+  // 3. Inteligência onomástica (nomes próprios femininos)
+  if (candidato.nomeCompleto) {
+    const primeiro = candidato.nomeCompleto.trim().split(' ')[0].toLowerCase();
+    const nomesFemininos = [
+      'maria', 'helena', 'fatima', 'fátima', 'cecilia', 'cecília', 'graca', 'graça', 
+      'amelia', 'amélia', 'ana', 'julia', 'júlia', 'isabel', 'lucia', 'lúcia', 
+      'teresa', 'terezinha', 'sonia', 'sónia', 'patricia', 'patrícia', 'marta', 
+      'luisa', 'luísa', 'joana', 'beatriz', 'carla', 'alberta', 'esperanca', 'esperança',
+      'dulce', 'celeste', 'zaida', 'amina', 'zainabo', 'aida', 'leila', 'rosa', 'ivone',
+      'elsa', 'aurora', 'paula', 'vanessa', 'claudia', 'cláudia', 'telma', 'tânia'
+    ];
+    if (nomesFemininos.includes(primeiro)) return 'Feminino';
+    if (primeiro.endsWith('a') && !['juca', 'mussá', 'issa', 'luca', 'sousa', 'baptista'].includes(primeiro)) {
+      return 'Feminino';
+    }
+  }
+
+  return 'Masculino';
+}
+
+export function getGenderText(candidato, tipo) {
+  const isFem = detectCandidateGender(candidato) === 'Feminino';
+  switch (tipo) {
+    case 'convocado_titulo':
+      return isFem ? 'Convocada para a 2ª Fase: Entrevista Profissional' : 'Convocado para a 2ª Fase: Entrevista Profissional';
+    case 'convocado_badge':
+      return isFem ? '2ª Fase: Convocada para Entrevista Profissional' : '2ª Fase: Convocado para Entrevista Profissional';
+    case 'convocado_timeline':
+      return isFem ? 'Convocada' : 'Convocado';
+    case 'convocado_mensagem':
+      return isFem 
+        ? 'Parabéns! A sua candidatura foi aprovada na 1ª Fase de Avaliação Documental. Foi formalmente convocada para a 2ª Fase: Entrevista Profissional perante a Comissão de Júri.'
+        : 'Parabéns! A sua candidatura foi aprovada na 1ª Fase de Avaliação Documental. Foi formalmente convocado para a 2ª Fase: Entrevista Profissional perante a Comissão de Júri.';
+    case 'admitido_titulo':
+      return isFem ? '3ª Fase: Candidata Admitida na Vaga' : '3ª Fase: Candidato Admitido na Vaga';
+    case 'admitido_badge':
+      return isFem ? '3ª Fase: Admitida - Provimento Efetivo' : '3ª Fase: Admitido - Provimento Efetivo';
+    case 'admitido_timeline':
+      return isFem ? 'Admitida 🎉' : 'Admitido 🎉';
+    case 'admitido_card':
+      return isFem ? 'Candidata Admitida com Sucesso!' : 'Candidato Admitido com Sucesso!';
+    case 'suplente_titulo':
+      return isFem ? '3ª Fase: Aprovada como Suplente (Lista de Reserva)' : '3ª Fase: Aprovado como Suplente (Lista de Reserva)';
+    case 'suplente_badge':
+      return isFem ? '3ª Fase: Aprovada - Suplente (Lista de Reserva)' : '3ª Fase: Aprovado - Suplente (Lista de Reserva)';
+    case 'excluido_titulo':
+      return isFem ? 'Candidata Não Aprovada no Concurso' : 'Candidato Não Aprovado no Concurso';
+    case 'excluido_badge':
+      return isFem ? 'Candidata Excluída do Concurso' : 'Candidato Excluído do Concurso';
+    case 'excluido_timeline':
+      return isFem ? 'Excluída' : 'Excluído';
+    case 'candidato':
+      return isFem ? 'Candidata' : 'Candidato';
+    default:
+      return isFem ? 'Convocada' : 'Convocado';
+  }
+}
+
 // Candidaturas de Demonstração para Consulta Instantânea e Gestão do Concurso
 // Estrutura Oficial SERNIC:
 // 1ª Fase: 'Em Análise Documental'
@@ -308,11 +382,11 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
       { id: 'doc-cv', tipo: 'Curriculum Vitae e Carta de Motivação', status: 'Validado', tamanho: '1.8 MB', data: '2026-10-04' }
     ],
     detalhesFase: {
-      titulo: 'Convocado(a) para 2ª Fase: Entrevista Profissional',
+      titulo: 'Convocado para 2ª Fase: Entrevista Profissional',
       dataEvento: '15 de Novembro de 2026 às 08h30',
       local: 'Direcção Geral do SERNIC - Sala 14 do Júri, Maputo',
       observacoes: 'Apresentação obrigatória com documento de identificação original (BI/Passaporte) e comprovativo impresso de inscrição.',
-      mensagemComissao: 'Parabéns! A sua candidatura foi aprovada na 1ª Fase de Avaliação Documental. Foi formalmente convocado(a) para a 2ª Fase: Entrevista Profissional perante a Comissão de Júri.'
+      mensagemComissao: 'Parabéns! A sua candidatura foi aprovada na 1ª Fase de Avaliação Documental. Foi formalmente convocado para a 2ª Fase: Entrevista Profissional perante a Comissão de Júri.'
     },
     deliberacaoJuri: {
       decisao: 'Entrevista Profissional',
@@ -1169,16 +1243,28 @@ export function getStoredCandidaturas() {
       if (Array.isArray(parsed) && parsed.length > 0) {
         let hasChanges = false;
         const normalized = parsed.map((c, i) => {
-          if (!c.fotoUrl || !c.validacaoFacial) {
+          let updated = { ...c };
+          const isFem = detectCandidateGender(c) === 'Feminino';
+
+          if (!updated.fotoUrl || !updated.validacaoFacial) {
             hasChanges = true;
             const fallback = INITIAL_CANDIDATURAS_CONSULTA.find(x => x.codigoCandidatura === c.codigoCandidatura) || INITIAL_CANDIDATURAS_CONSULTA[i % INITIAL_CANDIDATURAS_CONSULTA.length];
-            return {
-              ...c,
-              fotoUrl: c.fotoUrl || fallback?.fotoUrl || getCandidatePhotoUrl(c.genero, i),
-              validacaoFacial: c.validacaoFacial || fallback?.validacaoFacial || getDefaultValidacaoFacial(c.status)
+            updated.fotoUrl = updated.fotoUrl || fallback?.fotoUrl || getCandidatePhotoUrl(updated.genero, i);
+            updated.validacaoFacial = updated.validacaoFacial || fallback?.validacaoFacial || getDefaultValidacaoFacial(updated.status);
+          }
+
+          // Normalizar títulos e mensagens para remover Convocado(a) e aplicar gênero inteligente
+          if (updated.detalhesFase?.titulo?.includes('Convocado(a)') || updated.detalhesFase?.mensagemComissao?.includes('convocado(a)')) {
+            hasChanges = true;
+            updated.detalhesFase = {
+              ...updated.detalhesFase,
+              titulo: isFem ? 'Convocada para 2ª Fase: Entrevista Profissional' : 'Convocado para 2ª Fase: Entrevista Profissional',
+              mensagemComissao: isFem
+                ? 'Parabéns! A sua candidatura foi aprovada na 1ª Fase de Avaliação Documental. Foi formalmente convocada para a 2ª Fase: Entrevista Profissional perante a Comissão de Júri.'
+                : 'Parabéns! A sua candidatura foi aprovada na 1ª Fase de Avaliação Documental. Foi formalmente convocado para a 2ª Fase: Entrevista Profissional perante a Comissão de Júri.'
             };
           }
-          return c;
+          return updated;
         });
         if (hasChanges) {
           saveStoredCandidaturas(normalized);
@@ -1220,20 +1306,22 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
   let descEtapa = `Estado atualizado para: ${updates.status || current.status}.`;
   let novaFaseAtual = current.faseAtual || 1;
 
+  const isFem = detectCandidateGender(current) === 'Feminino';
+
   if (updates.status === 'Entrevista Profissional' || updates.status === 'Convocada para provas') {
-    novaEtapa = '2ª Fase: Convocado para Entrevista';
-    descEtapa = updates.parecer || (updates.eventoLocal ? `Entrevista agendada em ${updates.eventoLocal}.` : 'Documentos aprovados. Convocado para a Entrevista Profissional.');
+    novaEtapa = isFem ? '2ª Fase: Convocada para Entrevista' : '2ª Fase: Convocado para Entrevista';
+    descEtapa = updates.parecer || (updates.eventoLocal ? `Entrevista agendada em ${updates.eventoLocal}.` : (isFem ? 'Documentos aprovados. Convocada para a Entrevista Profissional.' : 'Documentos aprovados. Convocado para a Entrevista Profissional.'));
     novaFaseAtual = 2;
   } else if (updates.status === 'Admitido' || updates.status === 'Admitida' || updates.status === 'Aprovada') {
-    novaEtapa = '3ª Fase: Candidato Admitido';
+    novaEtapa = isFem ? '3ª Fase: Candidata Admitida' : '3ª Fase: Candidato Admitido';
     descEtapa = `Aprovado na Entrevista com nota de ${updates.notaFinal || '18.0'} valores. Selecionado para a vaga.`;
     novaFaseAtual = 3;
   } else if (updates.status === 'Aprovado (Suplente)') {
-    novaEtapa = '3ª Fase: Aprovado como Suplente';
+    novaEtapa = isFem ? '3ª Fase: Aprovada como Suplente' : '3ª Fase: Aprovado como Suplente';
     descEtapa = `Aprovado na Entrevista com nota de ${updates.notaFinal || '16.0'} valores. Fica na lista de reserva.`;
     novaFaseAtual = 3;
   } else if (updates.status === 'Excluído' || updates.status === 'Excluída') {
-    novaEtapa = 'Candidatura Excluída';
+    novaEtapa = isFem ? 'Candidata Excluída' : 'Candidatura Excluída';
     descEtapa = updates.motivoExclusao || updates.parecer || 'Não cumpre os requisitos do concurso.';
     novaFaseAtual = current.faseAtual === 2 ? 2 : 1;
   } else if (updates.status === 'Em Análise Documental' || updates.status === 'Em análise') {
@@ -1267,19 +1355,25 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
     detalhesFase: {
       ...current.detalhesFase,
       titulo: finalStatus === 'Entrevista Profissional'
-        ? '2ª Fase: Convocado(a) para a Entrevista'
-        : finalStatus === 'Admitido'
-        ? '3ª Fase: Candidato(a) Admitido(a) na Vaga'
+        ? (isFem ? 'Convocada para 2ª Fase: Entrevista Profissional' : 'Convocado para 2ª Fase: Entrevista Profissional')
+        : finalStatus === 'Admitido' || finalStatus === 'Admitida'
+        ? (isFem ? '3ª Fase: Candidata Admitida na Vaga' : '3ª Fase: Candidato Admitido na Vaga')
         : finalStatus === 'Aprovado (Suplente)'
-        ? '3ª Fase: Aprovado(a) como Suplente (Lista de Reserva)'
-        : finalStatus === 'Excluído'
-        ? 'Candidatura Não Aprovada no Concurso'
+        ? (isFem ? '3ª Fase: Aprovada como Suplente (Lista de Reserva)' : '3ª Fase: Aprovado como Suplente (Lista de Reserva)')
+        : finalStatus === 'Excluído' || finalStatus === 'Excluída'
+        ? (isFem ? 'Candidata Não Aprovada no Concurso' : 'Candidato Não Aprovado no Concurso')
         : '1ª Fase: Análise de Documentos em Curso',
       dataEvento: updates.eventoData || current.detalhesFase?.dataEvento || 'Conforme Edital Publicado',
       local: updates.eventoLocal || current.detalhesFase?.local || 'Instalações do SERNIC',
       observacoes: updates.observacoes || current.detalhesFase?.observacoes || '',
       motivoExclusao: updates.motivoExclusao || current.detalhesFase?.motivoExclusao || null,
-      mensagemComissao: updates.parecer || current.detalhesFase?.mensagemComissao || ''
+      mensagemComissao: updates.parecer || (
+        finalStatus === 'Entrevista Profissional'
+          ? (isFem 
+              ? 'Parabéns! A sua candidatura foi aprovada na 1ª Fase de Avaliação Documental. Foi formalmente convocada para a 2ª Fase: Entrevista Profissional perante a Comissão de Júri.' 
+              : 'Parabéns! A sua candidatura foi aprovada na 1ª Fase de Avaliação Documental. Foi formalmente convocado para a 2ª Fase: Entrevista Profissional perante a Comissão de Júri.')
+          : current.detalhesFase?.mensagemComissao || ''
+      )
     }
   };
 
