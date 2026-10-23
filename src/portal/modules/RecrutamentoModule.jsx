@@ -40,7 +40,16 @@ import {
 import sernicLogo from '../../assets/sernic-logo.png';
 import DraggableSubAba from '../components/DraggableSubAba';
 
-export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatura }) {
+export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatura, currentUser }) {
+  // Determinar se o utilizador autenticado possui perfil de Gestor / Júri
+  const isGestor = Boolean(
+    currentUser && (
+      currentUser.role === 'admin' || 
+      currentUser.role === 'gestor' || 
+      currentUser.isGestor === true
+    )
+  );
+
   // Lista de vagas sincronizada
   const [vagas, setVagas] = useState(() => getStoredVagas());
   const [filterStatus, setFilterStatus] = useState('todos'); // 'todos' | 'aberto' | 'encerrado'
@@ -331,17 +340,20 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-          {/* BOTÃO PARA CRIAR NOVA VAGA (CRUD: CREATE) */}
-          <button
-            type="button"
-            className="gestor-action-btn primary"
-            onClick={handleOpenNovaVaga}
-            style={{ padding: '0.65rem 1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 800 }}
-          >
-            <PlusCircle size={18} />
-            <span>Lançar Novo Concurso / Vaga</span>
-          </button>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          {/* BOTÃO PARA CRIAR NOVA VAGA (CRUD: CREATE) - RESTRITO AO GESTOR */}
+          {isGestor && (
+            <button
+              type="button"
+              className="gestor-action-btn primary"
+              onClick={handleOpenNovaVaga}
+              style={{ padding: '0.65rem 1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 800 }}
+              title="Acesso de Gestor: Criar nova vaga ou aviso oficial"
+            >
+              <PlusCircle size={18} />
+              <span>Lançar Novo Concurso / Vaga</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -476,28 +488,30 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
                     </button>
                   )}
 
-                  {/* ABRIR SUB-ABA COMPLETA */}
+                  {/* ABRIR SUB-ABA COMPLETA DE REQUISITOS (PARA CANDIDATO E GESTOR) */}
                   <button
                     type="button"
                     className="btn-vaga-detalhes"
                     onClick={() => handleOpenVagaView(vaga)}
-                    title="Ver detalhes e opções de gestão"
+                    title="Ver requisitos estatutários e detalhes oficiais"
                   >
                     <span>Ver Requisitos</span>
                     <ChevronRight size={16} />
                   </button>
 
-                  {/* ABRIR SUB-ABA DIRETAMENTE EM MODO DE EDIÇÃO (CRUD) */}
-                  <button
-                    type="button"
-                    className="sub-aba-btn-action"
-                    onClick={() => handleOpenVagaEdit(vaga)}
-                    style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem' }}
-                    title="Editar informações deste concurso"
-                  >
-                    <Edit3 size={13} color="#c32026" />
-                    <span>Editar Vaga</span>
-                  </button>
+                  {/* CAMPO EDITAR VAGA: RESTRITO EXCLUSIVAMENTE AO GESTOR (NÃO APARECE PARA CANDIDATO) */}
+                  {isGestor && (
+                    <button
+                      type="button"
+                      className="sub-aba-btn-action gestor-edit-pill"
+                      onClick={() => handleOpenVagaEdit(vaga)}
+                      style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem' }}
+                      title="Área Administrativa: Editar informações e quotas deste concurso"
+                    >
+                      <Edit3 size={13} color="#c32026" />
+                      <span>Editar Vaga (Gestor)</span>
+                    </button>
+                  )}
 
                   <button
                     type="button"
@@ -542,77 +556,96 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
         >
           <DraggableSubAba 
             className="modal-content-card" 
-            moveHandleLabel="Mover Sub-Aba de Gestão da Vaga"
+            moveHandleLabel={isGestor ? "Mover Sub-Aba de Gestão da Vaga" : "Mover Sub-Aba • Requisitos do Concurso"}
             onClose={() => setSelectedVagaModal(null)}
           >
-            {/* 4.1 TOOLBAR DE CRUD SUPERIOR DA SUB-ABA */}
-            <div className="sub-aba-crud-toolbar">
-              <div className="sub-aba-mode-tabs">
-                <button
-                  type="button"
-                  className={`sub-aba-mode-btn ${modalMode === 'view' ? 'active' : ''}`}
-                  onClick={() => setModalMode('view')}
-                >
-                  <Eye size={14} />
-                  <span>Visualização (Read)</span>
-                </button>
-                <button
-                  type="button"
-                  className={`sub-aba-mode-btn ${modalMode === 'edit' || modalMode === 'create' ? 'active' : ''}`}
-                  onClick={() => setModalMode(modalMode === 'create' ? 'create' : 'edit')}
-                >
-                  <Edit3 size={14} />
-                  <span>{modalMode === 'create' ? 'Criar Nova Vaga' : 'Editar Dados (Update)'}</span>
-                </button>
+            {/* 4.1 TOOLBAR DE CRUD: RESTRITA EXCLUSIVAMENTE AO GESTOR */}
+            {isGestor ? (
+              <div className="sub-aba-crud-toolbar">
+                <div className="sub-aba-mode-tabs">
+                  <button
+                    type="button"
+                    className={`sub-aba-mode-btn ${modalMode === 'view' ? 'active' : ''}`}
+                    onClick={() => setModalMode('view')}
+                  >
+                    <Eye size={14} />
+                    <span>Visualização (Read)</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`sub-aba-mode-btn ${modalMode === 'edit' || modalMode === 'create' ? 'active' : ''}`}
+                    onClick={() => setModalMode(modalMode === 'create' ? 'create' : 'edit')}
+                  >
+                    <Edit3 size={14} />
+                    <span>{modalMode === 'create' ? 'Criar Nova Vaga' : 'Editar Dados (Update)'}</span>
+                  </button>
+                </div>
+
+                {/* Ações Rápidas na Toolbar da Sub-Aba */}
+                <div className="sub-aba-quick-actions">
+                  {modalMode !== 'create' && (
+                    <>
+                      <button
+                        type="button"
+                        className="sub-aba-btn-action"
+                        onClick={() => handleQuickToggleStatus(selectedVagaModal.id)}
+                        title="Alternar estado entre Aberto e Encerrado"
+                      >
+                        <RefreshCw size={13} />
+                        <span>Status: {vagaForm.status}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="sub-aba-btn-action"
+                        onClick={() => handleDuplicateVaga(selectedVagaModal)}
+                        title="Duplicar concurso como novo modelo"
+                      >
+                        <Copy size={13} />
+                        <span>Duplicar</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="sub-aba-btn-action danger"
+                        onClick={() => setIsDeletingConfirm(true)}
+                        title="Eliminar este concurso do sistema"
+                      >
+                        <Trash2 size={13} />
+                        <span>Excluir</span>
+                      </button>
+                    </>
+                  )}
+
+                  <button
+                    type="button"
+                    className="sub-aba-btn-action"
+                    onClick={() => setViewEditalModal(selectedVagaModal)}
+                    title="Visualizar documento timbrado oficial em PDF"
+                  >
+                    <Printer size={13} />
+                    <span>Edital PDF</span>
+                  </button>
+                </div>
               </div>
-
-              {/* Ações Rápidas na Toolbar da Sub-Aba */}
-              <div className="sub-aba-quick-actions">
-                {modalMode !== 'create' && (
-                  <>
-                    <button
-                      type="button"
-                      className="sub-aba-btn-action"
-                      onClick={() => handleQuickToggleStatus(selectedVagaModal.id)}
-                      title="Alternar estado entre Aberto e Encerrado"
-                    >
-                      <RefreshCw size={13} />
-                      <span>Status: {vagaForm.status}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="sub-aba-btn-action"
-                      onClick={() => handleDuplicateVaga(selectedVagaModal)}
-                      title="Duplicar concurso como novo modelo"
-                    >
-                      <Copy size={13} />
-                      <span>Duplicar</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className="sub-aba-btn-action danger"
-                      onClick={() => setIsDeletingConfirm(true)}
-                      title="Eliminar este concurso do sistema"
-                    >
-                      <Trash2 size={13} />
-                      <span>Excluir</span>
-                    </button>
-                  </>
-                )}
-
+            ) : (
+              /* CABEÇALHO OFICIAL INSTITUCIONAL PARA O CANDIDATO (SEM QUALQUER OPÇÃO DE EDIÇÃO) */
+              <div className="sub-aba-candidato-header-bar">
+                <div className="candidato-header-badge">
+                  <ShieldCheck size={16} color="#c32026" />
+                  <span>AVISO OFICIAL DE ABERTURA • SERVIÇO NACIONAL DE INVESTIGAÇÃO CRIMINAL</span>
+                </div>
                 <button
                   type="button"
                   className="sub-aba-btn-action"
                   onClick={() => setViewEditalModal(selectedVagaModal)}
-                  title="Visualizar documento timbrado oficial em PDF"
+                  title="Baixar Edital Oficial em formato PDF"
                 >
-                  <Printer size={13} />
-                  <span>Edital PDF</span>
+                  <Download size={13} color="#c59b27" />
+                  <span>Baixar Edital (PDF)</span>
                 </button>
               </div>
-            </div>
+            )}
 
             {/* 4.2 BANNER DE CONFIRMAÇÃO DE EXCLUSÃO (DELETE) */}
             {isDeletingConfirm && (
@@ -667,15 +700,17 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
                     </p>
                   </div>
                   
-                  <button
-                    type="button"
-                    onClick={() => setModalMode('edit')}
-                    className="gestor-action-btn secondary"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem' }}
-                  >
-                    <Edit3 size={14} />
-                    <span>Editar Concurso</span>
-                  </button>
+                  {isGestor && (
+                    <button
+                      type="button"
+                      onClick={() => setModalMode('edit')}
+                      className="gestor-action-btn secondary"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem' }}
+                    >
+                      <Edit3 size={14} />
+                      <span>Editar Concurso (Gestor)</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Métricas e Prazos */}
@@ -747,15 +782,22 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
 
                 {/* Rodapé da Sub-Aba no Modo Visualização */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--portal-border)', paddingTop: '1.2rem', marginTop: 'auto' }}>
-                  <button
-                    type="button"
-                    className="gestor-btn-outline"
-                    onClick={() => handleOpenVagaEdit(selectedVagaModal)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                  >
-                    <Edit3 size={15} />
-                    <span>Editar Informações</span>
-                  </button>
+                  {isGestor ? (
+                    <button
+                      type="button"
+                      className="gestor-btn-outline"
+                      onClick={() => handleOpenVagaEdit(selectedVagaModal)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                    >
+                      <Edit3 size={15} />
+                      <span>Editar Informações (Gestor)</span>
+                    </button>
+                  ) : (
+                    <div style={{ fontSize: '0.82rem', color: 'var(--portal-text-muted)', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                      <FileCheck size={16} color="#15803d" />
+                      <span>Documento Oficial Homologado • SERNIC DRH 2026</span>
+                    </div>
+                  )}
 
                   <div style={{ display: 'flex', gap: '0.8rem' }}>
                     <button
@@ -796,213 +838,305 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
                   </p>
                 </div>
 
-                <div className="sub-aba-form-grid">
-                  <div className="sub-aba-form-field full">
-                    <label>Designação Oficial do Cargo / Carreira</label>
-                    <input
-                      type="text"
-                      className="sub-aba-input"
-                      placeholder="Ex: Investigador Criminal de 2ª Classe"
-                      value={vagaForm.titulo}
-                      onChange={(e) => setVagaForm({ ...vagaForm, titulo: e.target.value })}
-                      required
-                    />
+                {/* ========================================================
+                    FORMULÁRIO DE GESTÃO ORGANIZADO POR SECÇÕES INSTITUCIONAIS
+                    ======================================================== */}
+                
+                {/* SECÇÃO 1: IDENTIFICAÇÃO OFICIAL E RAMO DO SERNIC */}
+                <div className="vaga-form-section">
+                  <div className="vaga-form-section-header">
+                    <div className="vaga-form-section-badge">1</div>
+                    <div className="vaga-form-section-title-wrap">
+                      <h4 className="vaga-form-section-title">
+                        <Briefcase size={17} color="#c32026" />
+                        <span>Identificação Oficial do Cargo & Ramo SERNIC</span>
+                      </h4>
+                      <p className="vaga-form-section-subtitle">
+                        Designação da carreira, código do edital no Boletim da República e enquadramento estatutário
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="sub-aba-form-field">
-                    <label>Código do Edital / Aviso Oficial</label>
-                    <input
-                      type="text"
-                      className="sub-aba-input"
-                      placeholder="Ex: Aviso n.º 01/SERNIC-DG/DRH/2026"
-                      value={vagaForm.codigoEdital}
-                      onChange={(e) => setVagaForm({ ...vagaForm, codigoEdital: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="sub-aba-form-field">
-                    <label>Estado do Concurso</label>
-                    <select
-                      className="sub-aba-select"
-                      value={vagaForm.status}
-                      onChange={(e) => setVagaForm({ ...vagaForm, status: e.target.value })}
-                    >
-                      <option value="Aberto">Aberto (Candidaturas Activas)</option>
-                      <option value="Encerrado">Encerrado (Inscrições Terminadas)</option>
-                      <option value="Em Breve">Em Breve (Fase de Homologação)</option>
-                    </select>
-                  </div>
-
-                  <div className="sub-aba-form-field">
-                    <label>Área / Ramo do SERNIC</label>
-                    <select
-                      className="sub-aba-select"
-                      value={vagaForm.carreira}
-                      onChange={(e) => setVagaForm({ ...vagaForm, carreira: e.target.value })}
-                    >
-                      <option value="Investigação Criminal e Instrução Processual">Investigação Criminal e Instrução Processual</option>
-                      <option value="Laboratório Central de Criminalística (Polícia Científica)">Polícia Científica (Laboratório Forense)</option>
-                      <option value="Divisão de Investigação de Cibercrimes e Inteligência Digital">Inteligência Digital e Cibersegurança</option>
-                      <option value="Departamento de Tanatologia e Toxicologia">Medicina Legal e Toxicologia Forense</option>
-                      <option value="Corpo Técnico Operativo">Corpo Técnico Operativo e Apoio</option>
-                    </select>
-                  </div>
-
-                  <div className="sub-aba-form-field">
-                    <label>Regime de Carreira</label>
-                    <input
-                      type="text"
-                      className="sub-aba-input"
-                      placeholder="Ex: Carreira de Regime Especial - SERNIC"
-                      value={vagaForm.regime}
-                      onChange={(e) => setVagaForm({ ...vagaForm, regime: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="sub-aba-form-field">
-                    <label>Número de Vagas Autorizadas</label>
-                    <input
-                      type="number"
-                      min="1"
-                      className="sub-aba-input"
-                      value={vagaForm.vagas}
-                      onChange={(e) => setVagaForm({ ...vagaForm, vagas: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="sub-aba-form-field">
-                    <label>Local / Delegações de Colocação</label>
-                    <input
-                      type="text"
-                      className="sub-aba-input"
-                      placeholder="Ex: Nacional ou Maputo, Beira, Nampula"
-                      value={vagaForm.local}
-                      onChange={(e) => setVagaForm({ ...vagaForm, local: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="sub-aba-form-field">
-                    <label>Data de Abertura</label>
-                    <input
-                      type="date"
-                      className="sub-aba-input"
-                      value={vagaForm.dataAbertura}
-                      onChange={(e) => setVagaForm({ ...vagaForm, dataAbertura: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="sub-aba-form-field">
-                    <label>Data Limite de Candidaturas</label>
-                    <input
-                      type="date"
-                      className="sub-aba-input"
-                      value={vagaForm.dataLimite}
-                      onChange={(e) => setVagaForm({ ...vagaForm, dataLimite: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="sub-aba-form-field full">
-                    <label>Enquadramento Salarial e Benefícios</label>
-                    <input
-                      type="text"
-                      className="sub-aba-input"
-                      placeholder="Ex: Tabela Salarial Única (TSU) + Subsídio de Risco e Investigação"
-                      value={vagaForm.remuneracao}
-                      onChange={(e) => setVagaForm({ ...vagaForm, remuneracao: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                {/* GESTOR DE REQUISITOS GERAIS */}
-                <div style={{ marginBottom: '1.4rem' }}>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--portal-text-main)', display: 'block', marginBottom: '0.4rem' }}>
-                    Requisitos Gerais Obrigatórios ({vagaForm.requisitosGerais.length} definidos)
-                  </label>
-                  <div className="sub-aba-req-list-editor">
-                    {vagaForm.requisitosGerais.map((req, idx) => (
-                      <div key={idx} className="sub-aba-req-item-row">
-                        <span style={{ flex: 1 }}>{req}</span>
-                        <button
-                          type="button"
-                          className="sub-aba-req-delete-btn"
-                          onClick={() => handleRemoveReqGeral(idx)}
-                          title="Remover requisito"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                    <div className="sub-aba-add-input-group">
+                  <div className="vaga-section-grid full" style={{ marginBottom: '0.9rem' }}>
+                    <div className="sub-aba-form-field">
+                      <label>Designação Oficial do Cargo / Carreira</label>
                       <input
                         type="text"
                         className="sub-aba-input"
-                        placeholder="Escreva um novo requisito geral..."
-                        value={novoReqGeral}
-                        onChange={(e) => setNovoReqGeral(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddReqGeral();
-                          }
-                        }}
+                        placeholder="Ex: Investigador Criminal de 2ª Classe"
+                        value={vagaForm.titulo}
+                        onChange={(e) => setVagaForm({ ...vagaForm, titulo: e.target.value })}
+                        required
                       />
-                      <button
-                        type="button"
-                        className="sub-aba-btn-add"
-                        onClick={handleAddReqGeral}
+                    </div>
+                  </div>
+
+                  <div className="vaga-section-grid">
+                    <div className="sub-aba-form-field">
+                      <label>Código do Edital / Aviso Oficial</label>
+                      <input
+                        type="text"
+                        className="sub-aba-input"
+                        placeholder="Ex: Aviso n.º 01/SERNIC-DG/DRH/2026"
+                        value={vagaForm.codigoEdital}
+                        onChange={(e) => setVagaForm({ ...vagaForm, codigoEdital: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div className="sub-aba-form-field">
+                      <label>Regime de Carreira</label>
+                      <input
+                        type="text"
+                        className="sub-aba-input"
+                        placeholder="Ex: Carreira de Regime Especial - SERNIC"
+                        value={vagaForm.regime}
+                        onChange={(e) => setVagaForm({ ...vagaForm, regime: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="sub-aba-form-field" style={{ gridColumn: '1 / -1' }}>
+                      <label>Área / Ramo do SERNIC</label>
+                      <select
+                        className="sub-aba-select"
+                        value={vagaForm.carreira}
+                        onChange={(e) => setVagaForm({ ...vagaForm, carreira: e.target.value })}
                       >
-                        <Plus size={14} />
-                        <span>Adicionar</span>
-                      </button>
+                        <option value="Investigação Criminal e Instrução Processual">Investigação Criminal e Instrução Processual</option>
+                        <option value="Laboratório Central de Criminalística (Polícia Científica)">Polícia Científica (Laboratório Forense)</option>
+                        <option value="Divisão de Investigação de Cibercrimes e Inteligência Digital">Inteligência Digital e Cibersegurança</option>
+                        <option value="Departamento de Tanatologia e Toxicologia">Medicina Legal e Toxicologia Forense</option>
+                        <option value="Corpo Técnico Operativo">Corpo Técnico Operativo e Apoio</option>
+                      </select>
                     </div>
                   </div>
                 </div>
 
-                {/* GESTOR DE REQUISITOS ESPECÍFICOS */}
-                <div style={{ marginBottom: '1.6rem' }}>
-                  <label style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--portal-text-main)', display: 'block', marginBottom: '0.4rem' }}>
-                    Requisitos Específicos & Habilitações ({vagaForm.requisitosEspecificos.length} definidos)
-                  </label>
-                  <div className="sub-aba-req-list-editor">
-                    {vagaForm.requisitosEspecificos.map((req, idx) => (
-                      <div key={idx} className="sub-aba-req-item-row">
-                        <span style={{ flex: 1 }}>{req}</span>
-                        <button
-                          type="button"
-                          className="sub-aba-req-delete-btn"
-                          onClick={() => handleRemoveReqEsp(idx)}
-                          title="Remover requisito"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                    <div className="sub-aba-add-input-group">
+                {/* SECÇÃO 2: QUOTAS AUTORIZADAS E DISTRIBUIÇÃO TERRITORIAL */}
+                <div className="vaga-form-section">
+                  <div className="vaga-form-section-header">
+                    <div className="vaga-form-section-badge">2</div>
+                    <div className="vaga-form-section-title-wrap">
+                      <h4 className="vaga-form-section-title">
+                        <Users size={17} color="#c32026" />
+                        <span>Quotas Autorizadas & Colocação Geográfica</span>
+                      </h4>
+                      <p className="vaga-form-section-subtitle">
+                        Número de postos homologados pelo Ministério e províncias / delegações de destino
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="vaga-section-grid">
+                    <div className="sub-aba-form-field">
+                      <label>Quotas de Vagas Autorizadas</label>
+                      <input
+                        type="number"
+                        min="1"
+                        className="sub-aba-input"
+                        value={vagaForm.vagas}
+                        onChange={(e) => setVagaForm({ ...vagaForm, vagas: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div className="sub-aba-form-field">
+                      <label>Estado Operacional do Concurso</label>
+                      <select
+                        className="sub-aba-select"
+                        value={vagaForm.status}
+                        onChange={(e) => setVagaForm({ ...vagaForm, status: e.target.value })}
+                      >
+                        <option value="Aberto">Aberto (Candidaturas Activas)</option>
+                        <option value="Encerrado">Encerrado (Inscrições Terminadas)</option>
+                        <option value="Em Breve">Em Breve (Fase de Homologação)</option>
+                      </select>
+                    </div>
+
+                    <div className="sub-aba-form-field" style={{ gridColumn: '1 / -1' }}>
+                      <label>Local / Delegações de Colocação</label>
                       <input
                         type="text"
                         className="sub-aba-input"
-                        placeholder="Escreva um novo requisito específico..."
-                        value={novoReqEsp}
-                        onChange={(e) => setNovoReqEsp(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddReqEsp();
-                          }
-                        }}
+                        placeholder="Ex: Nacional ou Maputo, Beira, Nampula"
+                        value={vagaForm.local}
+                        onChange={(e) => setVagaForm({ ...vagaForm, local: e.target.value })}
+                        required
                       />
-                      <button
-                        type="button"
-                        className="sub-aba-btn-add"
-                        onClick={handleAddReqEsp}
-                      >
-                        <Plus size={14} />
-                        <span>Adicionar</span>
-                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECÇÃO 3: CRONOGRAMA OFICIAL E PRAZOS */}
+                <div className="vaga-form-section">
+                  <div className="vaga-form-section-header">
+                    <div className="vaga-form-section-badge">3</div>
+                    <div className="vaga-form-section-title-wrap">
+                      <h4 className="vaga-form-section-title">
+                        <Calendar size={17} color="#c32026" />
+                        <span>Cronograma Oficial & Prazos do Edital</span>
+                      </h4>
+                      <p className="vaga-form-section-subtitle">
+                        Período de abertura e prazo limite improrrogável de receção de candidaturas
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="vaga-section-grid">
+                    <div className="sub-aba-form-field">
+                      <label>Data de Publicação / Abertura</label>
+                      <input
+                        type="date"
+                        className="sub-aba-input"
+                        value={vagaForm.dataAbertura}
+                        onChange={(e) => setVagaForm({ ...vagaForm, dataAbertura: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="sub-aba-form-field">
+                      <label>Data Limite de Candidaturas</label>
+                      <input
+                        type="date"
+                        className="sub-aba-input"
+                        value={vagaForm.dataLimite}
+                        onChange={(e) => setVagaForm({ ...vagaForm, dataLimite: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECÇÃO 4: ENQUADRAMENTO SALARIAL E TSU */}
+                <div className="vaga-form-section">
+                  <div className="vaga-form-section-header">
+                    <div className="vaga-form-section-badge">4</div>
+                    <div className="vaga-form-section-title-wrap">
+                      <h4 className="vaga-form-section-title">
+                        <Award size={17} color="#c59b27" />
+                        <span>Enquadramento Salarial & Benefícios TSU</span>
+                      </h4>
+                      <p className="vaga-form-section-subtitle">
+                        Nível de vencimento na Tabela Salarial Única e subsídios inerentes ao regime especial
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="vaga-section-grid full">
+                    <div className="sub-aba-form-field">
+                      <label>Enquadramento Salarial e Benefícios Estatutários</label>
+                      <input
+                        type="text"
+                        className="sub-aba-input"
+                        placeholder="Ex: Tabela Salarial Única (TSU) + Subsídio de Risco e Investigação"
+                        value={vagaForm.remuneracao}
+                        onChange={(e) => setVagaForm({ ...vagaForm, remuneracao: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* SECÇÃO 5: REQUISITOS E CRITÉRIOS DE ADMISSÃO */}
+                <div className="vaga-form-section">
+                  <div className="vaga-form-section-header">
+                    <div className="vaga-form-section-badge">5</div>
+                    <div className="vaga-form-section-title-wrap">
+                      <h4 className="vaga-form-section-title">
+                        <ShieldCheck size={17} color="#c59b27" />
+                        <span>Requisitos Estatutários & Critérios de Admissão</span>
+                      </h4>
+                      <p className="vaga-form-section-subtitle">
+                        Requisitos eliminatórios gerais previstos na Lei e habilitações específicas para o posto
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Requisitos Gerais */}
+                  <div style={{ marginBottom: '1.4rem' }}>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--portal-text-main)', display: 'block', marginBottom: '0.4rem' }}>
+                      Requisitos Gerais Obrigatórios ({vagaForm.requisitosGerais.length} definidos)
+                    </label>
+                    <div className="sub-aba-req-list-editor">
+                      {vagaForm.requisitosGerais.map((req, idx) => (
+                        <div key={idx} className="sub-aba-req-item-row">
+                          <span style={{ flex: 1 }}>{req}</span>
+                          <button
+                            type="button"
+                            className="sub-aba-req-delete-btn"
+                            onClick={() => handleRemoveReqGeral(idx)}
+                            title="Remover requisito"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                      <div className="sub-aba-add-input-group">
+                        <input
+                          type="text"
+                          className="sub-aba-input"
+                          placeholder="Escreva um novo requisito geral..."
+                          value={novoReqGeral}
+                          onChange={(e) => setNovoReqGeral(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddReqGeral();
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className="sub-aba-btn-add"
+                          onClick={handleAddReqGeral}
+                        >
+                          <Plus size={14} />
+                          <span>Adicionar</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Requisitos Específicos */}
+                  <div>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--portal-text-main)', display: 'block', marginBottom: '0.4rem' }}>
+                      Requisitos Específicos & Habilitações ({vagaForm.requisitosEspecificos.length} definidos)
+                    </label>
+                    <div className="sub-aba-req-list-editor">
+                      {vagaForm.requisitosEspecificos.map((req, idx) => (
+                        <div key={idx} className="sub-aba-req-item-row">
+                          <span style={{ flex: 1 }}>{req}</span>
+                          <button
+                            type="button"
+                            className="sub-aba-req-delete-btn"
+                            onClick={() => handleRemoveReqEsp(idx)}
+                            title="Remover requisito"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                      <div className="sub-aba-add-input-group">
+                        <input
+                          type="text"
+                          className="sub-aba-input"
+                          placeholder="Escreva um novo requisito específico..."
+                          value={novoReqEsp}
+                          onChange={(e) => setNovoReqEsp(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddReqEsp();
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className="sub-aba-btn-add"
+                          onClick={handleAddReqEsp}
+                        >
+                          <Plus size={14} />
+                          <span>Adicionar</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

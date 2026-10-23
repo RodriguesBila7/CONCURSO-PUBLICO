@@ -3595,115 +3595,184 @@ export default function GestorPortalModule({
             </div>
 
             <form onSubmit={handleSaveVagaGestor} className="dossier-modal-body" style={{ padding: '1.5rem 1.8rem' }}>
-              <div className="form-group-custom" style={{ marginBottom: '1rem' }}>
-                <label>Designação Oficial da Carreira / Vaga</label>
-                <input
-                  type="text"
-                  className="definicoes-input"
-                  placeholder="Ex: Investigador Criminal de 2ª Classe"
-                  value={gestorVagaForm.titulo}
-                  onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, titulo: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                <div className="form-group-custom">
-                  <label>Código do Edital / Aviso</label>
-                  <input
-                    type="text"
-                    className="definicoes-input"
-                    value={gestorVagaForm.codigoEdital}
-                    onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, codigoEdital: e.target.value })}
-                    required
-                  />
+              {/* SECÇÃO 1: IDENTIFICAÇÃO OFICIAL E RAMO DO SERNIC */}
+              <div className="vaga-form-section">
+                <div className="vaga-form-section-header">
+                  <div className="vaga-form-section-badge">1</div>
+                  <div className="vaga-form-section-title-wrap">
+                    <h4 className="vaga-form-section-title">
+                      <Briefcase size={17} color="#c32026" />
+                      <span>Identificação Oficial do Cargo & Ramo SERNIC</span>
+                    </h4>
+                    <p className="vaga-form-section-subtitle">
+                      Designação da carreira, código do edital oficial e ramo de investigação
+                    </p>
+                  </div>
                 </div>
 
-                <div className="form-group-custom">
-                  <label>Estado do Concurso</label>
-                  <select
-                    className="definicoes-select full"
-                    value={gestorVagaForm.status}
-                    onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, status: e.target.value })}
-                  >
-                    <option value="Aberto">Aberto</option>
-                    <option value="Encerrado">Encerrado</option>
-                    <option value="Em Breve">Em Breve</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                <div className="form-group-custom">
-                  <label>Quotas de Vagas Autorizadas</label>
-                  <input
-                    type="number"
-                    min="1"
-                    className="definicoes-input"
-                    value={gestorVagaForm.vagas}
-                    onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, vagas: e.target.value })}
-                    required
-                  />
+                <div className="vaga-section-grid full" style={{ marginBottom: '0.9rem' }}>
+                  <div className="form-group-custom">
+                    <label>Designação Oficial da Carreira / Vaga</label>
+                    <input
+                      type="text"
+                      className="definicoes-input"
+                      placeholder="Ex: Investigador Criminal de 2ª Classe"
+                      value={gestorVagaForm.titulo}
+                      onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, titulo: e.target.value })}
+                      required
+                    />
+                  </div>
                 </div>
 
-                <div className="form-group-custom">
-                  <label>Colocação Geográfica</label>
-                  <input
-                    type="text"
-                    className="definicoes-input"
-                    value={gestorVagaForm.local}
-                    onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, local: e.target.value })}
-                    required
-                  />
+                <div className="vaga-section-grid">
+                  <div className="form-group-custom">
+                    <label>Código do Edital / Aviso Oficial</label>
+                    <input
+                      type="text"
+                      className="definicoes-input"
+                      placeholder="Ex: Aviso n.º 01/SERNIC-DG/DRH/2026"
+                      value={gestorVagaForm.codigoEdital}
+                      onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, codigoEdital: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Área / Ramo do SERNIC</label>
+                    <select
+                      className="definicoes-select full"
+                      value={gestorVagaForm.carreira}
+                      onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, carreira: e.target.value })}
+                    >
+                      <option value="Investigação Criminal e Instrução Processual">Investigação Criminal e Instrução Processual</option>
+                      <option value="Laboratório Central de Criminalística (Polícia Científica)">Polícia Científica (Laboratório Forense)</option>
+                      <option value="Divisão de Investigação de Cibercrimes e Inteligência Digital">Inteligência Digital e Cibercrime</option>
+                      <option value="Departamento de Tanatologia e Toxicologia">Medicina Legal e Toxicologia Forense</option>
+                      <option value="Corpo Técnico Operativo">Corpo Técnico Operativo e Apoio</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-                <div className="form-group-custom">
-                  <label>Data de Abertura</label>
-                  <input
-                    type="date"
-                    className="definicoes-input"
-                    value={gestorVagaForm.dataAbertura}
-                    onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, dataAbertura: e.target.value })}
-                  />
+              {/* SECÇÃO 2: QUOTAS AUTORIZADAS E DISTRIBUIÇÃO TERRITORIAL */}
+              <div className="vaga-form-section">
+                <div className="vaga-form-section-header">
+                  <div className="vaga-form-section-badge">2</div>
+                  <div className="vaga-form-section-title-wrap">
+                    <h4 className="vaga-form-section-title">
+                      <Users size={17} color="#c32026" />
+                      <span>Quotas Autorizadas & Colocação Geográfica</span>
+                    </h4>
+                    <p className="vaga-form-section-subtitle">
+                      Postos aprovados pelo Ministério e províncias / delegações de destino
+                    </p>
+                  </div>
                 </div>
 
-                <div className="form-group-custom">
-                  <label>Data Limite de Candidaturas</label>
-                  <input
-                    type="date"
-                    className="definicoes-input"
-                    value={gestorVagaForm.dataLimite}
-                    onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, dataLimite: e.target.value })}
-                    required
-                  />
+                <div className="vaga-section-grid">
+                  <div className="form-group-custom">
+                    <label>Quotas de Vagas Autorizadas</label>
+                    <input
+                      type="number"
+                      min="1"
+                      className="definicoes-input"
+                      value={gestorVagaForm.vagas}
+                      onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, vagas: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Estado Operacional do Concurso</label>
+                    <select
+                      className="definicoes-select full"
+                      value={gestorVagaForm.status}
+                      onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, status: e.target.value })}
+                    >
+                      <option value="Aberto">Aberto</option>
+                      <option value="Encerrado">Encerrado</option>
+                      <option value="Em Breve">Em Breve</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group-custom" style={{ gridColumn: '1 / -1' }}>
+                    <label>Colocação Geográfica / Delegações Provinciais</label>
+                    <input
+                      type="text"
+                      className="definicoes-input"
+                      value={gestorVagaForm.local}
+                      onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, local: e.target.value })}
+                      required
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="form-group-custom" style={{ marginBottom: '1rem' }}>
-                <label>Carreira / Ramo SERNIC</label>
-                <select
-                  className="definicoes-select full"
-                  value={gestorVagaForm.carreira}
-                  onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, carreira: e.target.value })}
-                >
-                  <option value="Investigação Criminal e Instrução Processual">Investigação Criminal e Instrução Processual</option>
-                  <option value="Laboratório Central de Criminalística (Polícia Científica)">Polícia Científica (Laboratório Forense)</option>
-                  <option value="Divisão de Investigação de Cibercrimes e Inteligência Digital">Inteligência Digital e Cibercrime</option>
-                  <option value="Departamento de Tanatologia e Toxicologia">Medicina Legal e Toxicologia Forense</option>
-                  <option value="Corpo Técnico Operativo">Corpo Técnico Operativo e Apoio</option>
-                </select>
+              {/* SECÇÃO 3: CRONOGRAMA OFICIAL E PRAZOS */}
+              <div className="vaga-form-section">
+                <div className="vaga-form-section-header">
+                  <div className="vaga-form-section-badge">3</div>
+                  <div className="vaga-form-section-title-wrap">
+                    <h4 className="vaga-form-section-title">
+                      <Calendar size={17} color="#c32026" />
+                      <span>Cronograma Oficial & Prazos Improrrogáveis</span>
+                    </h4>
+                    <p className="vaga-form-section-subtitle">
+                      Datas de publicação em BR e encerramento oficial de candidaturas
+                    </p>
+                  </div>
+                </div>
+
+                <div className="vaga-section-grid">
+                  <div className="form-group-custom">
+                    <label>Data de Publicação / Abertura</label>
+                    <input
+                      type="date"
+                      className="definicoes-input"
+                      value={gestorVagaForm.dataAbertura}
+                      onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, dataAbertura: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Data Limite de Candidaturas</label>
+                    <input
+                      type="date"
+                      className="definicoes-input"
+                      value={gestorVagaForm.dataLimite}
+                      onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, dataLimite: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="form-group-custom" style={{ marginBottom: '1rem' }}>
-                <label>Enquadramento Salarial / TSU</label>
-                <input
-                  type="text"
-                  className="definicoes-input"
-                  value={gestorVagaForm.remuneracao}
-                  onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, remuneracao: e.target.value })}
-                />
+              {/* SECÇÃO 4: ENQUADRAMENTO SALARIAL E TSU */}
+              <div className="vaga-form-section">
+                <div className="vaga-form-section-header">
+                  <div className="vaga-form-section-badge">4</div>
+                  <div className="vaga-form-section-title-wrap">
+                    <h4 className="vaga-form-section-title">
+                      <Award size={17} color="#c59b27" />
+                      <span>Enquadramento Salarial & TSU</span>
+                    </h4>
+                    <p className="vaga-form-section-subtitle">
+                      Tabela Salarial Única e suplementos remuneratórios do estatuto do SERNIC
+                    </p>
+                  </div>
+                </div>
+
+                <div className="vaga-section-grid full">
+                  <div className="form-group-custom">
+                    <label>Enquadramento Salarial / Nível TSU & Benefícios</label>
+                    <input
+                      type="text"
+                      className="definicoes-input"
+                      value={gestorVagaForm.remuneracao}
+                      onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, remuneracao: e.target.value })}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="dossier-modal-footer" style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

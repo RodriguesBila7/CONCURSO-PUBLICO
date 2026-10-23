@@ -328,6 +328,7 @@ export default function App() {
         <RecrutamentoModule
           navigate={navigate}
           onSelectVagaParaCandidatura={(vaga) => setSelectedVagaParaCandidatura(vaga)}
+          currentUser={currentUser}
         />
       );
     } else if (currentPath === '/portal-recrutamento/candidatura' || currentPath === '/candidatura') {

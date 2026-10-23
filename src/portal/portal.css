@@ -4450,6 +4450,143 @@
   border-color: #7f1d1d;
 }
 
+/* ========================================================
+   ESTILOS INSTITUCIONAIS PARA GESTÃO DE VAGAS ORGANIZADA (GESTOR)
+   ======================================================== */
+.sub-aba-candidato-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  background: linear-gradient(135deg, rgba(15, 32, 66, 0.05) 0%, rgba(197, 155, 39, 0.08) 100%);
+  border: 1px solid var(--portal-border, #cbd5e1);
+  border-left: 4px solid #c59b27;
+  border-radius: 12px;
+  padding: 0.8rem 1.1rem;
+  margin-bottom: 1.5rem;
+}
+
+.portal-theme-preto .sub-aba-candidato-header-bar {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(197, 155, 39, 0.06) 100%);
+  border-color: #2c3c52;
+  border-left-color: #c59b27;
+}
+
+.candidato-header-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: var(--portal-text-main, #0f172a);
+  text-transform: uppercase;
+}
+
+.gestor-edit-pill {
+  border-color: rgba(195, 32, 38, 0.35) !important;
+  color: #c32026 !important;
+  background: rgba(195, 32, 38, 0.06) !important;
+  font-weight: 800 !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.gestor-edit-pill:hover {
+  background: #c32026 !important;
+  color: #ffffff !important;
+  border-color: #c32026 !important;
+}
+
+.gestor-edit-pill:hover svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+/* CARDS ORGANIZADOS POR SECCÃO PARA O FORMULÁRIO DO GESTOR */
+.vaga-form-section {
+  background-color: var(--portal-card-inner, #f8fafc);
+  border: 1px solid var(--portal-border, #e2e8f0);
+  border-radius: 12px;
+  padding: 1.25rem 1.35rem;
+  margin-bottom: 1.35rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.portal-theme-preto .vaga-form-section {
+  background-color: #121c2c;
+  border-color: #24344d;
+}
+
+.vaga-form-section:focus-within {
+  border-color: #c59b27;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+}
+
+.vaga-form-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--portal-border, #e2e8f0);
+}
+
+.portal-theme-preto .vaga-form-section-header {
+  border-bottom-color: #24344d;
+}
+
+.vaga-form-section-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #0f2042 0%, #1e3a8a 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.vaga-form-section-title-wrap {
+  flex: 1;
+}
+
+.vaga-form-section-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--portal-text-main, #0f172a);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.vaga-form-section-subtitle {
+  margin: 0.15rem 0 0 0;
+  font-size: 0.78rem;
+  color: var(--portal-text-muted, #64748b);
+}
+
+.vaga-section-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.vaga-section-grid.full {
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 640px) {
+  .vaga-section-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .is-dragging {
   user-select: none !important;
 }
