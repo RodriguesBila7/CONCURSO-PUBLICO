@@ -53,7 +53,8 @@ import {
   Building,
   AlertTriangle,
   Sun,
-  Moon
+  Moon,
+  PieChart
 } from 'lucide-react';
 import { 
   INITIAL_VAGAS, 
@@ -434,11 +435,18 @@ export default function GestorPortalModule({
       porVaga[v.titulo] = candidatos.filter(c => c.vagaTitulo === v.titulo).length;
     });
 
-    // Distribuição por província
+    // Distribuição por província (12 unidades oficiais: Direcção Geral + 11 Províncias)
     const porProvincia = {};
+    PROVINCIAS_MOCAMBIQUE.forEach(p => {
+      porProvincia[p] = 0;
+    });
     candidatos.forEach(c => {
       const p = c.provincia || 'Maputo Cidade';
-      porProvincia[p] = (porProvincia[p] || 0) + 1;
+      if (porProvincia[p] !== undefined) {
+        porProvincia[p] += 1;
+      } else {
+        porProvincia[p] = (porProvincia[p] || 0) + 1;
+      }
     });
 
     return {
@@ -453,7 +461,45 @@ export default function GestorPortalModule({
       porVaga,
       porProvincia
     };
-  }, [candidatos]);
+  }, [candidatos, vagas]);
+
+  // Cálculos do Gráfico Donut de Resumo do Júri
+  const donutSegments = useMemo(() => {
+    const total = stats.total || 1;
+    const items = [
+      { label: 'Aprovadas / Provimento', value: stats.aprovados, color: '#16a34a' },
+      { label: 'Convocadas p/ Provas', value: stats.convocados, color: '#2563eb' },
+      { label: 'Admitidas', value: stats.admitidos, color: '#0d9488' },
+      { label: 'Em Análise', value: stats.analise, color: '#f59e0b' },
+      { label: 'Excluídas', value: stats.excluidos, color: '#c32026' },
+    ];
+    const r = 54;
+    const circumference = 2 * Math.PI * r;
+    let accumulated = 0;
+
+    return items.map(item => {
+      const percentage = stats.total > 0 ? Math.round((item.value / stats.total) * 100) : 0;
+      const dashLength = (item.value / total) * circumference;
+      const dashGap = circumference - dashLength;
+      const dashOffset = -accumulated;
+      accumulated += dashLength;
+      return {
+        ...item,
+        percentage,
+        dashLength,
+        dashGap,
+        dashOffset
+      };
+    });
+  }, [stats]);
+
+  const taxaAdmissibilidade = stats.total > 0
+    ? Math.round(((stats.admitidos + stats.convocados + stats.aprovados) / stats.total) * 100)
+    : 0;
+
+  const taxaTriagemConcluida = stats.total > 0
+    ? Math.round(((stats.total - stats.analise) / stats.total) * 100)
+    : 0;
 
   // ========================================================
   // FILTRAGEM DE INSCRITOS
@@ -1175,19 +1221,19 @@ export default function GestorPortalModule({
               </div>
             </div>
 
-            {/* Coluna 2: Distribuição por Província e Ações Rápidas */}
+            {/* Coluna 2: Distribuição por Província (12 Unidades: Direcção Geral + 11 Províncias) */}
             <div className="gestor-panel-card">
               <div className="gestor-panel-header">
                 <h3>
                   <MapPin size={18} color="#c32026" />
                   Distribuição Territorial de Candidaturas
                 </h3>
-                <span className="gestor-panel-tag">Delegações Provinciais</span>
+                <span className="gestor-panel-tag">12 Direcções Oficiais</span>
               </div>
               <div className="gestor-panel-body">
                 <div className="gestor-prov-grid">
                   {Object.entries(stats.porProvincia).map(([prov, qtd]) => (
-                    <div key={prov} className="gestor-prov-chip">
+                    <div key={prov} className={`gestor-prov-chip ${prov === 'Direcção Geral' ? 'is-dg' : ''}`}>
                       <span className="prov-name">{prov}</span>
                       <span className="prov-count">{qtd}</span>
                     </div>
@@ -1212,6 +1258,83 @@ export default function GestorPortalModule({
                     <FileSignature size={16} />
                     <span>Abrir Triagem de Pendentes</span>
                   </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Coluna 3: Novo Gráfico de Resumo de Deliberação & Eficiência do Júri */}
+            <div className="gestor-panel-card">
+              <div className="gestor-panel-header">
+                <h3>
+                  <PieChart size={18} color="#c32026" />
+                  Resumo do Funil de Deliberação
+                </h3>
+                <span className="gestor-panel-tag">Pipeline & Métricas</span>
+              </div>
+              <div className="gestor-panel-body gestor-summary-chart-body">
+                {/* GRÁFICO DONUT SVG PROFISSIONAL */}
+                <div className="gestor-donut-wrapper">
+                  <div className="gestor-donut-svg-container">
+                    <svg viewBox="0 0 160 160" className="gestor-donut-svg">
+                      <circle
+                        cx="80"
+                        cy="80"
+                        r="54"
+                        fill="none"
+                        stroke="rgba(148, 163, 184, 0.2)"
+                        strokeWidth="18"
+                      />
+                      {donutSegments.map((seg, idx) => (
+                        <circle
+                          key={idx}
+                          cx="80"
+                          cy="80"
+                          r="54"
+                          fill="none"
+                          stroke={seg.color}
+                          strokeWidth="18"
+                          strokeDasharray={`${seg.dashLength} ${seg.dashGap}`}
+                          strokeDashoffset={seg.dashOffset}
+                          strokeLinecap="butt"
+                          transform="rotate(-90 80 80)"
+                          className="donut-segment"
+                        >
+                          <title>{`${seg.label}: ${seg.value} (${seg.percentage}%)`}</title>
+                        </circle>
+                      ))}
+                    </svg>
+                    <div className="gestor-donut-center-content">
+                      <span className="donut-center-num">{stats.total}</span>
+                      <span className="donut-center-txt">Candidatos</span>
+                    </div>
+                  </div>
+
+                  {/* LEGENDA / STATUS BREAKDOWN */}
+                  <div className="gestor-donut-legend">
+                    {donutSegments.map((seg, idx) => (
+                      <div key={idx} className="donut-legend-item">
+                        <div className="legend-indicator-dot" style={{ backgroundColor: seg.color }} />
+                        <span className="legend-label">{seg.label}</span>
+                        <span className="legend-count"><strong>{seg.value}</strong> ({seg.percentage}%)</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* TAXAS ESTRATÉGICAS DE DESEMPENHO */}
+                <div className="gestor-metrics-strip">
+                  <div className="gestor-metric-chip">
+                    <span className="metric-chip-label">Taxa Admissão</span>
+                    <strong className="metric-chip-value success">{taxaAdmissibilidade}%</strong>
+                  </div>
+                  <div className="gestor-metric-chip">
+                    <span className="metric-chip-label">Taxa Exclusão</span>
+                    <strong className="metric-chip-value danger">{stats.taxaExclusao}%</strong>
+                  </div>
+                  <div className="gestor-metric-chip">
+                    <span className="metric-chip-label">Triagem Feita</span>
+                    <strong className="metric-chip-value info">{taxaTriagemConcluida}%</strong>
+                  </div>
                 </div>
               </div>
             </div>

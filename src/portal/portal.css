@@ -2807,14 +2807,21 @@
   color: var(--portal-text-muted);
 }
 
-/* Colunas do Dashboard */
+/* Colunas do Dashboard (3 Colunas: Concorrência + 12 Províncias + Gráfico Resumo Funil) */
 .gestor-dashboard-cols {
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.5rem;
+  align-items: stretch;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1400px) {
+  .gestor-dashboard-cols {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 950px) {
   .gestor-dashboard-cols {
     grid-template-columns: 1fr;
   }
@@ -2928,6 +2935,183 @@
   background: rgba(195, 32, 38, 0.1);
   padding: 0.1rem 0.45rem;
   border-radius: 4px;
+}
+
+.gestor-prov-chip.is-dg {
+  border-color: rgba(195, 32, 38, 0.45);
+  background: linear-gradient(135deg, rgba(195, 32, 38, 0.08) 0%, var(--portal-btn-tab-bg) 100%);
+  box-shadow: 0 2px 8px rgba(195, 32, 38, 0.1);
+}
+
+.gestor-prov-chip.is-dg .prov-name {
+  color: #c32026;
+  font-weight: 800;
+}
+
+/* ========================================================
+   GRÁFICO DONUT DE RESUMO DO FUNIL DE DELIBERAÇÃO
+   ======================================================== */
+.gestor-summary-chart-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.25rem;
+  height: calc(100% - 60px);
+}
+
+.gestor-donut-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.gestor-donut-svg-container {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  flex-shrink: 0;
+}
+
+.gestor-donut-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.donut-segment {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.donut-segment:hover {
+  stroke-width: 22;
+  filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.25));
+}
+
+.gestor-donut-center-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.donut-center-num {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: var(--portal-text-main);
+  line-height: 1;
+}
+
+.donut-center-txt {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--portal-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+.gestor-donut-legend {
+  flex: 1;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.donut-legend-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  padding: 0.25rem 0.45rem;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.donut-legend-item:hover {
+  background-color: var(--portal-card-inner, #f8fafc);
+}
+
+.legend-indicator-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-label {
+  flex: 1;
+  color: var(--portal-text-main);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.legend-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--portal-text-muted);
+}
+
+.gestor-metrics-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.55rem;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--portal-border);
+}
+
+.gestor-metric-chip {
+  background: var(--portal-card-inner, #f8fafc);
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  padding: 0.55rem 0.45rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.2rem;
+}
+
+.portal-theme-preto .gestor-metric-chip {
+  background: #172235;
+  border-color: #24344d;
+}
+
+.metric-chip-label {
+  font-size: 0.66rem;
+  color: var(--portal-text-muted);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.metric-chip-value {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.metric-chip-value.success {
+  color: #16a34a;
+}
+
+.metric-chip-value.danger {
+  color: #c32026;
+}
+
+.metric-chip-value.info {
+  color: #2563eb;
 }
 
 .gestor-quick-card-banner {

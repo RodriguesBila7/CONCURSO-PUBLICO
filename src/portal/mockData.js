@@ -747,11 +747,166 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
       { data: '2026-10-16', etapa: 'Provas Práticas de Laboratório', descricao: 'Excelente desempenho prático.' },
       { data: '2026-10-21', etapa: 'Aprovação Final', descricao: 'Apurada com 17.8 valores.' }
     ]
+  },
+  {
+    codigoCandidatura: 'SERNIC-2026-00311',
+    biNumero: '110500123456K',
+    nuit: '100456123',
+    nomeCompleto: 'Bernardo Zacarias Chongo',
+    genero: 'Masculino',
+    dataNascimento: '1994-06-18',
+    idade: 32,
+    telefone: '+258 84 332 1100',
+    email: 'bernardo.chongo@gmail.com',
+    provincia: 'Direcção Geral',
+    distrito: 'Sede Central (Maputo)',
+    morada: 'Av. Vladimir Lenine, n.º 1234, Maputo',
+    filiacaoPai: 'Zacarias Chongo',
+    filiacaoMae: 'Albertina Langa',
+    estadoCivil: 'Casado(a)',
+    vagaId: 'VAG-2026-01',
+    vagaTitulo: 'Investigador Criminal de 2ª Classe',
+    carreira: 'Investigação Criminal',
+    dataSubmissao: '2026-10-06T08:45:00Z',
+    status: 'Aprovada',
+    faseAtual: 6,
+    habilitacoes: {
+      grau: 'Licenciatura',
+      curso: 'Direito e Segurança Pública',
+      instituicao: 'Universidade Eduardo Mondlane (UEM)',
+      anoConclusao: 2021,
+      mediaFinal: '16.8'
+    },
+    documentos: [
+      { id: 'doc-bi', tipo: 'Bilhete de Identidade Autenticado', status: 'Validado', tamanho: '1.2 MB', data: '2026-10-06' },
+      { id: 'doc-cert', tipo: 'Certificado de Licenciatura', status: 'Validado', tamanho: '2.0 MB', data: '2026-10-06' }
+    ],
+    detalhesFase: {
+      titulo: 'Candidato Homologado pela Direcção Geral',
+      dataEvento: 'Apresentação: 1 de Dezembro de 2026',
+      local: 'Direcção Geral do SERNIC - Auditório Central',
+      observacoes: 'Aprovado para provimento imediato.',
+      mensagemComissao: 'Processo concluído com parecer favorável.'
+    },
+    deliberacaoJuri: {
+      decisao: 'Aprovada',
+      dataDeliberacao: '2026-10-21T18:00:00Z',
+      operador: 'Dr. Alberto Chissano (Presidente do Júri)',
+      notaFinal: '16.8',
+      parecer: 'Aprovado com mérito pelo júri nacional.'
+    },
+    historico: [
+      { data: '2026-10-06', etapa: 'Candidatura Submetida', descricao: 'Processo enviado.' },
+      { data: '2026-10-12', etapa: 'Triagem Documental', descricao: 'Homologação favorável.' },
+      { data: '2026-10-21', etapa: 'Aprovação Final', descricao: 'Nota 16.8 valores.' }
+    ]
+  },
+  {
+    codigoCandidatura: 'SERNIC-2026-00428',
+    biNumero: '060200789012F',
+    nuit: '100654321',
+    nomeCompleto: 'Graça Inês Machava',
+    genero: 'Feminino',
+    dataNascimento: '1997-11-20',
+    idade: 29,
+    telefone: '+258 82 771 2299',
+    email: 'graca.machava@outlook.com',
+    provincia: 'Manica',
+    distrito: 'Chimoio',
+    morada: 'Bairro 25 de Junho, Casa 18, Chimoio',
+    filiacaoPai: 'Inácio Machava',
+    filiacaoMae: 'Filomena Sitoe',
+    estadoCivil: 'Solteiro(a)',
+    vagaId: 'VAG-2026-02',
+    vagaTitulo: 'Perito Forense Balístico e Dactiloscópico',
+    carreira: 'Criminalística e Ciências Forenses',
+    dataSubmissao: '2026-10-08T10:20:00Z',
+    status: 'Admitida',
+    faseAtual: 3,
+    habilitacoes: {
+      grau: 'Licenciatura',
+      curso: 'Química e Peritagem Forense',
+      instituicao: 'Universidade Pedagógica de Moçambique',
+      anoConclusao: 2022,
+      mediaFinal: '15.4'
+    },
+    documentos: [
+      { id: 'doc-bi', tipo: 'Bilhete de Identidade Autenticado', status: 'Validado', tamanho: '1.0 MB', data: '2026-10-08' },
+      { id: 'doc-cert', tipo: 'Certificado de Habilitações', status: 'Validado', tamanho: '1.8 MB', data: '2026-10-08' }
+    ],
+    detalhesFase: {
+      titulo: 'Candidatura Admitida na Província de Manica',
+      dataEvento: 'Convocação a publicar',
+      local: 'Delegação Provincial de Manica - Chimoio',
+      observacoes: 'Apta para provas laboratoriais.',
+      mensagemComissao: 'Documentação validada pelo júri provincial.'
+    },
+    deliberacaoJuri: {
+      decisao: 'Admitida',
+      dataDeliberacao: '2026-10-18T11:40:00Z',
+      operador: 'Dr. Alberto Chissano (Presidente do Júri)',
+      parecer: 'Apta na conferência curricular.'
+    },
+    historico: [
+      { data: '2026-10-08', etapa: 'Candidatura Submetida', descricao: 'Processo enviado.' },
+      { data: '2026-10-18', etapa: 'Candidatura Admitida', descricao: 'Homologação favorável.' }
+    ]
+  },
+  {
+    codigoCandidatura: 'SERNIC-2026-00652',
+    biNumero: '090800345678H',
+    nuit: '100987654',
+    nomeCompleto: 'Aníbal Salvador Muando',
+    genero: 'Masculino',
+    dataNascimento: '1996-03-12',
+    idade: 30,
+    telefone: '+258 84 990 8877',
+    email: 'anibal.muando@gmail.com',
+    provincia: 'Niassa',
+    distrito: 'Lichinga',
+    morada: 'Bairro Popular, Rua do Aeroporto, Lichinga',
+    filiacaoPai: 'Salvador Muando',
+    filiacaoMae: 'Joana Nhavene',
+    estadoCivil: 'Solteiro(a)',
+    vagaId: 'VAG-2026-04',
+    vagaTitulo: 'Técnico Superior de Medicina Legal e Toxicologia Forense',
+    carreira: 'Medicina Legal e Toxicologia Forense',
+    dataSubmissao: '2026-10-12T16:10:00Z',
+    status: 'Em análise',
+    faseAtual: 2,
+    habilitacoes: {
+      grau: 'Licenciatura',
+      curso: 'Biologia e Análises Clínicas',
+      instituicao: 'Universidade Lúrio (UniLúrio)',
+      anoConclusao: 2023,
+      mediaFinal: '15.9'
+    },
+    documentos: [
+      { id: 'doc-bi', tipo: 'Bilhete de Identidade Autenticado', status: 'Validado', tamanho: '1.3 MB', data: '2026-10-12' },
+      { id: 'doc-cert', tipo: 'Certificado de Conclusão', status: 'Validado', tamanho: '2.2 MB', data: '2026-10-12' }
+    ],
+    detalhesFase: {
+      titulo: 'Em Análise Curricular na Província de Niassa',
+      dataEvento: 'Triagem em curso',
+      local: 'Delegação Provincial do SERNIC - Lichinga',
+      observacoes: 'Aguardando parecer final do júri examinador.',
+      mensagemComissao: 'Processo na fase de conferência da comissão provincial.'
+    },
+    deliberacaoJuri: {
+      decisao: 'Em análise',
+      dataDeliberacao: null,
+      operador: null,
+      parecer: 'Em fase de conferência documental.'
+    },
+    historico: [
+      { data: '2026-10-12', etapa: 'Candidatura Submetida', descricao: 'Processo registado no portal.' }
+    ]
   }
 ];
 
-// Províncias e Distritos de Moçambique para selects estruturados
+// Províncias e Direcções de Moçambique: 12 unidades (Direcção Geral + 11 Províncias)
 export const PROVINCIAS_MOCAMBIQUE = [
+  'Direcção Geral',
   'Maputo Cidade',
   'Maputo Província',
   'Gaza',
@@ -795,7 +950,7 @@ export function validarTelefoneMZ(tel) {
 // PERSISTÊNCIA EM LOCALSTORAGE & HELPERS DE CONEXÃO
 // ========================================================
 
-const STORAGE_KEY_CANDIDATURAS = 'sernic_concurso_candidaturas_v2';
+const STORAGE_KEY_CANDIDATURAS = 'sernic_concurso_candidaturas_v4';
 const STORAGE_KEY_LISTAS = 'sernic_concurso_listas_v2';
 const STORAGE_KEY_AUDITORIA = 'sernic_concurso_auditoria_v2';
 const STORAGE_KEY_VAGAS = 'sernic_concurso_vagas_v2';
