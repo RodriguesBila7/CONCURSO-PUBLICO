@@ -356,10 +356,10 @@ export default function PortalLayout({
                 type="button"
                 className={`portal-sidebar-btn ${gestorTab === 'deliberacao' ? 'active' : ''}`}
                 onClick={() => handleSelectGestorTab('deliberacao')}
-                title="Deliberação e Decisão do Júri"
+                title="Avaliação e Decisão dos Candidatos"
               >
                 <FileText size={18} className="sidebar-btn-icon" />
-                <span className="sidebar-btn-text">Deliberação do Júri</span>
+                <span className="sidebar-btn-text">Avaliação dos Candidatos</span>
               </button>
 
               <button

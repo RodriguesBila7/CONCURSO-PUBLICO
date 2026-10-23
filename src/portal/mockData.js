@@ -316,11 +316,11 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
       { id: 'doc-med', tipo: 'Atestado Médico Oficial', status: 'Validado', tamanho: '890 KB', data: '2026-10-11' }
     ],
     detalhesFase: {
-      titulo: '1ª Fase: Avaliação Documental em Curso',
-      dataEvento: 'Previsão de publicação de deliberação: 30 de Outubro de 2026',
+      titulo: '1ª Fase: Análise de Documentos em Curso',
+      dataEvento: 'Previsão de publicação dos resultados: 30 de Outubro de 2026',
       local: 'Comissão Provincial de Júri - Sofala (Beira)',
-      observacoes: 'A comissão de júri está a conferir a autenticidade e validade jurídica dos certificados e certidões anexadas.',
-      mensagemComissao: 'O seu processo de candidatura foi submetido com sucesso e encontra-se na 1ª Fase de Avaliação Documental. Aguarde a deliberação do júri para saber se passa à Entrevista Profissional.'
+      observacoes: 'A equipa de avaliação está a verificar os documentos anexados.',
+      mensagemComissao: 'A sua candidatura foi recebida com sucesso e está na 1ª Fase de Análise de Documentos. Aguarde a confirmação para saber se passa à Entrevista Profissional.'
     },
     deliberacaoJuri: {
       decisao: 'Em Análise Documental',
@@ -330,7 +330,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     },
     historico: [
       { data: '2026-10-11', etapa: 'Inscrição Submetida', descricao: 'Processo registado no módulo Inscritos no Concurso.' },
-      { data: '2026-10-16', etapa: '1ª Fase: Em Análise Documental', descricao: 'Documentação remetida à mesa de avaliação do júri examinador.' }
+      { data: '2026-10-16', etapa: '1ª Fase: Em Análise Documental', descricao: 'Documentação remetida à equipa de avaliação.' }
     ]
   },
   {
@@ -367,12 +367,12 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
       { id: 'doc-cert', tipo: 'Certificado de Habilitações (Incompleto)', status: 'Rejeitado', tamanho: '1.9 MB', data: '2026-10-08' }
     ],
     detalhesFase: {
-      titulo: 'Candidatura Excluída na 1ª Fase (Inconformidade Documental)',
-      dataEvento: 'Deliberação exarada a 16 de Outubro de 2026',
+      titulo: 'Candidatura Não Aprovada na 1ª Fase (Documentos)',
+      dataEvento: 'Decisão tomada em 16 de Outubro de 2026',
       local: 'Comissão de Recrutamento do SERNIC - Gaza',
-      observacoes: 'Prazo legal para reclamação ou recurso administrativo: 5 (cinco) dias úteis após a notificação oficial.',
-      motivoExclusao: 'Documento de Habilitações Literárias incompleto: Não foi anexada a Certidão de Equivalência/Homologação do Grau Académico obtido no exterior, contrariando o Ponto 4.2 do Edital.',
-      mensagemComissao: 'Lamentamos informar que a sua candidatura foi excluída na 1ª Fase de Avaliação Documental por não conformidade dos requisitos formais exigidos no edital.'
+      observacoes: 'Se pretender pedir revisão desta decisão, tem 5 dias úteis a contar desta data.',
+      motivoExclusao: 'Falta a Certidão de Equivalência do Grau Académico obtido no exterior (exigido no ponto 4.2 do edital).',
+      mensagemComissao: 'A sua candidatura não foi aprovada na 1ª Fase (Análise de Documentos) devido a documentos incompletos.'
     },
     deliberacaoJuri: {
       decisao: 'Excluído',
@@ -1128,29 +1128,29 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
 
   // Novo histórico
   const novoHistorico = [...(current.historico || [])];
-  let novaEtapa = 'Deliberação do Júri';
+  let novaEtapa = 'Decisão da Avaliação';
   let descEtapa = `Estado atualizado para: ${updates.status || current.status}.`;
   let novaFaseAtual = current.faseAtual || 1;
 
   if (updates.status === 'Entrevista Profissional' || updates.status === 'Convocada para provas') {
-    novaEtapa = '2ª Fase: Convocação para Entrevista Profissional';
-    descEtapa = updates.parecer || (updates.eventoLocal ? `Convocado para Entrevista Profissional em ${updates.eventoLocal}.` : 'Aprovado na 1ª fase (avaliação documental). Convocado para a Entrevista Profissional.');
+    novaEtapa = '2ª Fase: Convocado para Entrevista';
+    descEtapa = updates.parecer || (updates.eventoLocal ? `Entrevista agendada em ${updates.eventoLocal}.` : 'Documentos aprovados. Convocado para a Entrevista Profissional.');
     novaFaseAtual = 2;
   } else if (updates.status === 'Admitido' || updates.status === 'Admitida' || updates.status === 'Aprovada') {
-    novaEtapa = '3ª Fase: Candidato Admitido para Provimento';
-    descEtapa = `Aprovado na Entrevista Profissional com a nota de ${updates.notaFinal || '18.0'} valores. Admitido para provimento da vaga.`;
+    novaEtapa = '3ª Fase: Candidato Admitido';
+    descEtapa = `Aprovado na Entrevista com nota de ${updates.notaFinal || '18.0'} valores. Selecionado para a vaga.`;
     novaFaseAtual = 3;
   } else if (updates.status === 'Aprovado (Suplente)') {
-    novaEtapa = '3ª Fase: Aprovado (Suplente / Reserva)';
-    descEtapa = `Aprovado na Entrevista Profissional com a nota de ${updates.notaFinal || '16.0'} valores. Classificado como suplente na lista de reserva.`;
+    novaEtapa = '3ª Fase: Aprovado como Suplente';
+    descEtapa = `Aprovado na Entrevista com nota de ${updates.notaFinal || '16.0'} valores. Fica na lista de reserva.`;
     novaFaseAtual = 3;
   } else if (updates.status === 'Excluído' || updates.status === 'Excluída') {
     novaEtapa = 'Candidatura Excluída';
-    descEtapa = updates.motivoExclusao || updates.parecer || 'Exclusão fundamentada nos requisitos do edital do concurso.';
+    descEtapa = updates.motivoExclusao || updates.parecer || 'Não cumpre os requisitos do concurso.';
     novaFaseAtual = current.faseAtual === 2 ? 2 : 1;
   } else if (updates.status === 'Em Análise Documental' || updates.status === 'Em análise') {
-    novaEtapa = '1ª Fase: Avaliação Documental';
-    descEtapa = 'Processo em análise documental pela comissão de júri.';
+    novaEtapa = '1ª Fase: Análise de Documentos';
+    descEtapa = 'Documentos a serem verificados.';
     novaFaseAtual = 1;
   }
 
@@ -1179,16 +1179,16 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
     detalhesFase: {
       ...current.detalhesFase,
       titulo: finalStatus === 'Entrevista Profissional'
-        ? 'Convocado(a) para 2ª Fase: Entrevista Profissional'
+        ? '2ª Fase: Convocado(a) para a Entrevista'
         : finalStatus === 'Admitido'
-        ? 'Candidato(a) Admitido(a) - Provimento Efetivo de Vaga'
+        ? '3ª Fase: Candidato(a) Admitido(a) na Vaga'
         : finalStatus === 'Aprovado (Suplente)'
-        ? 'Aprovado(a) na Entrevista - Candidato Suplente (Lista de Reserva)'
+        ? '3ª Fase: Aprovado(a) como Suplente (Lista de Reserva)'
         : finalStatus === 'Excluído'
-        ? 'Candidatura Excluída do Processo Selectivo'
-        : '1ª Fase: Avaliação Documental em Curso',
+        ? 'Candidatura Não Aprovada no Concurso'
+        : '1ª Fase: Análise de Documentos em Curso',
       dataEvento: updates.eventoData || current.detalhesFase?.dataEvento || 'Conforme Edital Publicado',
-      local: updates.eventoLocal || current.detalhesFase?.local || 'Instalações Oficiais do SERNIC',
+      local: updates.eventoLocal || current.detalhesFase?.local || 'Instalações do SERNIC',
       observacoes: updates.observacoes || current.detalhesFase?.observacoes || '',
       motivoExclusao: updates.motivoExclusao || current.detalhesFase?.motivoExclusao || null,
       mensagemComissao: updates.parecer || current.detalhesFase?.mensagemComissao || ''
@@ -1200,11 +1200,11 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
 
   // Registar na auditoria
   addStoredAuditoria({
-    acao: 'Deliberação de Candidatura',
+    acao: 'Avaliação de Candidato',
     candidato: `${current.nomeCompleto} (${current.codigoCandidatura})`,
     estadoAnterior: current.status,
     novoEstado: finalStatus,
-    motivo: updates.motivoExclusao || updates.parecer || `Deliberação formal registrada (${finalStatus})`,
+    motivo: updates.motivoExclusao || updates.parecer || `Decisão gravada (${finalStatus})`,
     operador: operador
   });
 
@@ -1290,7 +1290,7 @@ export function getStoredAuditoria() {
       id: 'AUD-001',
       dataHora: '2026-10-21 17:30',
       operador: 'Dr. Alberto Chissano (Presidente do Júri)',
-      acao: 'Deliberação de Candidatura',
+      acao: 'Avaliação de Candidato',
       candidato: 'Ângela Beatriz Cossa (SERNIC-2026-00789)',
       estadoAnterior: 'Convocada para provas',
       novoEstado: 'Aprovada',
@@ -1300,7 +1300,7 @@ export function getStoredAuditoria() {
       id: 'AUD-002',
       dataHora: '2026-10-21 16:00',
       operador: 'Dr. Alberto Chissano (Presidente do Júri)',
-      acao: 'Deliberação de Candidatura',
+      acao: 'Avaliação de Candidato',
       candidato: 'Fátima Abdul Remane (SERNIC-2026-00311)',
       estadoAnterior: 'Convocada para provas',
       novoEstado: 'Aprovada',

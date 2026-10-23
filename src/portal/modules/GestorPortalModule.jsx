@@ -674,7 +674,7 @@ export default function GestorPortalModule({
         ? 'Aprovado(a) na entrevista para provimento de vaga.'
         : novoEstado === 'Aprovado (Suplente)'
         ? 'Aprovado(a) na entrevista para a lista de reserva (suplente).'
-        : 'Deliberação homologada pelo júri.'),
+        : 'Decisão gravada com sucesso.'),
       motivoExclusao: motivoFinal,
       notaFinal: (novoEstado === 'Admitido' || novoEstado === 'Aprovado (Suplente)') ? notaFinal : null,
       eventoData: novoEstado === 'Entrevista Profissional' ? eventoData : null,
@@ -687,7 +687,7 @@ export default function GestorPortalModule({
 
     if (updated) {
       reloadData();
-      if (onNotify) onNotify('success', `Deliberação registada com sucesso para o protocolo ${deliberandoCandidato.codigoCandidatura}!`);
+      if (onNotify) onNotify('success', `Decisão guardada com sucesso para ${deliberandoCandidato.nomeCompleto}!`);
       setDeliberandoCandidato(updated);
     }
   };
@@ -1196,7 +1196,7 @@ export default function GestorPortalModule({
                 </h2>
                 <p>
                   Serviço Nacional de Investigação Criminal • Direcção Geral • Direcção de Recursos Humanos.
-                  Avaliação de candidaturas, conferência documental, deliberação da comissão e publicação oficial de editais.
+                  Avaliação de candidaturas, conferência de documentos e publicação dos resultados oficiais.
                 </p>
               </div>
 
@@ -1352,13 +1352,13 @@ export default function GestorPortalModule({
                 </div>
 
                 <div className="gestor-quick-card-banner">
-                  <h4>Comissão de Júri em Sessão</h4>
-                  <p>Existem <strong>{stats.analise}</strong> candidaturas pendentes que requerem parecer formal de admissão ou exclusão.</p>
+                  <h4>Avaliação em Curso</h4>
+                  <p>Existem <strong>{stats.analise}</strong> candidaturas a aguardar conferência de documentos.</p>
                   <button
                     type="button"
                     className="gestor-btn-primary-red"
                     onClick={() => {
-                      const primeiroPendente = candidatos.find(c => c.status === 'Em análise' || c.status === 'Submetida');
+                      const primeiroPendente = candidatos.find(c => c.status === 'Em Análise Documental' || c.status === 'Em análise' || c.status === 'Submetida');
                       if (primeiroPendente) {
                         iniciarDeliberacao(primeiroPendente);
                       } else {
@@ -1367,7 +1367,7 @@ export default function GestorPortalModule({
                     }}
                   >
                     <FileSignature size={16} />
-                    <span>Abrir Triagem de Pendentes</span>
+                    <span>Avaliar Candidatos Pendentes</span>
                   </button>
                 </div>
               </div>
@@ -1376,7 +1376,7 @@ export default function GestorPortalModule({
           </div>
 
           {/* ========================================================
-              SECÇÃO EM DESTAQUE ABAIXO: FUNIL DE DELIBERAÇÃO EXPANDIDO
+              SECÇÃO EM DESTAQUE ABAIXO: FUNIL DO CONCURSO EXPANDIDO
               ======================================================== */}
           <div className="gestor-funnel-full-card fadeIn">
             <div className="gestor-funnel-header">
@@ -1385,9 +1385,9 @@ export default function GestorPortalModule({
                   <PieChart size={22} color="#ffffff" />
                 </div>
                 <div>
-                  <h3>Funil Executivo de Deliberação & Triagem do Concurso</h3>
+                  <h3>Progresso dos Candidatos no Concurso</h3>
                   <p>
-                    Fluxo completo de conversão das candidaturas, taxas de admissibilidade e eficiência do Júri Nacional do SERNIC 2026.
+                    Acompanhamento simples de todos os candidatos: desde a inscrição inicial, passando pela entrevista, até ao resultado final.
                   </p>
                 </div>
               </div>
@@ -1463,7 +1463,7 @@ export default function GestorPortalModule({
 
               {/* LADO 2: PIPELINE PROGRESSIVO DAS FASES DO FUNIL */}
               <div className="funnel-expanded-pipeline-col">
-                <h4 className="pipeline-col-title">Etapas Oficiais de Deliberação da Comissão</h4>
+                <h4 className="pipeline-col-title">Etapas de Avaliação do Concurso</h4>
                 
                 <div className="pipeline-stages-list">
                   {funnelStages.map((stage, idx) => {
@@ -1502,42 +1502,42 @@ export default function GestorPortalModule({
 
               {/* LADO 3: CARTÕES DE EFICIÊNCIA & INDICADORES ESTRATÉGICOS */}
               <div className="funnel-expanded-kpis-col">
-                <h4 className="pipeline-col-title">Indicadores Estratégicos</h4>
+                <h4 className="pipeline-col-title">Indicadores Principais</h4>
 
                 <div className="funnel-kpi-card green">
                   <div className="funnel-kpi-top">
-                    <span className="kpi-label">Taxa de Admissibilidade</span>
+                    <span className="kpi-label">Taxa de Sucesso</span>
                     <ShieldCheck size={20} className="kpi-icon" />
                   </div>
                   <div className="funnel-kpi-value">{taxaAdmissibilidade}%</div>
-                  <div className="funnel-kpi-footnote">Candidatos habilitados a prosseguir no concurso</div>
+                  <div className="funnel-kpi-footnote">Candidatos admitidos ou suplentes</div>
                 </div>
 
                 <div className="funnel-kpi-card blue">
                   <div className="funnel-kpi-top">
-                    <span className="kpi-label">Índice de Triagem Concluída</span>
+                    <span className="kpi-label">Processos Já Avaliados</span>
                     <CheckCircle2 size={20} className="kpi-icon" />
                   </div>
                   <div className="funnel-kpi-value">{taxaTriagemConcluida}%</div>
-                  <div className="funnel-kpi-footnote">{stats.total - stats.analise} de {stats.total} candidaturas já avaliadas</div>
+                  <div className="funnel-kpi-footnote">{stats.total - stats.analise} de {stats.total} candidaturas analisadas</div>
                 </div>
 
                 <div className="funnel-kpi-card red">
                   <div className="funnel-kpi-top">
-                    <span className="kpi-label">Taxa de Exclusão Jurídica</span>
+                    <span className="kpi-label">Taxa de Exclusão</span>
                     <XCircle size={20} className="kpi-icon" />
                   </div>
                   <div className="funnel-kpi-value">{stats.taxaExclusao}%</div>
-                  <div className="funnel-kpi-footnote">{stats.excluidos} excluídos por inconformidade com o edital</div>
+                  <div className="funnel-kpi-footnote">{stats.excluidos} excluídos por não cumprirem os requisitos</div>
                 </div>
 
                 <div className="funnel-kpi-card gold">
                   <div className="funnel-kpi-top">
-                    <span className="kpi-label">Tempo Médio de Deliberação</span>
+                    <span className="kpi-label">Tempo Médio de Avaliação</span>
                     <Clock size={20} className="kpi-icon" />
                   </div>
                   <div className="funnel-kpi-value">2.4 Dias</div>
-                  <div className="funnel-kpi-footnote">Meta estatutária do SERNIC: até 5 dias úteis</div>
+                  <div className="funnel-kpi-footnote">Média de resposta para cada etapa</div>
                 </div>
               </div>
             </div>
@@ -1733,10 +1733,10 @@ export default function GestorPortalModule({
                             type="button"
                             className="btn-action-deliberar"
                             onClick={() => iniciarDeliberacao(c)}
-                            title="Deliberar: Admitir, Aprovar ou Excluir"
+                            title="Avaliar candidato e definir resultado"
                           >
                             <FileSignature size={15} />
-                            <span>Deliberar</span>
+                            <span>Avaliar</span>
                           </button>
                         </div>
                       </td>
@@ -1774,9 +1774,9 @@ export default function GestorPortalModule({
               <div className="deliberacao-sidebar-header">
                 <h3>
                   <Users size={17} color="#c32026" />
-                  Candidatos à Avaliação do Júri
+                  Lista de Candidatos para Avaliação
                 </h3>
-                <span className="sidebar-count">{candidatos.length} totais</span>
+                <span className="sidebar-count">{candidatos.length} no total</span>
               </div>
 
               <div className="deliberacao-candidatos-list">
@@ -1794,10 +1794,10 @@ export default function GestorPortalModule({
                         const isF2 = c.faseAtual === 2 || c.status === 'Entrevista Profissional' || c.status === 'Convocada para provas';
                         if (isF1) {
                           setNovoEstado('Entrevista Profissional');
-                          setParecerJuri('Candidatura conforme na validação documental. Aprovado(a) para a 2ª Fase (Entrevista Profissional).');
+                          setParecerJuri('Documentos conferidos e aprovados. Convocado(a) para a 2ª Fase (Entrevista).');
                         } else if (isF2) {
                           setNovoEstado('Admitido');
-                          setParecerJuri('Candidato demonstrou excelente domínio técnico na Entrevista Profissional. Proposto para provimento de vaga.');
+                          setParecerJuri('Excelente desempenho na Entrevista Profissional. Aprovado para a vaga.');
                         } else {
                           setNovoEstado(c.status);
                           setParecerJuri(c.deliberacaoJuri?.parecer || '');
@@ -1889,29 +1889,29 @@ export default function GestorPortalModule({
 
                       return (
                         <>
-                          {/* BANNER OFICIAL DA FASE DO CONCURSO */}
+                          {/* BANNER DA FASE DO CONCURSO */}
                           <div className={`deliberacao-phase-banner fase${candFase}`}>
                             <div className="banner-title">
                               <ShieldCheck size={18} />
                               <span>
-                                {candFase === 1 && '1ª Fase: Avaliação Documental (Triagem de Requisitos)'}
-                                {candFase === 2 && '2ª Fase: Entrevista Profissional (Avaliação Técnica e Comportamental)'}
-                                {candFase === 3 && `3ª Fase: Deliberação Final Homologada (${deliberandoCandidato.status})`}
+                                {candFase === 1 && '1ª Fase: Análise de Documentos'}
+                                {candFase === 2 && '2ª Fase: Entrevista Profissional'}
+                                {candFase === 3 && `3ª Fase: Resultado Final (${deliberandoCandidato.status})`}
                               </span>
                             </div>
                             <p className="banner-desc">
-                              {candFase === 1 && 'Regra Fundamental: Na 1ª fase o júri apenas pode aprovar o candidato para a 2ª Fase (Entrevista Profissional) ou excluí-lo por inconformidade documental com o Edital.'}
-                              {candFase === 2 && 'Regra Fundamental: Após a realização da Entrevista Profissional, o júri delibera o desfecho final em 3 categorias: Admitido (Efetivo), Aprovado (Suplente) ou Excluído.'}
-                              {candFase === 3 && 'O candidato já tem resultado final homologado pela comissão. É possível recalibrar a deliberação caso tenha sido interposto recurso com provimento.'}
+                              {candFase === 1 && 'Nesta 1ª fase, pode aprovar o candidato para a Entrevista ou excluir caso não cumpra os requisitos obrigatórios.'}
+                              {candFase === 2 && 'Após a realização da entrevista, defina o resultado: Admitido, Aprovado como Suplente ou Excluído.'}
+                              {candFase === 3 && 'O candidato já tem o resultado gravado. Se necessário, pode alterar a decisão abaixo.'}
                             </p>
                           </div>
 
                           <div className="deliberacao-choice-title">
                             <FileSignature size={18} color="#c32026" />
                             <span>
-                              {candFase === 1 && 'Deliberação da 1ª Fase (Avaliação Documental):'}
-                              {candFase === 2 && 'Deliberação da 2ª Fase (Entrevista Profissional):'}
-                              {candFase === 3 && 'Ajuste da Deliberação Final do Candidato:'}
+                              {candFase === 1 && 'Escolha a decisão da 1ª Fase:'}
+                              {candFase === 2 && 'Escolha o resultado da Entrevista:'}
+                              {candFase === 3 && 'Alterar o resultado final do candidato:'}
                             </span>
                           </div>
 
@@ -1923,7 +1923,7 @@ export default function GestorPortalModule({
                                 className={`deliberacao-radio-card option-convocado ${novoEstado === 'Entrevista Profissional' ? 'checked' : ''}`}
                                 onClick={() => {
                                   setNovoEstado('Entrevista Profissional');
-                                  if (!parecerJuri) setParecerJuri('Candidatura conforme na validação documental. Aprovado(a) para a 2ª Fase (Entrevista Profissional).');
+                                  if (!parecerJuri) setParecerJuri('Documentos aprovados. Convocado(a) para a 2ª Fase (Entrevista).');
                                 }}
                               >
                                 <input
@@ -1938,7 +1938,7 @@ export default function GestorPortalModule({
                                     <Calendar size={20} className="radio-icon" />
                                     <strong>APROVAR PARA A 2ª FASE (ENTREVISTA)</strong>
                                   </div>
-                                  <p>Validação documental regular. Convocar oficialmente o candidato para a Entrevista Profissional com o júri.</p>
+                                  <p>Documentos em conformidade. Convidar o candidato para a Entrevista Profissional.</p>
                                 </div>
                               </label>
 
@@ -1947,7 +1947,7 @@ export default function GestorPortalModule({
                                 className={`deliberacao-radio-card option-excluido ${novoEstado === 'Excluído' || novoEstado === 'Excluída' ? 'checked' : ''}`}
                                 onClick={() => {
                                   setNovoEstado('Excluído');
-                                  if (!parecerJuri) setParecerJuri('Candidatura excluída por não conformidade documental com os requisitos obrigatórios do edital.');
+                                  if (!parecerJuri) setParecerJuri('Candidatura excluída por falta ou inconformidade de documentos obrigatórios.');
                                 }}
                               >
                                 <input
@@ -1960,9 +1960,9 @@ export default function GestorPortalModule({
                                 <div className="radio-content">
                                   <div className="radio-header">
                                     <XCircle size={20} className="radio-icon" />
-                                    <strong>EXCLUIR POR INCONFORMIDADE DOCUMENTAL</strong>
+                                    <strong>EXCLUIR POR FALTA DE DOCUMENTOS</strong>
                                   </div>
-                                  <p>Falta de certidão, idade acima do limite ou registo criminal desfavorável. Requer fundamentação jurídica.</p>
+                                  <p>Falta de certidão, idade fora do limite ou registo criminal inválido. Indique o motivo.</p>
                                 </div>
                               </label>
                             </div>
@@ -1976,7 +1976,7 @@ export default function GestorPortalModule({
                                 className={`deliberacao-radio-card option-admitido ${novoEstado === 'Admitido' || novoEstado === 'Admitida' ? 'checked' : ''}`}
                                 onClick={() => {
                                   setNovoEstado('Admitido');
-                                  if (!parecerJuri) setParecerJuri('Candidato demonstrou elevado mérito na Entrevista Profissional. Proposto para provimento efetivo.');
+                                  if (!parecerJuri) setParecerJuri('Candidato teve excelente aproveitamento na Entrevista Profissional. Proposto para a vaga.');
                                 }}
                               >
                                 <input
@@ -1989,9 +1989,9 @@ export default function GestorPortalModule({
                                 <div className="radio-content">
                                   <div className="radio-header">
                                     <CheckCircle2 size={20} className="radio-icon" />
-                                    <strong>ADMITIDO (PROVIMENTO EFETIVO)</strong>
+                                    <strong>ADMITIR CANDIDATO (VAGA EFETIVA)</strong>
                                   </div>
-                                  <p>Apurado com nota de topo na entrevista para preenchimento imediato de vaga na carreira.</p>
+                                  <p>Aprovado com nota alta na entrevista para preencher a vaga disponível.</p>
                                 </div>
                               </label>
 
@@ -2000,7 +2000,7 @@ export default function GestorPortalModule({
                                 className={`deliberacao-radio-card option-suplente ${novoEstado === 'Aprovado (Suplente)' ? 'checked' : ''}`}
                                 onClick={() => {
                                   setNovoEstado('Aprovado (Suplente)');
-                                  if (!parecerJuri) setParecerJuri('Candidato aprovado com mérito na Entrevista Profissional. Classificado em lista de suplência / reserva.');
+                                  if (!parecerJuri) setParecerJuri('Candidato aprovado com nota positiva na Entrevista. Integrado na lista de suplentes.');
                                 }}
                               >
                                 <input
@@ -2013,9 +2013,9 @@ export default function GestorPortalModule({
                                 <div className="radio-content">
                                   <div className="radio-header">
                                     <Award size={20} className="radio-icon" />
-                                    <strong>APROVADO (SUPLENTE / RESERVA)</strong>
+                                    <strong>APROVAR COMO SUPLENTE (LISTA DE RESERVA)</strong>
                                   </div>
-                                  <p>Aprovado com nota positiva na entrevista, integrado na lista de reserva para provimento superveniente.</p>
+                                  <p>Aprovado na entrevista. Fica em lista de espera para futuras vagas.</p>
                                 </div>
                               </label>
 
@@ -2024,7 +2024,7 @@ export default function GestorPortalModule({
                                 className={`deliberacao-radio-card option-excluido ${novoEstado === 'Excluído' || novoEstado === 'Excluída' ? 'checked' : ''}`}
                                 onClick={() => {
                                   setNovoEstado('Excluído');
-                                  if (!parecerJuri) setParecerJuri('Candidato não obteve a classificação mínima estatutária (10.0 valores) na Entrevista Profissional.');
+                                  if (!parecerJuri) setParecerJuri('Nota insuficiente na Entrevista Profissional (inferior a 10 valores).');
                                 }}
                               >
                                 <input
@@ -2037,9 +2037,9 @@ export default function GestorPortalModule({
                                 <div className="radio-content">
                                   <div className="radio-header">
                                     <XCircle size={20} className="radio-icon" />
-                                    <strong>EXCLUÍDO (ENTREVISTA)</strong>
+                                    <strong>EXCLUIR (NÃO PASSOU NA ENTREVISTA)</strong>
                                   </div>
-                                  <p>Classificação insuficiente na entrevista ou inaptidão detectada pelo júri de avaliação.</p>
+                                  <p>Nota inferior a 10 valores ou não compareceu na data marcada para a entrevista.</p>
                                 </div>
                               </label>
                             </div>
@@ -2050,11 +2050,11 @@ export default function GestorPortalModule({
                             <div className="deliberacao-extra-box info-box">
                               <div className="extra-box-title">
                                 <Calendar size={17} />
-                                <span>Agendamento da Entrevista Profissional (2ª Fase)</span>
+                                <span>Marcar Entrevista (2ª Fase)</span>
                               </div>
                               <div className="extra-box-grid">
                                 <div className="form-field">
-                                  <label>Designação Oficial do Ato:</label>
+                                  <label>Nome da Prova / Entrevista:</label>
                                   <input
                                     type="text"
                                     value={tipoProva}
@@ -2074,7 +2074,7 @@ export default function GestorPortalModule({
                                 </div>
 
                                 <div className="form-field full-width">
-                                  <label>Local Oficial / Sala da Entrevista:</label>
+                                  <label>Local da Entrevista:</label>
                                   <input
                                     type="text"
                                     value={eventoLocal}
@@ -2093,13 +2093,13 @@ export default function GestorPortalModule({
                                 <Award size={17} />
                                 <span>
                                   {novoEstado === 'Aprovado (Suplente)' 
-                                    ? 'Classificação na Entrevista e Posicionamento em Lista de Reserva'
-                                    : 'Classificação Final e Proposta de Provimento Efetivo'}
+                                    ? 'Nota da Entrevista e Delegação (Lista de Reserva)'
+                                    : 'Nota da Entrevista e Delegação Proposta'}
                                 </span>
                               </div>
                               <div className="extra-box-grid">
                                 <div className="form-field">
-                                  <label>Classificação na Entrevista Profissional (0 a 20 valores):</label>
+                                  <label>Nota da Entrevista (de 0 a 20 valores):</label>
                                   <input
                                     type="number"
                                     step="0.1"
@@ -2111,7 +2111,7 @@ export default function GestorPortalModule({
                                   />
                                 </div>
                                 <div className="form-field">
-                                  <label>Delegação Provincial Proposta:</label>
+                                  <label>Delegação Provincial:</label>
                                   <input
                                     type="text"
                                     defaultValue={`Delegação Provincial de ${deliberandoCandidato.provincia || 'Maputo'}`}
@@ -2121,66 +2121,66 @@ export default function GestorPortalModule({
                             </div>
                           )}
 
-                          {/* CAMPOS ESPECÍFICOS: EXCLUSÃO COM FUNDAMENTAÇÃO LEGAL */}
+                          {/* CAMPOS ESPECÍFICOS: EXCLUSÃO */}
                           {(novoEstado === 'Excluído' || novoEstado === 'Excluída') && (
                             <div className="deliberacao-extra-box danger-box">
                               <div className="extra-box-title">
                                 <XCircle size={17} />
-                                <span>Fundamentação Jurídica Obrigatória para Exclusão</span>
+                                <span>Motivo da Exclusão</span>
                               </div>
                               <div className="extra-box-grid">
                                 <div className="form-field full-width">
-                                  <label>Motivo Legal Canónico (EGFAE e Regulamento do Concurso SERNIC):</label>
+                                  <label>Escolha o motivo da exclusão:</label>
                                   <select 
                                     value={motivoExclusao} 
                                     onChange={(e) => setMotivoExclusao(e.target.value)}
                                     className="select-danger"
                                   >
-                                    <optgroup label="1ª Fase - Avaliação Documental">
-                                      <option value="Art. 35 do EGFAE - Idade superior a 35 anos à data limite">
-                                        Art. 35 do EGFAE - Idade superior a 35 anos à data limite do Edital
+                                    <optgroup label="1ª Fase - Análise de Documentos">
+                                      <option value="Idade superior a 35 anos à data limite do edital">
+                                        Idade superior a 35 anos à data limite do edital
                                       </option>
-                                      <option value="Falta de Certificado de Habilitações autenticado ou sem homologação">
-                                        Falta de Certificado de Habilitações autenticado ou sem homologação ministerial
+                                      <option value="Falta de Certificado de Habilitações autenticado">
+                                        Falta de Certificado de Habilitações autenticado
                                       </option>
-                                      <option value="Registo Criminal não conforme ou existência de antecedentes desabonadores">
-                                        Registo Criminal não conforme ou existência de antecedentes desabonadores
+                                      <option value="Registo Criminal com antecedentes desfavoráveis ou em falta">
+                                        Registo Criminal com antecedentes desfavoráveis ou em falta
                                       </option>
-                                      <option value="Não cumprimento da altura mínima obrigatória (1.65m masculino / 1.60m feminino)">
-                                        Não cumprimento da altura mínima obrigatória (1.65m masculino / 1.60m feminino)
+                                      <option value="Não cumpre a altura mínima (1.65m masculino / 1.60m feminino)">
+                                        Não cumpre a altura mínima (1.65m masculino / 1.60m feminino)
                                       </option>
-                                      <option value="Documento de identificação (BI/Passaporte) caducado ou ilegível">
-                                        Documento de identificação (BI/Passaporte) caducado ou ilegível
+                                      <option value="Bilhete de Identidade caducado ou ilegível">
+                                        Bilhete de Identidade caducado ou ilegível
                                       </option>
-                                      <option value="Falta de Atestado Médico ou inaptidão física/mental comprovada">
-                                        Falta de Atestado Médico ou inaptidão física/mental comprovada
+                                      <option value="Falta de Atestado Médico ou inaptidão física comprovada">
+                                        Falta de Atestado Médico ou inaptidão física comprovada
                                       </option>
                                     </optgroup>
-                                    <optgroup label="2ª Fase - Entrevista Profissional">
-                                      <option value="Classificação na Entrevista Profissional inferior a 10.0 valores">
-                                        Classificação na Entrevista Profissional inferior a 10.0 valores (Não Aproveitamento)
+                                    <optgroup label="2ª Fase - Entrevista">
+                                      <option value="Nota inferior a 10 valores na Entrevista Profissional">
+                                        Nota inferior a 10 valores na Entrevista Profissional
                                       </option>
-                                      <option value="Não comparência injustificada à Entrevista Profissional">
-                                        Não comparência injustificada à Entrevista Profissional na data convocada
+                                      <option value="Não compareceu na Entrevista Profissional">
+                                        Não compareceu na Entrevista Profissional
                                       </option>
-                                      <option value="Perfil comportamental incompatível com as funções de investigação criminal">
-                                        Perfil comportamental incompatível com as funções de investigação criminal
+                                      <option value="Perfil não adequado para as funções exigidas">
+                                        Perfil não adequado para as funções exigidas
                                       </option>
                                     </optgroup>
                                     <optgroup label="Outro">
-                                      <option value="Outro fundamento legal com descrição detalhada">
-                                        Outro fundamento legal com descrição detalhada
+                                      <option value="Outro motivo detalhado">
+                                        Outro motivo detalhado
                                       </option>
                                     </optgroup>
                                   </select>
                                 </div>
 
-                                {motivoExclusao === 'Outro fundamento legal com descrição detalhada' && (
+                                {motivoExclusao === 'Outro motivo detalhado' && (
                                   <div className="form-field full-width">
-                                    <label>Descreva o Fundamento Jurídico Específico:</label>
+                                    <label>Descreva o motivo da exclusão:</label>
                                     <input
                                       type="text"
-                                      placeholder="Indique a disposição legal e o facto concreto que fundamenta a exclusão..."
+                                      placeholder="Indique claramente o motivo pelo qual o candidato não foi aprovado..."
                                       value={outroMotivo}
                                       onChange={(e) => setOutroMotivo(e.target.value)}
                                       required
@@ -2194,17 +2194,17 @@ export default function GestorPortalModule({
                       );
                     })()}
 
-                    {/* PARECER E OBSERVAÇÕES FORMAIS DA COMISSÃO DE JÚRI */}
+                    {/* OBSERVAÇÕES E PARECER */}
                     <div className="form-field full-width" style={{ marginTop: '1.25rem' }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}>
                         <FileCheck size={16} color="#c32026" />
-                        Parecer Oficial e Despacho da Comissão de Júri:
+                        Observações / Parecer sobre o Candidato:
                       </label>
                       <textarea
                         rows={3}
                         value={parecerJuri}
                         onChange={(e) => setParecerJuri(e.target.value)}
-                        placeholder="Insira as observações oficiais, termos de homologação ou notas para o dossier do candidato..."
+                        placeholder="Escreva aqui anotações ou observações sobre este candidato..."
                         className="gestor-textarea"
                       />
                     </div>
@@ -2213,7 +2213,7 @@ export default function GestorPortalModule({
                     <div className="deliberacao-submit-row">
                       <div className="deliberacao-auditor-info">
                         <ShieldCheck size={16} color="#15803d" />
-                        <span>A decisão será registada sob a credencial de: <strong>{currentUser?.name || 'Dr. Alberto Chissano'}</strong></span>
+                        <span>Decisão registada por: <strong>{currentUser?.name || 'Dr. Alberto Chissano'}</strong></span>
                       </div>
 
                       <button
@@ -2221,7 +2221,7 @@ export default function GestorPortalModule({
                         className="btn-salvar-deliberacao-red"
                       >
                         <FileSignature size={18} />
-                        <span>Registar Deliberação Oficial do Júri</span>
+                        <span>Guardar Decisão do Candidato</span>
                       </button>
                     </div>
                   </form>
@@ -2230,7 +2230,7 @@ export default function GestorPortalModule({
                 <div className="deliberacao-empty-state">
                   <FileSignature size={48} color="#94a3b8" />
                   <h3>Nenhum Candidato Selecionado</h3>
-                  <p>Selecione um candidato na lista à esquerda para abrir a estação de deliberação da comissão de júri.</p>
+                  <p>Clique num candidato da lista à esquerda para analisar os documentos ou registar a nota da entrevista.</p>
                 </div>
               )}
             </div>
@@ -2449,8 +2449,8 @@ export default function GestorPortalModule({
         <div className="gestor-tab-content fadeIn">
           <div className="auditoria-header-bar">
             <div>
-              <h3>Livro de Registo e Auditoria do Júri</h3>
-              <p>Rastreabilidade legal: todas as deliberações e publicações são gravadas com assinatura e timestamp.</p>
+              <h3>Histórico e Registo de Atividades</h3>
+              <p>Todas as decisões, avaliações e publicações ficam guardadas com data, hora e responsável.</p>
             </div>
             <button
               type="button"
@@ -3201,7 +3201,7 @@ export default function GestorPortalModule({
                     />
                     <span>
                       <strong>Notificações por Correio Electrónico Oficial</strong>
-                      <small>Envia comprovativo em PDF e resultados de deliberação para o e-mail cadastrado.</small>
+                      <small>Envia comprovativo em PDF e o resultado da avaliação para o e-mail do candidato.</small>
                     </span>
                   </label>
                 </div>
@@ -3268,10 +3268,10 @@ export default function GestorPortalModule({
               </button>
             </div>
 
-            {/* TOOLBAR DE DELIBERAÇÃO DIRETA DENTRO DA SUB-ABA (INSTANTÂNEO) */}
+            {/* TOOLBAR DE AVALIAÇÃO DIRETA DENTRO DA SUB-ABA (INSTANTÂNEO) */}
             <div className="sub-aba-crud-toolbar" style={{ margin: '0.8rem 1.5rem', borderRadius: '10px' }}>
               <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>
-                Decisão da Mesa de Júri:
+                Decisão sobre o Candidato:
               </span>
               <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
                 {(() => {
@@ -3314,10 +3314,10 @@ export default function GestorPortalModule({
                           className="sub-aba-btn-action"
                           style={{ color: '#15803d', borderColor: '#86efac', backgroundColor: '#f0fdf4' }}
                           onClick={() => handleInlineDeliberacao(selectedDossier, 'Admitido')}
-                          title="Aprovar para provimento efetivo"
+                          title="Aprovar para vaga efetiva"
                         >
                           <Check size={13} />
-                          <span>Admitir (Provimento Efetivo)</span>
+                          <span>Admitir (Vaga Efetiva)</span>
                         </button>
                         <button
                           type="button"
@@ -3345,7 +3345,7 @@ export default function GestorPortalModule({
                   return (
                     <>
                       <span style={{ fontSize: '0.8rem', fontWeight: 700, padding: '0.25rem 0.55rem', borderRadius: '6px', background: '#f1f5f9', color: '#475569' }}>
-                        Fase 3 Concluída: {selectedDossier.status}
+                        Resultado Final: {selectedDossier.status}
                       </span>
                       <button
                         type="button"
@@ -3551,7 +3551,7 @@ export default function GestorPortalModule({
                   onClick={() => iniciarDeliberacao(selectedDossier)}
                 >
                   <FileSignature size={16} />
-                  <span>Deliberar este Candidato</span>
+                  <span>Avaliar este Candidato</span>
                 </button>
               </div>
             </div>

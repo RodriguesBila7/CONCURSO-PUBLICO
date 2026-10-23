@@ -301,9 +301,9 @@ export default function ConsultaModule() {
                     Etapas Oficiais do Concurso Público SERNIC
                   </h4>
                   <span style={{ fontSize: '0.78rem', color: 'var(--portal-text-muted)', fontWeight: 700 }}>
-                    {searchResult.status === 'Em Análise Documental' || searchResult.status === 'Em análise' ? 'Fase Actual: 1 de 3 (Avaliação Documental)' :
-                     searchResult.status === 'Entrevista Profissional' || searchResult.status === 'Convocada para provas' ? 'Fase Actual: 2 de 3 (Entrevista Profissional)' :
-                     'Fase Actual: 3 de 3 (Deliberação Final)'}
+                    {searchResult.status === 'Em Análise Documental' || searchResult.status === 'Em análise' ? 'Fase Actual: 1 de 3 (Análise de Documentos)' :
+                     searchResult.status === 'Entrevista Profissional' || searchResult.status === 'Convocada para provas' ? 'Fase Actual: 2 de 3 (Entrevista)' :
+                     'Fase Actual: 3 de 3 (Resultado Final)'}
                   </span>
                 </div>
                 
@@ -319,12 +319,12 @@ export default function ConsultaModule() {
                       : 'done'
                   }`}>
                     <div className="timeline-circle">1</div>
-                    <span className="timeline-label">1ª Fase: Avaliação Documental</span>
+                    <span className="timeline-label">1ª Fase: Análise de Documentos</span>
                     <span className="timeline-subtext">
                       {(searchResult.status === 'Excluído' || searchResult.status === 'Excluída') && searchResult.faseAtual === 1 
-                        ? 'Não Admitido' 
+                        ? 'Excluído' 
                         : searchResult.status === 'Em Análise Documental' || searchResult.status === 'Em análise' || searchResult.status === 'Submetida' 
-                        ? 'Em Triagem' 
+                        ? 'A decorrer' 
                         : 'Aprovado ✓'}
                     </span>
                   </div>
@@ -340,7 +340,7 @@ export default function ConsultaModule() {
                       : 'done'
                   }`}>
                     <div className="timeline-circle">2</div>
-                    <span className="timeline-label">2ª Fase: Entrevista Profissional</span>
+                    <span className="timeline-label">2ª Fase: Entrevista</span>
                     <span className="timeline-subtext">
                       {searchResult.status === 'Em Análise Documental' || searchResult.status === 'Em análise' || searchResult.status === 'Submetida' 
                         ? 'Aguardando 1ª Fase' 
@@ -348,11 +348,11 @@ export default function ConsultaModule() {
                         ? 'Convocado' 
                         : (searchResult.status === 'Excluído' || searchResult.status === 'Excluída') && searchResult.faseAtual === 2 
                         ? 'Não Apurado' 
-                        : 'Aprovado ✓'}
+                        : 'Concluída ✓'}
                     </span>
                   </div>
 
-                  {/* ETAPA 3: DELIBERAÇÃO FINAL */}
+                  {/* ETAPA 3: RESULTADO FINAL */}
                   <div className={`timeline-step ${
                     searchResult.status === 'Admitido' || searchResult.status === 'Admitida' || searchResult.status === 'Aprovada'
                       ? 'done'
@@ -363,7 +363,7 @@ export default function ConsultaModule() {
                       : ''
                   }`}>
                     <div className="timeline-circle">3</div>
-                    <span className="timeline-label">3ª Fase: Deliberação Final</span>
+                    <span className="timeline-label">3ª Fase: Resultado Final</span>
                     <span className="timeline-subtext">
                       {searchResult.status === 'Admitido' || searchResult.status === 'Admitida' || searchResult.status === 'Aprovada'
                         ? 'Admitido(a) 🎉'
@@ -381,7 +381,7 @@ export default function ConsultaModule() {
               <div style={{ backgroundColor: 'var(--portal-card-inner)', border: '1px solid var(--portal-border)', borderRadius: '12px', padding: '1.5rem', marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.6rem' }}>
                   <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--portal-text-main)', margin: 0 }}>
-                    {searchResult.detalhesFase?.titulo || 'Informações Oficiais do Processo'}
+                    {searchResult.detalhesFase?.titulo || 'Informações da sua Candidatura'}
                   </h4>
                   {searchResult.deliberacaoJuri?.notaFinal && (
                     <span style={{ fontSize: '0.85rem', fontWeight: 800, padding: '0.2rem 0.65rem', borderRadius: '6px', background: 'rgba(22, 163, 74, 0.1)', color: '#16a34a', border: '1px solid rgba(22, 163, 74, 0.25)' }}>
@@ -394,25 +394,25 @@ export default function ConsultaModule() {
                   {searchResult.detalhesFase?.mensagemComissao}
                 </p>
 
-                {/* Se Convocado para Entrevista Profissional: Informações de data e local */}
+                {/* Se Convocado para Entrevista: Informações de data e local */}
                 {(searchResult.status === 'Entrevista Profissional' || searchResult.status === 'Convocada para provas') && (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', backgroundColor: 'var(--portal-card-bg)', padding: '1.1rem', borderRadius: '10px', border: '1px solid var(--portal-border)' }}>
                     <div>
-                      <span style={{ fontSize: '0.74rem', color: 'var(--portal-text-muted)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.04em' }}>Data e Horário da Entrevista</span>
+                      <span style={{ fontSize: '0.74rem', color: 'var(--portal-text-muted)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.04em' }}>Dia e Hora da Entrevista</span>
                       <strong style={{ display: 'block', fontSize: '0.94rem', color: '#1e40af', marginTop: '0.2rem' }}>
                         {searchResult.detalhesFase?.dataEvento || '15 de Novembro de 2026 às 08h30'}
                       </strong>
                     </div>
 
                     <div>
-                      <span style={{ fontSize: '0.74rem', color: 'var(--portal-text-muted)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.04em' }}>Local da Entrevista com o Júri</span>
+                      <span style={{ fontSize: '0.74rem', color: 'var(--portal-text-muted)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.04em' }}>Local da Entrevista</span>
                       <strong style={{ display: 'block', fontSize: '0.94rem', color: 'var(--portal-text-main)', marginTop: '0.2rem' }}>
                         {searchResult.detalhesFase?.local || 'Gabinete Provincial de Entrevistas do SERNIC'}
                       </strong>
                     </div>
 
                     <div style={{ gridColumn: '1 / -1', borderTop: '1px solid var(--portal-border)', paddingTop: '0.75rem', fontSize: '0.82rem', color: 'var(--portal-text-muted)' }}>
-                      <strong>Instruções Obrigatórias:</strong> {searchResult.detalhesFase?.observacoes || 'Apresentação com Bilhete de Identidade original e comprovativo impresso de inscrição.'}
+                      <strong>O que levar:</strong> {searchResult.detalhesFase?.observacoes || 'Traga o Bilhete de Identidade original e o comprovativo de inscrição impresso.'}
                     </div>
                   </div>
                 )}
@@ -424,10 +424,10 @@ export default function ConsultaModule() {
                       <Award size={22} color="#15803d" style={{ flexShrink: 0 }} />
                       <div>
                         <strong style={{ fontSize: '0.92rem', color: '#15803d', display: 'block' }}>
-                          Provimento Efetivo Autorizado
+                          Candidato Admitido com Sucesso!
                         </strong>
                         <p style={{ fontSize: '0.85rem', color: '#166534', margin: '0.2rem 0 0 0', lineHeight: 1.4 }}>
-                          O candidato concluiu com mérito todas as etapas eliminatórias (avaliação documental e entrevista profissional). Deverá aguardar publicação do aviso de tomada de posse.
+                          Parabéns! Concluiu todas as fases com aproveitamento e foi selecionado para ocupar a vaga. Em breve receberá orientações sobre a posse e início de funções.
                         </p>
                       </div>
                     </div>
@@ -441,30 +441,30 @@ export default function ConsultaModule() {
                       <CheckCircle2 size={22} color="#b45309" style={{ flexShrink: 0 }} />
                       <div>
                         <strong style={{ fontSize: '0.92rem', color: '#b45309', display: 'block' }}>
-                          Candidato Aprovado na Bolsa de Reserva / Suplência
+                          Aprovado como Suplente (Lista de Reserva)
                         </strong>
                         <p style={{ fontSize: '0.85rem', color: '#92400e', margin: '0.2rem 0 0 0', lineHeight: 1.4 }}>
-                          Aprovado na entrevista profissional com classificação positiva. Mantém prioridade de chamada durante o período de validade do concurso para eventuais vagas remanescentes ou desistências.
+                          Passou na entrevista com nota positiva. Ficou registado na lista de suplentes e poderá ser convocado caso surjam novas vagas ou algum candidato admitido desista.
                         </p>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Se Excluído: Motivo Legal */}
+                {/* Se Excluído: Motivo */}
                 {(searchResult.status === 'Excluído' || searchResult.status === 'Excluída') && (
                   <div style={{ backgroundColor: '#fff5f5', border: '1px solid #fecaca', padding: '1rem 1.25rem', borderRadius: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem' }}>
                       <ShieldAlert size={22} color="#b91c1c" style={{ flexShrink: 0, marginTop: '2px' }} />
                       <div>
                         <strong style={{ fontSize: '0.92rem', color: '#b91c1c', display: 'block', marginBottom: '0.2rem' }}>
-                          Fundamento Legal da Não Admissão / Exclusão:
+                          Motivo da Exclusão:
                         </strong>
                         <p style={{ fontSize: '0.86rem', color: '#7f1d1d', lineHeight: 1.5, margin: 0 }}>
-                          {searchResult.detalhesFase?.motivoExclusao || searchResult.deliberacaoJuri?.motivoExclusao || 'Inconformidade com os requisitos formais expressos no edital de concurso.'}
+                          {searchResult.detalhesFase?.motivoExclusao || searchResult.deliberacaoJuri?.motivoExclusao || 'A documentação apresentada não cumpre os requisitos do concurso.'}
                         </p>
-                        <span style={{ display: 'block', marginTop: '0.45rem', fontSize: '0.78rem', color: '#991b1b', fontStyle: 'italic' }}>
-                          Prazo de recurso administrativo: 5 (cinco) dias úteis contados a partir da notificação oficial.
+                        <span style={{ display: 'block', marginTop: '0.45rem', fontSize: '0.78rem', color: '#991b1b' }}>
+                          Nota: Se discordar desta decisão, tem 5 dias úteis para apresentar pedido de revisão.
                         </span>
                       </div>
                     </div>
@@ -472,11 +472,11 @@ export default function ConsultaModule() {
                 )}
               </div>
 
-              {/* HISTÓRICO DE AUDITORIA DO PROCESSO */}
+              {/* HISTÓRICO DO PROCESSO */}
               {searchResult.historico && (
                 <div>
                   <h4 style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--portal-text-main)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.8rem' }}>
-                    Histórico de Actos Administrativos
+                    Histórico do Processo
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                     {searchResult.historico.map((h, i) => (
