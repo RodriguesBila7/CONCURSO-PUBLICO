@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { User, LogOut, CheckCircle2, FileText, Calendar, Award, ShieldAlert, Sparkles, Users, Briefcase } from 'lucide-react';
 
 export default function CandidateDashboardModal({ user, candidaturas, onLogout, t }) {
@@ -7,9 +8,9 @@ export default function CandidateDashboardModal({ user, candidaturas, onLogout, 
   const isGestor = user.role === 'admin' || user.role === 'gestor';
   const currentCandidatura = candidaturas && candidaturas.length > 0 ? candidaturas[0] : null;
 
-  return (
-    <div className="modal-overlay" style={{ backdropFilter: 'blur(10px)' }}>
-      <div className="modal-content-card" style={{ maxWidth: isGestor ? '800px' : '650px', padding: '2.5rem', maxHeight: '90vh', overflowY: 'auto' }}>
+  return typeof document !== 'undefined' ? createPortal(
+    <div className="modal-overlay">
+      <div className="modal-content-card" style={{ maxWidth: isGestor ? '800px' : '650px', padding: '2.5rem', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--input-border)', paddingBottom: '1.25rem', marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: isGestor ? '#1e293b' : '#c32026', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.4rem' }}>
@@ -155,6 +156,7 @@ export default function CandidateDashboardModal({ user, candidaturas, onLogout, 
           </div>
         )}
       </div>
-    </div>
-  );
+    </div>,
+    document.body
+  ) : null;
 }

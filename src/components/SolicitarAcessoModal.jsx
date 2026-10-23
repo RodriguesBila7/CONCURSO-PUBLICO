@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, UserPlus, CheckCircle2, AlertCircle, Loader2, ShieldCheck } from 'lucide-react';
 
 export default function SolicitarAcessoModal({ isOpen, onClose, t, onNotify }) {
@@ -59,7 +60,7 @@ export default function SolicitarAcessoModal({ isOpen, onClose, t, onNotify }) {
     }
   };
 
-  return (
+  return typeof document !== 'undefined' ? createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content-card" style={{ maxWidth: '620px' }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header-row">
@@ -257,6 +258,7 @@ export default function SolicitarAcessoModal({ isOpen, onClose, t, onNotify }) {
           </form>
         )}
       </div>
-    </div>
-  );
+    </div>,
+    document.body
+  ) : null;
 }

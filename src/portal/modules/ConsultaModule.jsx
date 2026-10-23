@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Search, 
   CheckCircle2, 
@@ -18,6 +19,7 @@ import {
   getStoredListasPublicadas
 } from '../mockData';
 import { Award } from 'lucide-react';
+import DraggableSubAba from '../components/DraggableSubAba';
 
 export default function ConsultaModule() {
   const [activeTab, setActiveTab] = useState('individual'); // 'individual' | 'listas'
@@ -498,9 +500,18 @@ export default function ConsultaModule() {
       )}
 
       {/* MODAL DE LISTA EM PDF SIMULADO */}
-      {viewListaModal && (
-        <div className="modal-overlay" style={{ backdropFilter: 'blur(8px)', zIndex: 1000 }}>
-          <div className="modal-content-card" style={{ maxWidth: '680px', padding: '2rem' }}>
+      {viewListaModal && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="modal-overlay" 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setViewListaModal(null);
+          }}
+        >
+          <DraggableSubAba 
+            className="modal-content-card" 
+            moveHandleLabel="Mover Relação Oficial"
+            onClose={() => setViewListaModal(null)}
+          >
             <div style={{ textAlign: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem' }}>
               <span style={{ fontSize: '0.75rem', color: 'var(--portal-text-muted)', textTransform: 'uppercase', fontWeight: 800 }}>Documento Oficial</span>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--portal-text-main)', margin: '0.4rem 0' }}>
@@ -535,8 +546,9 @@ export default function ConsultaModule() {
                 <span>Imprimir / Salvar Cópia Oficial</span>
               </button>
             </div>
-          </div>
-        </div>
+          </DraggableSubAba>
+        </div>,
+        document.body
       )}
     </div>
   );

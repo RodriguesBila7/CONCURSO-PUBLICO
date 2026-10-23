@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, KeyRound, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function ForgotPasswordModal({ isOpen, onClose, t, onNotify }) {
@@ -38,7 +39,7 @@ export default function ForgotPasswordModal({ isOpen, onClose, t, onNotify }) {
     }
   };
 
-  return (
+  return typeof document !== 'undefined' ? createPortal(
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header-row">
@@ -109,6 +110,7 @@ export default function ForgotPasswordModal({ isOpen, onClose, t, onNotify }) {
           </form>
         )}
       </div>
-    </div>
-  );
+    </div>,
+    document.body
+  ) : null;
 }

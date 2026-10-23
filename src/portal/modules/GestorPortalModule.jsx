@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Users, 
   CheckCircle2, 
@@ -58,8 +59,10 @@ import {
   getStoredCandidaturas, 
   saveStoredCandidaturas,
   updateStoredCandidatura,
+  deleteStoredCandidatura,
   getStoredListasPublicadas, 
   saveStoredListasPublicadas,
+  deleteStoredLista,
   getStoredAuditoria, 
   addStoredAuditoria,
   getStoredCursos,
@@ -67,9 +70,15 @@ import {
   getStoredLocais,
   saveStoredLocais,
   getStoredDefinicoes,
-  saveStoredDefinicoes
+  saveStoredDefinicoes,
+  getStoredVagas,
+  saveStoredVagas,
+  createStoredVaga,
+  updateStoredVaga,
+  deleteStoredVaga
 } from '../mockData';
 import sernicLogo from '../../assets/sernic-logo.png';
+import DraggableSubAba from '../components/DraggableSubAba';
 
 export default function GestorPortalModule({ 
   currentUser, 
@@ -106,6 +115,7 @@ export default function GestorPortalModule({
   const [candidatos, setCandidatos] = useState(() => getStoredCandidaturas());
   const [listas, setListas] = useState(() => getStoredListasPublicadas());
   const [auditoria, setAuditoria] = useState(() => getStoredAuditoria());
+  const [vagas, setVagas] = useState(() => getStoredVagas());
 
   // Dados do Módulo de Definições
   const [cursos, setCursos] = useState(() => getStoredCursos());
@@ -117,6 +127,7 @@ export default function GestorPortalModule({
     setCandidatos(getStoredCandidaturas());
     setListas(getStoredListasPublicadas());
     setAuditoria(getStoredAuditoria());
+    setVagas(getStoredVagas());
     setCursos(getStoredCursos());
     setLocais(getStoredLocais());
     setDefinicoes(getStoredDefinicoes());
@@ -124,6 +135,22 @@ export default function GestorPortalModule({
       onNotify('success', 'Base de dados do concurso sincronizada com sucesso!');
     }
   };
+
+  // Sincronização entre abas
+  useEffect(() => {
+    const handleSync = () => {
+      setVagas(getStoredVagas());
+      setCandidatos(getStoredCandidaturas());
+      setListas(getStoredListasPublicadas());
+      setAuditoria(getStoredAuditoria());
+    };
+    window.addEventListener('sernic-vagas-updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('sernic-vagas-updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
 
   // ========================================================
   // ESTADOS DO MÓDULO "DEFINIÇÕES DO SISTEMA"
@@ -200,6 +227,13 @@ export default function GestorPortalModule({
   // Documento selecionado para pré-visualização timbrada
   const [previewDoc, setPreviewDoc] = useState(null);
 
+  // Gestão de Vagas / Concursos no Gestor (CRUD Modal)
+  const [gestorVagaModal, setGestorVagaModal] = useState(null);
+  const [gestorVagaMode, setGestorVagaMode] = useState('view'); // 'view' | 'edit' | 'create'
+  const [gestorVagaForm, setGestorVagaForm] = useState(null);
+  const [novoReqGeralGestor, setNovoReqGeralGestor] = useState('');
+  const [novoReqEspGestor, setNovoReqEspGestor] = useState('');
+
   // ========================================================
   // ESTADOS DO MÓDULO "DELIBERAÇÃO DO JÚRI"
   // ========================================================
@@ -212,6 +246,132 @@ export default function GestorPortalModule({
   const [eventoData, setEventoData] = useState('15 de Novembro de 2026 às 08h00');
   const [eventoLocal, setEventoLocal] = useState('Academia de Ciências Policiais (ACIPOL) - Michafutene, Maputo');
   const [tipoProva, setTipoProva] = useState('Prova Escrita de Conhecimentos');
+
+  // ========================================================
+  // DELIBERAÇÃO DIRETA DENTRO DA SUB-ABA DO DOSSIER (SEM SAIR DO MODAL)
+  // ========================================================
+  const handleInlineDeliberacao = (candidato, status) => {
+    const updates = {
+      status: status,
+      parecer: status === 'Admitida' 
+        ? 'Candidatura admitida em conformidade com o edital.'
+        : status === 'Convocada para provas'
+        ? 'Convocado(a) oficialmente para a fase de exames.'
+        : status === 'Aprovada'
+        ? 'Candidato homologado e aprovado com mérito pelo júri.'
+        : 'Candidatura excluída por não conformidade com os requisitos do edital.',
+      motivoExclusao: status === 'Excluída' ? 'Não conformidade documental com o edital' : null
+    };
+    const operadorNome = currentUser?.name || 'Dr. Alberto Chissano (Presidente do Júri)';
+    const updated = updateStoredCandidatura(candidato.codigoCandidatura, updates, operadorNome);
+    if (updated) {
+      reloadData();
+      setSelectedDossier(updated);
+      if (onNotify) onNotify('success', `Candidatura de ${candidato.nomeCompleto} atualizada para "${status}" com sucesso!`);
+    }
+  };
+
+  const handleInlineDeleteCandidato = (codigo) => {
+    if (window.confirm(`Tem a certeza que deseja eliminar permanentemente a candidatura ${codigo}?`)) {
+      const ok = deleteStoredCandidatura(codigo, currentUser?.name || 'Comissão de Júri SERNIC');
+      if (ok) {
+        reloadData();
+        setSelectedDossier(null);
+        if (onNotify) onNotify('info', `Candidatura ${codigo} eliminada com sucesso.`);
+      }
+    }
+  };
+
+  // ========================================================
+  // HANDLERS DE CRUD DE VAGAS NO PORTAL DO GESTOR
+  // ========================================================
+  const handleOpenNovoConcursoGestor = () => {
+    const year = new Date().getFullYear();
+    const nextNum = vagas.length + 1;
+    const initial = {
+      id: `VAG-${year}-${String(nextNum).padStart(2, '0')}`,
+      codigoEdital: `Aviso n.º 0${nextNum}/SERNIC-DG/DRH/${year}`,
+      titulo: '',
+      carreira: 'Investigação Criminal e Instrução Processual',
+      regime: 'Carreira de Regime Especial - SERNIC',
+      vagas: 30,
+      local: 'Nacional',
+      dataAbertura: new Date().toISOString().split('T')[0],
+      dataLimite: '2026-12-31',
+      status: 'Aberto',
+      remuneracao: 'Tabela Salarial Única (TSU) + Subsídio de Risco e Investigação',
+      requisitosGerais: [
+        'Nacionalidade Moçambicana originária;',
+        'Idade entre 21 e 35 anos;',
+        'Situação militar regularizada e sem registo criminal.'
+      ],
+      requisitosEspecificos: [
+        'Licenciatura na especialidade do cargo;',
+        'Robustez física e mental atestada por junta médica.'
+      ],
+      fasesConcurso: [
+        { fase: 1, nome: 'Triagem Documental e Homologação' },
+        { fase: 2, nome: 'Prova Escrita de Conhecimentos' },
+        { fase: 3, nome: 'Exames Médicos e Psicotécnicos' }
+      ]
+    };
+    setGestorVagaModal(initial);
+    setGestorVagaForm(initial);
+    setGestorVagaMode('create');
+  };
+
+  const handleOpenEditConcursoGestor = (vaga) => {
+    setGestorVagaModal(vaga);
+    setGestorVagaForm({
+      ...vaga,
+      requisitosGerais: Array.isArray(vaga.requisitosGerais) ? [...vaga.requisitosGerais] : [],
+      requisitosEspecificos: Array.isArray(vaga.requisitosEspecificos) ? [...vaga.requisitosEspecificos] : [],
+      fasesConcurso: Array.isArray(vaga.fasesConcurso) ? [...vaga.fasesConcurso] : []
+    });
+    setGestorVagaMode('edit');
+  };
+
+  const handleSaveVagaGestor = (e) => {
+    if (e) e.preventDefault();
+    if (!gestorVagaForm.titulo.trim()) {
+      if (onNotify) onNotify('error', 'Por favor indique a designação oficial da carreira / vaga.');
+      return;
+    }
+
+    if (gestorVagaMode === 'create') {
+      const created = createStoredVaga(gestorVagaForm, currentUser?.name || 'Direcção de Recursos Humanos - SERNIC');
+      setVagas(getStoredVagas());
+      setGestorVagaModal(null);
+      if (onNotify) onNotify('success', `Concurso "${created.titulo}" lançado com sucesso!`);
+    } else {
+      const updated = updateStoredVaga(gestorVagaForm.id, gestorVagaForm, currentUser?.name || 'Direcção de Recursos Humanos - SERNIC');
+      setVagas(getStoredVagas());
+      setGestorVagaModal(null);
+      if (onNotify) onNotify('success', `Concurso "${updated.titulo}" atualizado com sucesso!`);
+    }
+  };
+
+  const handleDeleteVagaGestor = (id) => {
+    const target = vagas.find(v => v.id === id);
+    if (!target) return;
+    if (window.confirm(`Tem a certeza que deseja excluir o concurso "${target.titulo}" (${target.codigoEdital})?`)) {
+      deleteStoredVaga(id, currentUser?.name || 'Direcção de Recursos Humanos - SERNIC');
+      setVagas(getStoredVagas());
+      setGestorVagaModal(null);
+      if (onNotify) onNotify('info', `Concurso "${target.titulo}" removido com sucesso.`);
+    }
+  };
+
+  const handleToggleVagaStatusGestor = (id) => {
+    const target = vagas.find(v => v.id === id);
+    if (!target) return;
+    const nextStatus = target.status === 'Aberto' ? 'Encerrado' : 'Aberto';
+    const updated = updateStoredVaga(id, { status: nextStatus }, currentUser?.name || 'Direcção de Recursos Humanos - SERNIC');
+    if (updated) {
+      setVagas(getStoredVagas());
+      if (onNotify) onNotify('success', `Estado do concurso alterado para "${nextStatus}".`);
+    }
+  };
 
   // ========================================================
   // ESTADOS DO MÓDULO "PAUTAS E EDITAIS"
@@ -241,7 +401,7 @@ export default function GestorPortalModule({
 
     // Distribuição por vaga
     const porVaga = {};
-    INITIAL_VAGAS.forEach(v => {
+    vagas.forEach(v => {
       porVaga[v.titulo] = candidatos.filter(c => c.vagaTitulo === v.titulo).length;
     });
 
@@ -1699,6 +1859,22 @@ export default function GestorPortalModule({
                     <Download size={15} />
                     <span>Baixar PDF</span>
                   </button>
+                  <button
+                    type="button"
+                    className="sub-aba-btn-action danger"
+                    style={{ padding: '0.5rem 0.75rem', fontSize: '0.8rem' }}
+                    onClick={() => {
+                      if (window.confirm(`Tem a certeza que deseja revogar o edital "${lista.tituloLista}"?`)) {
+                        deleteStoredLista(lista.id, currentUser?.name || 'Dr. Alberto Chissano');
+                        reloadData();
+                        if (onNotify) onNotify('info', `Edital "${lista.tituloLista}" revogado e retirado do portal.`);
+                      }
+                    }}
+                    title="Revogar publicação deste edital"
+                  >
+                    <Trash2 size={13} />
+                    <span>Revogar</span>
+                  </button>
                 </div>
               </div>
             ))}
@@ -1707,22 +1883,33 @@ export default function GestorPortalModule({
       )}
 
       {/* ========================================================
-          ABA 5: VAGAS E QUOTAS DO CONCURSO
+          ABA 5: VAGAS E QUOTAS DO CONCURSO (CRUD COMPLETO)
           ======================================================== */}
       {gestorTab === 'vagas' && (
         <div className="gestor-tab-content fadeIn">
-          <div className="vagas-gestor-header">
+          <div className="vagas-gestor-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
               <h3>Quotas e Editais Oficiais Autorizados</h3>
               <p>Quadro de vagas fixado pelo Ministério da Economia e Finanças para o Concurso SERNIC 2026.</p>
             </div>
-            <div className="total-vagas-badge">
-              Total Autorizado: <strong>300 Vagas</strong>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
+              <div className="total-vagas-badge">
+                Total Autorizado: <strong>{vagas.reduce((acc, v) => acc + (Number(v.vagas) || 0), 0)} Vagas</strong>
+              </div>
+              <button
+                type="button"
+                className="gestor-btn-primary-red"
+                onClick={handleOpenNovoConcursoGestor}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', padding: '0.6rem 1.1rem' }}
+              >
+                <Plus size={16} />
+                <span>Lançar Novo Concurso Oficial</span>
+              </button>
             </div>
           </div>
 
           <div className="vagas-gestor-grid">
-            {INITIAL_VAGAS.map(vaga => {
+            {vagas.map(vaga => {
               const countInscritos = candidatos.filter(c => c.vagaTitulo === vaga.titulo).length;
               const ratio = vaga.vagas > 0 ? (countInscritos / vaga.vagas).toFixed(1) : '0';
 
@@ -1730,8 +1917,13 @@ export default function GestorPortalModule({
                 <div key={vaga.id} className="vaga-gestor-card">
                   <div className="vaga-gestor-top">
                     <span className="vaga-edital-cod">{vaga.codigoEdital}</span>
-                    <span className={`vaga-status-chip ${vaga.status === 'Aberto' ? 'aberto' : 'fechado'}`}>
-                      {vaga.status}
+                    <span 
+                      className={`vaga-status-chip ${vaga.status === 'Aberto' ? 'aberto' : 'fechado'}`}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => handleToggleVagaStatusGestor(vaga.id)}
+                      title="Clique para alternar estado Aberto / Encerrado"
+                    >
+                      {vaga.status} (Alternar)
                     </span>
                   </div>
 
@@ -1764,7 +1956,28 @@ export default function GestorPortalModule({
                     </div>
                   </div>
 
-                  <div className="vaga-gestor-footer">
+                  <div className="vaga-gestor-footer" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        type="button"
+                        className="sub-aba-btn-action"
+                        style={{ flex: 1, justifyContent: 'center' }}
+                        onClick={() => handleOpenEditConcursoGestor(vaga)}
+                      >
+                        <Edit3 size={13} color="#c32026" />
+                        <span>Editar Concurso</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="sub-aba-btn-action danger"
+                        onClick={() => handleDeleteVagaGestor(vaga.id)}
+                        title="Excluir este concurso"
+                      >
+                        <Trash2 size={13} />
+                        <span>Excluir</span>
+                      </button>
+                    </div>
+
                     <button
                       type="button"
                       className="btn-ver-edital-action"
@@ -2527,9 +2740,15 @@ export default function GestorPortalModule({
       {/* ========================================================
           MODAL 1: DOSSIER COMPLETO DO CANDIDATO
           ======================================================== */}
-      {selectedDossier && (
-        <div className="gestor-modal-overlay fadeIn">
-          <div className="gestor-modal-card dossier-modal">
+      {selectedDossier && typeof document !== 'undefined' && createPortal(
+        <div className="gestor-modal-overlay fadeIn" onClick={(e) => {
+          if (e.target === e.currentTarget) setSelectedDossier(null);
+        }}>
+          <DraggableSubAba 
+            className="gestor-modal-card dossier-modal" 
+            moveHandleLabel="Mover Dossiê"
+            onClose={() => setSelectedDossier(null)}
+          >
             {/* CABEÇALHO DO DOSSIER */}
             <div className="dossier-modal-header">
               <div className="dossier-header-left">
@@ -2566,6 +2785,60 @@ export default function GestorPortalModule({
               >
                 ✕
               </button>
+            </div>
+
+            {/* TOOLBAR DE DELIBERAÇÃO DIRETA DENTRO DA SUB-ABA (INSTANTÂNEO) */}
+            <div className="sub-aba-crud-toolbar" style={{ margin: '0.8rem 1.5rem', borderRadius: '10px' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>
+                Decisão da Mesa de Júri:
+              </span>
+              <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="sub-aba-btn-action"
+                  style={{ color: '#15803d', borderColor: '#86efac' }}
+                  onClick={() => handleInlineDeliberacao(selectedDossier, 'Admitida')}
+                >
+                  <Check size={13} />
+                  <span>Admitir</span>
+                </button>
+                <button
+                  type="button"
+                  className="sub-aba-btn-action"
+                  style={{ color: '#2563eb', borderColor: '#93c5fd' }}
+                  onClick={() => handleInlineDeliberacao(selectedDossier, 'Convocada para provas')}
+                >
+                  <Calendar size={13} />
+                  <span>Convocar Exames</span>
+                </button>
+                <button
+                  type="button"
+                  className="sub-aba-btn-action"
+                  style={{ color: '#d97706', borderColor: '#fcd34d' }}
+                  onClick={() => handleInlineDeliberacao(selectedDossier, 'Aprovada')}
+                >
+                  <Award size={13} />
+                  <span>Aprovar</span>
+                </button>
+                <button
+                  type="button"
+                  className="sub-aba-btn-action danger"
+                  onClick={() => handleInlineDeliberacao(selectedDossier, 'Excluída')}
+                >
+                  <UserX size={13} />
+                  <span>Excluir</span>
+                </button>
+                <button
+                  type="button"
+                  className="sub-aba-btn-action danger"
+                  style={{ backgroundColor: '#fee2e2' }}
+                  onClick={() => handleInlineDeleteCandidato(selectedDossier.codigoCandidatura)}
+                  title="Eliminar este registo de candidatura definitivamente"
+                >
+                  <Trash2 size={13} />
+                  <span>Eliminar Registo</span>
+                </button>
+              </div>
             </div>
 
             {/* CONTEÚDO DO DOSSIER */}
@@ -2749,16 +3022,17 @@ export default function GestorPortalModule({
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+          </DraggableSubAba>
+        </div>,
+        document.body
       )}
 
       {/* ========================================================
           MODAL 2: PRÉ-VISUALIZAÇÃO DE DOCUMENTO OFICIAL
           ======================================================== */}
-      {previewDoc && (
-        <div className="gestor-modal-overlay fadeIn" style={{ zIndex: 1200 }}>
-          <div className="gestor-modal-card doc-preview-modal">
+      {previewDoc && typeof document !== 'undefined' && createPortal(
+        <div className="gestor-modal-overlay fadeIn" style={{ zIndex: 1200 }} onClick={() => setPreviewDoc(null)}>
+          <DraggableSubAba className="gestor-modal-card doc-preview-modal" moveHandleLabel="Mover Visualização">
             <div className="dossier-modal-header">
               <div>
                 <h3>Visualização de Documento Anexado</h3>
@@ -2816,16 +3090,17 @@ export default function GestorPortalModule({
                 Fechar Visualização
               </button>
             </div>
-          </div>
-        </div>
+          </DraggableSubAba>
+        </div>,
+        document.body
       )}
 
       {/* ========================================================
           MODAL 3: PUBLICAR NOVO EDITAL OFICIAL
           ======================================================== */}
-      {isNovoEditalModalOpen && (
-        <div className="gestor-modal-overlay fadeIn">
-          <div className="gestor-modal-card novo-edital-modal">
+      {isNovoEditalModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="gestor-modal-overlay fadeIn" onClick={() => setIsNovoEditalModalOpen(false)}>
+          <DraggableSubAba className="gestor-modal-card novo-edital-modal" moveHandleLabel="Mover Novo Edital">
             <div className="dossier-modal-header">
               <div>
                 <h3>Publicação Oficial de Pauta / Edital</h3>
@@ -2908,16 +3183,17 @@ export default function GestorPortalModule({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+          </DraggableSubAba>
+        </div>,
+        document.body
       )}
 
       {/* ========================================================
           MODAL 4: VISUALIZAÇÃO E IMPRESSÃO DE EDITAL TIMBRADO
           ======================================================== */}
-      {selectedPautaPrint && (
-        <div className="gestor-modal-overlay fadeIn">
-          <div className="gestor-modal-card pauta-timbrada-modal">
+      {selectedPautaPrint && typeof document !== 'undefined' && createPortal(
+        <div className="gestor-modal-overlay fadeIn" onClick={() => setSelectedPautaPrint(null)}>
+          <DraggableSubAba className="gestor-modal-card pauta-timbrada-modal" moveHandleLabel="Mover Pauta Oficial">
             <div className="dossier-modal-header">
               <div>
                 <h3>Edital Oficial do Concurso Público</h3>
@@ -3025,16 +3301,17 @@ export default function GestorPortalModule({
                 Fechar
               </button>
             </div>
-          </div>
-        </div>
+          </DraggableSubAba>
+        </div>,
+        document.body
       )}
 
       {/* ========================================================
           MODAL DE CURSO (HOMOLOGAR NOVO OU EDITAR)
           ======================================================== */}
-      {isCursoModalOpen && (
-        <div className="gestor-modal-overlay fadeIn">
-          <div className="gestor-modal-card definicoes-modal">
+      {isCursoModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="gestor-modal-overlay fadeIn" onClick={() => setIsCursoModalOpen(false)}>
+          <DraggableSubAba className="gestor-modal-card definicoes-modal" moveHandleLabel="Mover Especialidade">
             <div className="dossier-modal-header">
               <div className="dossier-header-left">
                 <div className="dossier-modal-avatar">
@@ -3137,16 +3414,17 @@ export default function GestorPortalModule({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+          </DraggableSubAba>
+        </div>,
+        document.body
       )}
 
       {/* ========================================================
           MODAL DE LOCAL DE TESTES (CADASTRAR NOVO OU EDITAR)
           ======================================================== */}
-      {isLocalModalOpen && (
-        <div className="gestor-modal-overlay fadeIn">
-          <div className="gestor-modal-card definicoes-modal">
+      {isLocalModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="gestor-modal-overlay fadeIn" onClick={() => setIsLocalModalOpen(false)}>
+          <DraggableSubAba className="gestor-modal-card definicoes-modal" moveHandleLabel="Mover Local de Prova">
             <div className="dossier-modal-header">
               <div className="dossier-header-left">
                 <div className="dossier-modal-avatar">
@@ -3272,8 +3550,191 @@ export default function GestorPortalModule({
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+          </DraggableSubAba>
+        </div>,
+        document.body
+      )}
+
+      {/* ========================================================
+          MODAL 6: GESTÃO E EDIÇÃO DE VAGA / CONCURSO (GESTOR CRUD)
+          ======================================================== */}
+      {gestorVagaModal && gestorVagaForm && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="gestor-modal-overlay fadeIn" 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setGestorVagaModal(null);
+          }}
+        >
+          <DraggableSubAba 
+            className="gestor-modal-card definicoes-modal" 
+            style={{ width: 'min(calc(760px + 7cm), 95vw)', maxWidth: 'min(calc(760px + 7cm), 95vw)' }}
+            moveHandleLabel="Mover Gestão da Vaga"
+            onClose={() => setGestorVagaModal(null)}
+          >
+            <div className="dossier-modal-header">
+              <div className="dossier-header-left">
+                <div className="dossier-modal-avatar">
+                  <Briefcase size={24} />
+                </div>
+                <div>
+                  <h3>
+                    {gestorVagaMode === 'create' ? 'Lançar Novo Concurso Oficial' : `Editar Concurso: ${gestorVagaForm.titulo}`}
+                  </h3>
+                  <span className="dossier-protocolo">
+                    {gestorVagaForm.codigoEdital || 'Novo Concurso • SERNIC'}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="dossier-close-btn"
+                onClick={() => setGestorVagaModal(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveVagaGestor} className="dossier-modal-body" style={{ padding: '1.5rem 1.8rem' }}>
+              <div className="form-group-custom" style={{ marginBottom: '1rem' }}>
+                <label>Designação Oficial da Carreira / Vaga</label>
+                <input
+                  type="text"
+                  className="definicoes-input"
+                  placeholder="Ex: Investigador Criminal de 2ª Classe"
+                  value={gestorVagaForm.titulo}
+                  onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, titulo: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div className="form-group-custom">
+                  <label>Código do Edital / Aviso</label>
+                  <input
+                    type="text"
+                    className="definicoes-input"
+                    value={gestorVagaForm.codigoEdital}
+                    onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, codigoEdital: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="form-group-custom">
+                  <label>Estado do Concurso</label>
+                  <select
+                    className="definicoes-select full"
+                    value={gestorVagaForm.status}
+                    onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, status: e.target.value })}
+                  >
+                    <option value="Aberto">Aberto</option>
+                    <option value="Encerrado">Encerrado</option>
+                    <option value="Em Breve">Em Breve</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div className="form-group-custom">
+                  <label>Quotas de Vagas Autorizadas</label>
+                  <input
+                    type="number"
+                    min="1"
+                    className="definicoes-input"
+                    value={gestorVagaForm.vagas}
+                    onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, vagas: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="form-group-custom">
+                  <label>Colocação Geográfica</label>
+                  <input
+                    type="text"
+                    className="definicoes-input"
+                    value={gestorVagaForm.local}
+                    onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, local: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div className="form-group-custom">
+                  <label>Data de Abertura</label>
+                  <input
+                    type="date"
+                    className="definicoes-input"
+                    value={gestorVagaForm.dataAbertura}
+                    onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, dataAbertura: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group-custom">
+                  <label>Data Limite de Candidaturas</label>
+                  <input
+                    type="date"
+                    className="definicoes-input"
+                    value={gestorVagaForm.dataLimite}
+                    onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, dataLimite: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-group-custom" style={{ marginBottom: '1rem' }}>
+                <label>Carreira / Ramo SERNIC</label>
+                <select
+                  className="definicoes-select full"
+                  value={gestorVagaForm.carreira}
+                  onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, carreira: e.target.value })}
+                >
+                  <option value="Investigação Criminal e Instrução Processual">Investigação Criminal e Instrução Processual</option>
+                  <option value="Laboratório Central de Criminalística (Polícia Científica)">Polícia Científica (Laboratório Forense)</option>
+                  <option value="Divisão de Investigação de Cibercrimes e Inteligência Digital">Inteligência Digital e Cibercrime</option>
+                  <option value="Departamento de Tanatologia e Toxicologia">Medicina Legal e Toxicologia Forense</option>
+                  <option value="Corpo Técnico Operativo">Corpo Técnico Operativo e Apoio</option>
+                </select>
+              </div>
+
+              <div className="form-group-custom" style={{ marginBottom: '1rem' }}>
+                <label>Enquadramento Salarial / TSU</label>
+                <input
+                  type="text"
+                  className="definicoes-input"
+                  value={gestorVagaForm.remuneracao}
+                  onChange={(e) => setGestorVagaForm({ ...gestorVagaForm, remuneracao: e.target.value })}
+                />
+              </div>
+
+              <div className="dossier-modal-footer" style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                {gestorVagaMode === 'edit' && (
+                  <button
+                    type="button"
+                    className="sub-aba-btn-action danger"
+                    onClick={() => handleDeleteVagaGestor(gestorVagaForm.id)}
+                  >
+                    <Trash2 size={14} />
+                    <span>Excluir Concurso</span>
+                  </button>
+                )}
+                <div style={{ display: 'flex', gap: '0.6rem', marginLeft: 'auto' }}>
+                  <button
+                    type="button"
+                    className="gestor-btn-secondary"
+                    onClick={() => setGestorVagaModal(null)}
+                  >
+                    Cancelar
+                  </button>
+                  <button type="submit" className="gestor-btn-primary-red">
+                    <Save size={15} />
+                    <span>{gestorVagaMode === 'create' ? 'Publicar Novo Concurso' : 'Guardar Alterações'}</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </DraggableSubAba>
+        </div>,
+        document.body
       )}
     </div>
   );

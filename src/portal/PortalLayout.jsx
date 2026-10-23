@@ -57,6 +57,8 @@ export default function PortalLayout({
       document.documentElement.style.setProperty('--dynamic-bg', bg);
       document.documentElement.style.backgroundColor = bg;
       document.body.style.backgroundColor = bg;
+      document.body.classList.remove('portal-theme-claro', 'portal-theme-preto');
+      document.body.classList.add(`portal-theme-${portalTheme}`);
     } catch {
       // Ignora erro de storage
     }

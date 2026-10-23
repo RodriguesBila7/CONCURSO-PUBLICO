@@ -16,19 +16,81 @@ import {
   ChevronRight,
   AlertCircle,
   Clock,
-  CheckCircle2
+  CheckCircle2,
+  PlusCircle,
+  Edit3,
+  Trash2,
+  Eye,
+  Copy,
+  Save,
+  AlertTriangle,
+  Check,
+  RefreshCw,
+  Plus,
+  FileCheck
 } from 'lucide-react';
-import { INITIAL_VAGAS } from '../mockData';
+import { 
+  INITIAL_VAGAS, 
+  getStoredVagas, 
+  saveStoredVagas, 
+  createStoredVaga, 
+  updateStoredVaga, 
+  deleteStoredVaga 
+} from '../mockData';
 import sernicLogo from '../../assets/sernic-logo.png';
+import DraggableSubAba from '../components/DraggableSubAba';
 
 export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatura }) {
-  const [vagas, setVagas] = useState(INITIAL_VAGAS);
+  // Lista de vagas sincronizada
+  const [vagas, setVagas] = useState(() => getStoredVagas());
   const [filterStatus, setFilterStatus] = useState('todos'); // 'todos' | 'aberto' | 'encerrado'
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Sub-Aba Modal State: null | VagaObject
   const [selectedVagaModal, setSelectedVagaModal] = useState(null);
+  const [modalMode, setModalMode] = useState('view'); // 'view' | 'edit' | 'create'
+  
+  // Confirmação de Exclusão dentro da sub-aba
+  const [isDeletingConfirm, setIsDeletingConfirm] = useState(false);
+  
+  // Formulário CRUD da Vaga / Concurso
+  const [vagaForm, setVagaForm] = useState({
+    id: '',
+    codigoEdital: '',
+    titulo: '',
+    carreira: 'Investigação Criminal e Instrução Processual',
+    regime: 'Carreira de Regime Especial - SERNIC',
+    vagas: 20,
+    local: 'Nacional',
+    dataAbertura: new Date().toISOString().split('T')[0],
+    dataLimite: '2026-12-31',
+    status: 'Aberto',
+    remuneracao: 'Tabela Salarial Única (TSU) + Subsídio de Risco e Investigação',
+    requisitosGerais: [],
+    requisitosEspecificos: [],
+    fasesConcurso: []
+  });
+
+  // Campos temporários para adicionar novos requisitos
+  const [novoReqGeral, setNovoReqGeral] = useState('');
+  const [novoReqEsp, setNovoReqEsp] = useState('');
+
+  // Modal de Visualização de Edital Timbrado
   const [viewEditalModal, setViewEditalModal] = useState(null);
 
-  // Carregar vagas da API do SQLite (se disponível) ou fallback para mock
+  // Toast de feedback
+  const [toastMessage, setToastMessage] = useState(null);
+  const showToast = (type, text) => {
+    setToastMessage({ type, text });
+    setTimeout(() => setToastMessage(null), 4000);
+  };
+
+  // Carregar vagas persistidas ou API
+  const reloadVagas = () => {
+    const list = getStoredVagas();
+    setVagas(list);
+  };
+
   useEffect(() => {
     async function fetchVagas() {
       try {
@@ -36,15 +98,196 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
         const data = await res.json();
         if (data.success && data.vagas && data.vagas.length > 0) {
           setVagas(data.vagas);
+          saveStoredVagas(data.vagas);
+          return;
         }
       } catch {
-        // Usa INITIAL_VAGAS predefinidas
+        // Usa getStoredVagas()
       }
+      setVagas(getStoredVagas());
     }
     fetchVagas();
+
+    // Ouvinte para sincronização entre abas
+    const handleSync = () => setVagas(getStoredVagas());
+    window.addEventListener('sernic-vagas-updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('sernic-vagas-updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
   }, []);
 
-  // Filtragem
+  // Abrir sub-aba em Modo de Leitura
+  const handleOpenVagaView = (vaga) => {
+    setSelectedVagaModal(vaga);
+    setModalMode('view');
+    setIsDeletingConfirm(false);
+    setVagaForm({
+      ...vaga,
+      requisitosGerais: Array.isArray(vaga.requisitosGerais) ? [...vaga.requisitosGerais] : [],
+      requisitosEspecificos: Array.isArray(vaga.requisitosEspecificos) ? [...vaga.requisitosEspecificos] : [],
+      fasesConcurso: Array.isArray(vaga.fasesConcurso) ? [...vaga.fasesConcurso] : []
+    });
+  };
+
+  // Abrir sub-aba em Modo de Edição
+  const handleOpenVagaEdit = (vaga) => {
+    setSelectedVagaModal(vaga);
+    setModalMode('edit');
+    setIsDeletingConfirm(false);
+    setVagaForm({
+      ...vaga,
+      requisitosGerais: Array.isArray(vaga.requisitosGerais) ? [...vaga.requisitosGerais] : [],
+      requisitosEspecificos: Array.isArray(vaga.requisitosEspecificos) ? [...vaga.requisitosEspecificos] : [],
+      fasesConcurso: Array.isArray(vaga.fasesConcurso) ? [...vaga.fasesConcurso] : []
+    });
+  };
+
+  // Abrir sub-aba para Criar Nova Vaga
+  const handleOpenNovaVaga = () => {
+    const year = new Date().getFullYear();
+    const nextNum = vagas.length + 1;
+    const initialNew = {
+      id: `VAG-${year}-${String(nextNum).padStart(2, '0')}`,
+      codigoEdital: `Aviso n.º 0${nextNum}/SERNIC-DG/DRH/${year}`,
+      titulo: '',
+      carreira: 'Investigação Criminal e Instrução Processual',
+      regime: 'Carreira de Regime Especial - SERNIC',
+      vagas: 25,
+      local: 'Nacional (Delegações Provinciais do SERNIC)',
+      dataAbertura: new Date().toISOString().split('T')[0],
+      dataLimite: '2026-12-31',
+      status: 'Aberto',
+      remuneracao: 'Tabela Salarial Única (TSU) + Subsídio de Risco e Investigação',
+      requisitosGerais: [
+        'Nacionalidade Moçambicana originária;',
+        'Idade compreendida entre os 21 e os 35 anos;',
+        'Situação militar regularizada e sem registo criminal.'
+      ],
+      requisitosEspecificos: [
+        'Licenciatura na área correspondente ao cargo;',
+        'Aptidão física e robustez mental atestada por junta médica.'
+      ],
+      fasesConcurso: [
+        { fase: 1, nome: 'Triagem Documental e Homologação' },
+        { fase: 2, nome: 'Prova Escrita de Conhecimentos' },
+        { fase: 3, nome: 'Testes Psicotécnicos e Médicos' },
+        { fase: 4, nome: 'Curso de Formação Básica na ACIPOL' }
+      ]
+    };
+    setSelectedVagaModal(initialNew);
+    setVagaForm(initialNew);
+    setModalMode('create');
+    setIsDeletingConfirm(false);
+  };
+
+  // Alternar Estado Aberto / Encerrado com 1 clique (CRUD Rápido)
+  const handleQuickToggleStatus = (id) => {
+    const target = vagas.find(v => v.id === id);
+    if (!target) return;
+    const nextStatus = target.status === 'Aberto' ? 'Encerrado' : 'Aberto';
+    const updated = updateStoredVaga(id, { status: nextStatus });
+    if (updated) {
+      reloadVagas();
+      if (selectedVagaModal && selectedVagaModal.id === id) {
+        setSelectedVagaModal(updated);
+        setVagaForm(prev => ({ ...prev, status: nextStatus }));
+      }
+      showToast('success', `Estado do concurso alterado para "${nextStatus}".`);
+    }
+  };
+
+  // Duplicar Vaga (Clonar como novo modelo)
+  const handleDuplicateVaga = (vaga) => {
+    const year = new Date().getFullYear();
+    const nextNum = vagas.length + 1;
+    const duplicated = {
+      ...vaga,
+      id: `VAG-${year}-${String(nextNum).padStart(2, '0')}`,
+      codigoEdital: `Aviso n.º 0${nextNum}/SERNIC-DG/DRH/${year} (Cópia)`,
+      titulo: `${vaga.titulo} (Novo Lote)`,
+      status: 'Aberto',
+      dataAbertura: new Date().toISOString().split('T')[0]
+    };
+    setSelectedVagaModal(duplicated);
+    setVagaForm(duplicated);
+    setModalMode('create');
+    showToast('info', 'Modelo duplicado. Faça os ajustes e clique em "Publicar Novo Concurso".');
+  };
+
+  // Adicionar Requisito Geral
+  const handleAddReqGeral = () => {
+    if (!novoReqGeral.trim()) return;
+    setVagaForm(prev => ({
+      ...prev,
+      requisitosGerais: [...prev.requisitosGerais, novoReqGeral.trim()]
+    }));
+    setNovoReqGeral('');
+  };
+
+  // Remover Requisito Geral
+  const handleRemoveReqGeral = (idx) => {
+    setVagaForm(prev => ({
+      ...prev,
+      requisitosGerais: prev.requisitosGerais.filter((_, i) => i !== idx)
+    }));
+  };
+
+  // Adicionar Requisito Específico
+  const handleAddReqEsp = () => {
+    if (!novoReqEsp.trim()) return;
+    setVagaForm(prev => ({
+      ...prev,
+      requisitosEspecificos: [...prev.requisitosEspecificos, novoReqEsp.trim()]
+    }));
+    setNovoReqEsp('');
+  };
+
+  // Remover Requisito Específico
+  const handleRemoveReqEsp = (idx) => {
+    setVagaForm(prev => ({
+      ...prev,
+      requisitosEspecificos: prev.requisitosEspecificos.filter((_, i) => i !== idx)
+    }));
+  };
+
+  // Submeter Criação ou Atualização da Vaga (CRUD: Create / Update)
+  const handleSaveVagaForm = (e) => {
+    if (e) e.preventDefault();
+    if (!vagaForm.titulo.trim()) {
+      showToast('error', 'Por favor indique a designação oficial da carreira / vaga.');
+      return;
+    }
+
+    if (modalMode === 'create') {
+      const created = createStoredVaga(vagaForm);
+      reloadVagas();
+      setSelectedVagaModal(created);
+      setModalMode('view');
+      showToast('success', `Concurso "${created.titulo}" criado e publicado com sucesso!`);
+    } else {
+      const updated = updateStoredVaga(vagaForm.id, vagaForm);
+      reloadVagas();
+      setSelectedVagaModal(updated);
+      setModalMode('view');
+      showToast('success', `Concurso "${updated.titulo}" atualizado com sucesso!`);
+    }
+  };
+
+  // Excluir Vaga (CRUD: Delete)
+  const handleConfirmDelete = () => {
+    if (!selectedVagaModal) return;
+    const ok = deleteStoredVaga(selectedVagaModal.id);
+    if (ok) {
+      reloadVagas();
+      setSelectedVagaModal(null);
+      setIsDeletingConfirm(false);
+      showToast('info', `Concurso "${selectedVagaModal.titulo}" revogado e excluído.`);
+    }
+  };
+
+  // Filtragem de vagas para visualização
   const filteredVagas = vagas.filter(vaga => {
     const matchStatus = filterStatus === 'todos' || vaga.status.toLowerCase() === filterStatus.toLowerCase();
     const matchSearch = vaga.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -63,6 +306,19 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
 
   return (
     <div className="module-page-container">
+      {/* FEEDBACK TOAST FLUTUANTE */}
+      {toastMessage && (
+        <div 
+          className={`toast-notification toast-${toastMessage.type}`} 
+          style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 9999999 }}
+        >
+          {toastMessage.type === 'success' && <CheckCircle2 size={18} color="#22c55e" />}
+          {toastMessage.type === 'error' && <AlertCircle size={18} color="#ef4444" />}
+          {toastMessage.type === 'info' && <RefreshCw size={18} color="#3b82f6" />}
+          <span>{toastMessage.text}</span>
+        </div>
+      )}
+
       {/* 1. CABEÇALHO DO MÓDULO */}
       <div className="module-page-header">
         <div className="module-page-title-group">
@@ -71,19 +327,32 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
             Concursos e Vagas Abertas • SERNIC 2026
           </h2>
           <p>
-            Consulte os editais oficiais, categorias de carreira, requisitos específicos e submeta a sua candidatura.
+            Consulte os editais oficiais, categorias de carreira, requisitos específicos e faça a gestão profissional das quotas.
           </p>
         </div>
 
-        <button
-          type="button"
-          className="btn-vaga-candidatar"
-          onClick={() => navigate('/portal-recrutamento/candidatura')}
-          style={{ width: 'auto', padding: '0.65rem 1.3rem' }}
-        >
-          <FileText size={18} />
-          <span>Formulário de Candidatura</span>
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {/* BOTÃO PARA CRIAR NOVA VAGA (CRUD: CREATE) */}
+          <button
+            type="button"
+            className="gestor-action-btn primary"
+            onClick={handleOpenNovaVaga}
+            style={{ padding: '0.65rem 1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 800 }}
+          >
+            <PlusCircle size={18} />
+            <span>Lançar Novo Concurso / Vaga</span>
+          </button>
+
+          <button
+            type="button"
+            className="btn-vaga-candidatar"
+            onClick={() => navigate('/portal-recrutamento/candidatura')}
+            style={{ width: 'auto', padding: '0.65rem 1.3rem' }}
+          >
+            <FileText size={18} />
+            <span>Formulário de Candidatura</span>
+          </button>
+        </div>
       </div>
 
       {/* 2. BARRA DE PESQUISA E FILTROS */}
@@ -132,10 +401,19 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
       {/* 3. LISTA DE VAGAS */}
       <div className="vagas-list">
         {filteredVagas.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#64748b' }}>
-            <AlertCircle size={40} color="#94a3b8" style={{ margin: '0 auto 1rem auto' }} />
-            <h4 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--portal-text-main)' }}>Nenhum concurso encontrado</h4>
-            <p>Tente ajustar os termos de pesquisa ou os filtros seleccionados.</p>
+          <div style={{ textAlign: 'center', padding: '3.5rem 1rem', color: '#64748b', background: 'var(--portal-card-bg)', borderRadius: '16px', border: '1px solid var(--portal-border)' }}>
+            <AlertCircle size={44} color="#94a3b8" style={{ margin: '0 auto 1rem auto' }} />
+            <h4 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>Nenhum concurso encontrado</h4>
+            <p style={{ marginBottom: '1.2rem' }}>Tente ajustar os termos de pesquisa ou clique abaixo para criar um novo concurso.</p>
+            <button
+              type="button"
+              className="gestor-action-btn primary"
+              onClick={handleOpenNovaVaga}
+              style={{ margin: '0 auto' }}
+            >
+              <PlusCircle size={16} />
+              <span>Lançar Novo Concurso Oficial</span>
+            </button>
           </div>
         ) : (
           filteredVagas.map((vaga) => {
@@ -143,64 +421,82 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
             return (
               <div key={vaga.id} className="vaga-card">
                 <div className="vaga-main-info">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                    <span className={`vaga-badge-status ${isAberto ? 'vaga-status-aberto' : 'vaga-status-encerrado'}`}>
-                      {vaga.status}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                    <span 
+                      className={`vaga-badge-status ${isAberto ? 'vaga-status-aberto' : 'vaga-status-encerrado'}`}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => handleQuickToggleStatus(vaga.id)}
+                      title="Clique para alternar estado Aberto / Encerrado"
+                    >
+                      {vaga.status} (Clique p/ alternar)
                     </span>
-                    <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--portal-text-muted)', fontFamily: 'monospace' }}>
                       {vaga.codigoEdital}
                     </span>
                   </div>
 
                   <h3 className="vaga-title">{vaga.titulo}</h3>
-                  <div className="vaga-carreira">{vaga.carreira}</div>
+                  <p className="vaga-carreira">{vaga.carreira}</p>
 
-                  <div className="vaga-meta-row">
+                  <div className="vaga-meta-grid">
                     <div className="vaga-meta-item">
-                      <Users size={15} color="#c59b27" />
-                      <span><strong>{vaga.vagas}</strong> Vagas</span>
+                      <Users size={16} color="#c59b27" />
+                      <span><strong>{vaga.vagas}</strong> vagas autorizadas</span>
                     </div>
-
                     <div className="vaga-meta-item">
-                      <MapPin size={15} color="#c59b27" />
+                      <MapPin size={16} color="#c59b27" />
                       <span>{vaga.local}</span>
                     </div>
-
                     <div className="vaga-meta-item">
-                      <Calendar size={15} color={isAberto ? '#15803d' : '#ef4444'} />
-                      <span>Prazo: <strong>{new Date(vaga.dataLimite).toLocaleDateString('pt-MZ')}</strong></span>
+                      <Calendar size={16} color="#c32026" />
+                      <span>Limite: <strong>{new Date(vaga.dataLimite).toLocaleDateString('pt-MZ')}</strong></span>
                     </div>
                   </div>
                 </div>
 
-                <div className="vaga-actions">
+                {/* BOTÕES DE AÇÃO NA LINHA DA VAGA */}
+                <div className="vaga-actions-group">
                   {isAberto ? (
                     <button
                       type="button"
                       className="btn-vaga-candidatar"
                       onClick={() => handleCandidatarClick(vaga)}
                     >
+                      <span>Candidatar</span>
                       <ArrowRight size={16} />
-                      <span>Candidatar-me</span>
                     </button>
                   ) : (
                     <button
                       type="button"
                       className="btn-vaga-candidatar"
                       disabled
-                      style={{ opacity: 0.5, cursor: 'not-allowed', backgroundColor: '#94a3b8' }}
+                      style={{ opacity: 0.6, cursor: 'not-allowed', background: '#94a3b8', borderColor: '#94a3b8' }}
                     >
                       <span>Prazo Expirado</span>
                     </button>
                   )}
 
+                  {/* ABRIR SUB-ABA COMPLETA */}
                   <button
                     type="button"
                     className="btn-vaga-detalhes"
-                    onClick={() => setSelectedVagaModal(vaga)}
+                    onClick={() => handleOpenVagaView(vaga)}
+                    title="Ver detalhes e opções de gestão"
                   >
                     <span>Ver Requisitos</span>
                     <ChevronRight size={16} />
+                  </button>
+
+                  {/* ABRIR SUB-ABA DIRETAMENTE EM MODO DE EDIÇÃO (CRUD) */}
+                  <button
+                    type="button"
+                    className="sub-aba-btn-action"
+                    onClick={() => handleOpenVagaEdit(vaga)}
+                    style={{ padding: '0.35rem 0.65rem', fontSize: '0.78rem' }}
+                    title="Editar informações deste concurso"
+                  >
+                    <Edit3 size={13} color="#c32026" />
+                    <span>Editar Vaga</span>
                   </button>
 
                   <button
@@ -230,117 +526,547 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
         )}
       </div>
 
-      {/* 4. MODAL DETALHES COMPLETOS DA VAGA */}
-      {selectedVagaModal && (
-        <div className="modal-overlay" style={{ backdropFilter: 'blur(8px)', zIndex: 1000 }}>
-          <div className="modal-content-card" style={{ maxWidth: '720px', padding: '2.2rem', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: '1.2rem', marginBottom: '1.5rem' }}>
-              <div>
-                <span className="vaga-badge-status vaga-status-aberto" style={{ marginBottom: '0.4rem' }}>
-                  {selectedVagaModal.status} • {selectedVagaModal.codigoEdital}
-                </span>
-                <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>
-                  {selectedVagaModal.titulo}
-                </h3>
-                <p style={{ fontSize: '0.88rem', color: '#b0891e', fontWeight: 600 }}>
-                  {selectedVagaModal.carreira}
-                </p>
+      {/* ========================================================
+          4. SUB-ABA PROFISSIONAL COM CRUD COMPLETO
+          (CREATE, READ, UPDATE, DELETE + MOVIMENTAÇÃO E RESIZE)
+          ======================================================== */}
+      {selectedVagaModal && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="modal-overlay" 
+          onClick={(e) => {
+            // Fecha apenas se clicou no backdrop, não no interior da sub-aba
+            if (e.target === e.currentTarget) {
+              setSelectedVagaModal(null);
+            }
+          }}
+        >
+          <DraggableSubAba 
+            className="modal-content-card" 
+            moveHandleLabel="Mover Sub-Aba de Gestão da Vaga"
+            onClose={() => setSelectedVagaModal(null)}
+          >
+            {/* 4.1 TOOLBAR DE CRUD SUPERIOR DA SUB-ABA */}
+            <div className="sub-aba-crud-toolbar">
+              <div className="sub-aba-mode-tabs">
+                <button
+                  type="button"
+                  className={`sub-aba-mode-btn ${modalMode === 'view' ? 'active' : ''}`}
+                  onClick={() => setModalMode('view')}
+                >
+                  <Eye size={14} />
+                  <span>Visualização (Read)</span>
+                </button>
+                <button
+                  type="button"
+                  className={`sub-aba-mode-btn ${modalMode === 'edit' || modalMode === 'create' ? 'active' : ''}`}
+                  onClick={() => setModalMode(modalMode === 'create' ? 'create' : 'edit')}
+                >
+                  <Edit3 size={14} />
+                  <span>{modalMode === 'create' ? 'Criar Nova Vaga' : 'Editar Dados (Update)'}</span>
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setSelectedVagaModal(null)}
-                style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-              >
-                <X size={18} color="#475569" />
-              </button>
+
+              {/* Ações Rápidas na Toolbar da Sub-Aba */}
+              <div className="sub-aba-quick-actions">
+                {modalMode !== 'create' && (
+                  <>
+                    <button
+                      type="button"
+                      className="sub-aba-btn-action"
+                      onClick={() => handleQuickToggleStatus(selectedVagaModal.id)}
+                      title="Alternar estado entre Aberto e Encerrado"
+                    >
+                      <RefreshCw size={13} />
+                      <span>Status: {vagaForm.status}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="sub-aba-btn-action"
+                      onClick={() => handleDuplicateVaga(selectedVagaModal)}
+                      title="Duplicar concurso como novo modelo"
+                    >
+                      <Copy size={13} />
+                      <span>Duplicar</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="sub-aba-btn-action danger"
+                      onClick={() => setIsDeletingConfirm(true)}
+                      title="Eliminar este concurso do sistema"
+                    >
+                      <Trash2 size={13} />
+                      <span>Excluir</span>
+                    </button>
+                  </>
+                )}
+
+                <button
+                  type="button"
+                  className="sub-aba-btn-action"
+                  onClick={() => setViewEditalModal(selectedVagaModal)}
+                  title="Visualizar documento timbrado oficial em PDF"
+                >
+                  <Printer size={13} />
+                  <span>Edital PDF</span>
+                </button>
+              </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', backgroundColor: 'var(--portal-card-inner)', padding: '1rem', borderRadius: '10px', marginBottom: '1.5rem', border: '1px solid var(--portal-border)' }}>
-              <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--portal-text-muted)', display: 'block' }}>Vagas Abertas</span>
-                <strong style={{ fontSize: '1.1rem', color: 'var(--portal-text-main)' }}>{selectedVagaModal.vagas} Postos</strong>
-              </div>
-              <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--portal-text-muted)', display: 'block' }}>Data Limite</span>
-                <strong style={{ fontSize: '1.1rem', color: '#c32026' }}>{new Date(selectedVagaModal.dataLimite).toLocaleDateString('pt-MZ')}</strong>
-              </div>
-              <div>
-                <span style={{ fontSize: '0.75rem', color: 'var(--portal-text-muted)', display: 'block' }}>Âmbito Geográfico</span>
-                <strong style={{ fontSize: '0.95rem', color: 'var(--portal-text-main)' }}>{selectedVagaModal.local}</strong>
-              </div>
-            </div>
-
-            <div style={{ marginBottom: '1.4rem' }}>
-              <h4 style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--portal-text-main)', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <ShieldCheck size={18} color="#c59b27" /> Requisitos Gerais Obrigatórios
-              </h4>
-              <ul style={{ paddingLeft: '1.2rem', fontSize: '0.88rem', color: 'var(--portal-text-muted)', lineHeight: 1.6 }}>
-                {selectedVagaModal.requisitosGerais && selectedVagaModal.requisitosGerais.map((r, i) => (
-                  <li key={i}>{r}</li>
-                ))}
-              </ul>
-            </div>
-
-            <div style={{ marginBottom: '1.4rem' }}>
-              <h4 style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--portal-text-main)', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <Award size={18} color="#c59b27" /> Requisitos Específicos & Habilitações
-              </h4>
-              <ul style={{ paddingLeft: '1.2rem', fontSize: '0.88rem', color: 'var(--portal-text-muted)', lineHeight: 1.6 }}>
-                {selectedVagaModal.requisitosEspecificos && selectedVagaModal.requisitosEspecificos.map((r, i) => (
-                  <li key={i}>{r}</li>
-                ))}
-              </ul>
-            </div>
-
-            {selectedVagaModal.fasesConcurso && (
-              <div style={{ marginBottom: '1.6rem' }}>
-                <h4 style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--portal-text-main)', marginBottom: '0.6rem' }}>
-                  Fases do Concurso
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  {selectedVagaModal.fasesConcurso.map((f, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: '#334155' }}>
-                      <span style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: '#0f2042', color: '#fff', fontSize: '0.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {f.fase}
-                      </span>
-                      <span>{f.nome}</span>
+            {/* 4.2 BANNER DE CONFIRMAÇÃO DE EXCLUSÃO (DELETE) */}
+            {isDeletingConfirm && (
+              <div className="sub-aba-delete-dialog">
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.8rem' }}>
+                  <AlertTriangle size={24} color="#c32026" style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <div style={{ flex: 1 }}>
+                    <h4 style={{ margin: '0 0 0.3rem 0', color: '#c32026', fontSize: '0.98rem', fontWeight: 800 }}>
+                      Tem a certeza que deseja revogar e excluir este concurso?
+                    </h4>
+                    <p style={{ margin: '0 0 0.8rem 0', fontSize: '0.84rem', color: '#7f1d1d', lineHeight: 1.5 }}>
+                      Esta ação removerá o edital <strong>{selectedVagaModal.codigoEdital}</strong> ({selectedVagaModal.titulo}) da consulta pública de todos os cidadãos e registará a operação no Livro de Atas e Auditoria do SERNIC.
+                    </p>
+                    <div style={{ display: 'flex', gap: '0.6rem' }}>
+                      <button
+                        type="button"
+                        onClick={handleConfirmDelete}
+                        style={{ background: '#c32026', color: '#ffffff', border: 'none', padding: '0.45rem 1rem', borderRadius: '7px', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}
+                      >
+                        Sim, Confirmar Exclusão
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsDeletingConfirm(false)}
+                        style={{ background: '#ffffff', color: '#475569', border: '1px solid #cbd5e1', padding: '0.45rem 0.9rem', borderRadius: '7px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}
+                      >
+                        Cancelar
+                      </button>
                     </div>
-                  ))}
+                  </div>
                 </div>
               </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.8rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.2rem' }}>
-              <button
-                type="button"
-                className="btn-draft"
-                onClick={() => setSelectedVagaModal(null)}
-              >
-                Fechar
-              </button>
-              {selectedVagaModal.status === 'Aberto' && (
-                <button
-                  type="button"
-                  className="btn-vaga-candidatar"
-                  onClick={() => {
-                    const vaga = selectedVagaModal;
-                    setSelectedVagaModal(null);
-                    handleCandidatarClick(vaga);
-                  }}
-                >
-                  <ArrowRight size={16} />
-                  <span>Candidatar-me a esta Vaga</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+            {/* 4.3 MODO DE VISUALIZAÇÃO (READ) */}
+            {modalMode === 'view' && !isDeletingConfirm && (
+              <div className="sub-aba-view-mode">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--portal-border)', paddingBottom: '1.2rem', marginBottom: '1.5rem' }}>
+                  <div>
+                    <span 
+                      className={`vaga-badge-status ${selectedVagaModal.status === 'Aberto' ? 'vaga-status-aberto' : 'vaga-status-encerrado'}`} 
+                      style={{ marginBottom: '0.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                    >
+                      {selectedVagaModal.status === 'Aberto' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
+                      {selectedVagaModal.status} • {selectedVagaModal.codigoEdital}
+                    </span>
+                    <h3 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--portal-text-main)', margin: '0.2rem 0' }}>
+                      {selectedVagaModal.titulo}
+                    </h3>
+                    <p style={{ fontSize: '0.9rem', color: '#b0891e', fontWeight: 700, margin: 0 }}>
+                      {selectedVagaModal.carreira} • {selectedVagaModal.regime}
+                    </p>
+                  </div>
+                  
+                  <button
+                    type="button"
+                    onClick={() => setModalMode('edit')}
+                    className="gestor-action-btn secondary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem' }}
+                  >
+                    <Edit3 size={14} />
+                    <span>Editar Concurso</span>
+                  </button>
+                </div>
+
+                {/* Métricas e Prazos */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', backgroundColor: 'var(--portal-card-inner)', padding: '1.1rem', borderRadius: '12px', marginBottom: '1.5rem', border: '1px solid var(--portal-border)' }}>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--portal-text-muted)', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Vagas Abertas</span>
+                    <strong style={{ fontSize: '1.2rem', color: 'var(--portal-text-main)' }}>{selectedVagaModal.vagas} Postos</strong>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--portal-text-muted)', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Data Limite</span>
+                    <strong style={{ fontSize: '1.15rem', color: '#c32026' }}>{new Date(selectedVagaModal.dataLimite).toLocaleDateString('pt-MZ')}</strong>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--portal-text-muted)', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Colocação Geográfica</span>
+                    <strong style={{ fontSize: '0.92rem', color: 'var(--portal-text-main)' }}>{selectedVagaModal.local}</strong>
+                  </div>
+                </div>
+
+                {/* Remuneração */}
+                {selectedVagaModal.remuneracao && (
+                  <div style={{ background: 'rgba(197, 155, 39, 0.08)', border: '1px solid rgba(197, 155, 39, 0.25)', borderRadius: '10px', padding: '0.8rem 1rem', marginBottom: '1.4rem' }}>
+                    <span style={{ fontSize: '0.76rem', color: '#b0891e', fontWeight: 800, textTransform: 'uppercase', display: 'block' }}>Enquadramento Salarial</span>
+                    <strong style={{ fontSize: '0.9rem', color: 'var(--portal-text-main)' }}>{selectedVagaModal.remuneracao}</strong>
+                  </div>
+                )}
+
+                {/* Requisitos Gerais */}
+                <div style={{ marginBottom: '1.4rem' }}>
+                  <h4 style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--portal-text-main)', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <ShieldCheck size={18} color="#c59b27" /> Requisitos Gerais Obrigatórios
+                  </h4>
+                  <ul style={{ paddingLeft: '1.2rem', fontSize: '0.88rem', color: 'var(--portal-text-muted)', lineHeight: 1.6 }}>
+                    {selectedVagaModal.requisitosGerais && selectedVagaModal.requisitosGerais.map((r, i) => (
+                      <li key={i}>{r}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Requisitos Específicos */}
+                <div style={{ marginBottom: '1.4rem' }}>
+                  <h4 style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--portal-text-main)', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Award size={18} color="#c59b27" /> Requisitos Específicos & Habilitações
+                  </h4>
+                  <ul style={{ paddingLeft: '1.2rem', fontSize: '0.88rem', color: 'var(--portal-text-muted)', lineHeight: 1.6 }}>
+                    {selectedVagaModal.requisitosEspecificos && selectedVagaModal.requisitosEspecificos.map((r, i) => (
+                      <li key={i}>{r}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Fases do Concurso */}
+                {selectedVagaModal.fasesConcurso && selectedVagaModal.fasesConcurso.length > 0 && (
+                  <div style={{ marginBottom: '1.6rem' }}>
+                    <h4 style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--portal-text-main)', marginBottom: '0.6rem' }}>
+                      Fases Oficiais do Concurso
+                    </h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                      {selectedVagaModal.fasesConcurso.map((f, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', fontSize: '0.85rem', color: 'var(--portal-text-main)' }}>
+                          <span style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: '#0f2042', color: '#fff', fontSize: '0.75rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {f.fase}
+                          </span>
+                          <span>{f.nome}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Rodapé da Sub-Aba no Modo Visualização */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--portal-border)', paddingTop: '1.2rem', marginTop: 'auto' }}>
+                  <button
+                    type="button"
+                    className="gestor-btn-outline"
+                    onClick={() => handleOpenVagaEdit(selectedVagaModal)}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                  >
+                    <Edit3 size={15} />
+                    <span>Editar Informações</span>
+                  </button>
+
+                  <div style={{ display: 'flex', gap: '0.8rem' }}>
+                    <button
+                      type="button"
+                      className="btn-draft"
+                      onClick={() => setSelectedVagaModal(null)}
+                    >
+                      Fechar
+                    </button>
+                    {selectedVagaModal.status === 'Aberto' && (
+                      <button
+                        type="button"
+                        className="btn-vaga-candidatar"
+                        onClick={() => {
+                          const vaga = selectedVagaModal;
+                          setSelectedVagaModal(null);
+                          handleCandidatarClick(vaga);
+                        }}
+                      >
+                        <ArrowRight size={16} />
+                        <span>Candidatar-me a esta Vaga</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 4.4 MODO DE EDIÇÃO / CRIAÇÃO (CRUD: CREATE & UPDATE) */}
+            {(modalMode === 'edit' || modalMode === 'create') && !isDeletingConfirm && (
+              <form onSubmit={handleSaveVagaForm} className="sub-aba-crud-form">
+                <div style={{ borderBottom: '1px solid var(--portal-border)', paddingBottom: '0.9rem', marginBottom: '1.4rem' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>
+                    {modalMode === 'create' ? 'Lançar Novo Concurso Público / Vaga' : `Editar Concurso: ${vagaForm.titulo}`}
+                  </h3>
+                  <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: 'var(--portal-text-muted)' }}>
+                    Actualize os parâmetros estatutários, quotas provinciais e requisitos que serão apresentados aos candidatos.
+                  </p>
+                </div>
+
+                <div className="sub-aba-form-grid">
+                  <div className="sub-aba-form-field full">
+                    <label>Designação Oficial do Cargo / Carreira</label>
+                    <input
+                      type="text"
+                      className="sub-aba-input"
+                      placeholder="Ex: Investigador Criminal de 2ª Classe"
+                      value={vagaForm.titulo}
+                      onChange={(e) => setVagaForm({ ...vagaForm, titulo: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="sub-aba-form-field">
+                    <label>Código do Edital / Aviso Oficial</label>
+                    <input
+                      type="text"
+                      className="sub-aba-input"
+                      placeholder="Ex: Aviso n.º 01/SERNIC-DG/DRH/2026"
+                      value={vagaForm.codigoEdital}
+                      onChange={(e) => setVagaForm({ ...vagaForm, codigoEdital: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="sub-aba-form-field">
+                    <label>Estado do Concurso</label>
+                    <select
+                      className="sub-aba-select"
+                      value={vagaForm.status}
+                      onChange={(e) => setVagaForm({ ...vagaForm, status: e.target.value })}
+                    >
+                      <option value="Aberto">Aberto (Candidaturas Activas)</option>
+                      <option value="Encerrado">Encerrado (Inscrições Terminadas)</option>
+                      <option value="Em Breve">Em Breve (Fase de Homologação)</option>
+                    </select>
+                  </div>
+
+                  <div className="sub-aba-form-field">
+                    <label>Área / Ramo do SERNIC</label>
+                    <select
+                      className="sub-aba-select"
+                      value={vagaForm.carreira}
+                      onChange={(e) => setVagaForm({ ...vagaForm, carreira: e.target.value })}
+                    >
+                      <option value="Investigação Criminal e Instrução Processual">Investigação Criminal e Instrução Processual</option>
+                      <option value="Laboratório Central de Criminalística (Polícia Científica)">Polícia Científica (Laboratório Forense)</option>
+                      <option value="Divisão de Investigação de Cibercrimes e Inteligência Digital">Inteligência Digital e Cibersegurança</option>
+                      <option value="Departamento de Tanatologia e Toxicologia">Medicina Legal e Toxicologia Forense</option>
+                      <option value="Corpo Técnico Operativo">Corpo Técnico Operativo e Apoio</option>
+                    </select>
+                  </div>
+
+                  <div className="sub-aba-form-field">
+                    <label>Regime de Carreira</label>
+                    <input
+                      type="text"
+                      className="sub-aba-input"
+                      placeholder="Ex: Carreira de Regime Especial - SERNIC"
+                      value={vagaForm.regime}
+                      onChange={(e) => setVagaForm({ ...vagaForm, regime: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="sub-aba-form-field">
+                    <label>Número de Vagas Autorizadas</label>
+                    <input
+                      type="number"
+                      min="1"
+                      className="sub-aba-input"
+                      value={vagaForm.vagas}
+                      onChange={(e) => setVagaForm({ ...vagaForm, vagas: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="sub-aba-form-field">
+                    <label>Local / Delegações de Colocação</label>
+                    <input
+                      type="text"
+                      className="sub-aba-input"
+                      placeholder="Ex: Nacional ou Maputo, Beira, Nampula"
+                      value={vagaForm.local}
+                      onChange={(e) => setVagaForm({ ...vagaForm, local: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="sub-aba-form-field">
+                    <label>Data de Abertura</label>
+                    <input
+                      type="date"
+                      className="sub-aba-input"
+                      value={vagaForm.dataAbertura}
+                      onChange={(e) => setVagaForm({ ...vagaForm, dataAbertura: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="sub-aba-form-field">
+                    <label>Data Limite de Candidaturas</label>
+                    <input
+                      type="date"
+                      className="sub-aba-input"
+                      value={vagaForm.dataLimite}
+                      onChange={(e) => setVagaForm({ ...vagaForm, dataLimite: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="sub-aba-form-field full">
+                    <label>Enquadramento Salarial e Benefícios</label>
+                    <input
+                      type="text"
+                      className="sub-aba-input"
+                      placeholder="Ex: Tabela Salarial Única (TSU) + Subsídio de Risco e Investigação"
+                      value={vagaForm.remuneracao}
+                      onChange={(e) => setVagaForm({ ...vagaForm, remuneracao: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                {/* GESTOR DE REQUISITOS GERAIS */}
+                <div style={{ marginBottom: '1.4rem' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--portal-text-main)', display: 'block', marginBottom: '0.4rem' }}>
+                    Requisitos Gerais Obrigatórios ({vagaForm.requisitosGerais.length} definidos)
+                  </label>
+                  <div className="sub-aba-req-list-editor">
+                    {vagaForm.requisitosGerais.map((req, idx) => (
+                      <div key={idx} className="sub-aba-req-item-row">
+                        <span style={{ flex: 1 }}>{req}</span>
+                        <button
+                          type="button"
+                          className="sub-aba-req-delete-btn"
+                          onClick={() => handleRemoveReqGeral(idx)}
+                          title="Remover requisito"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                    <div className="sub-aba-add-input-group">
+                      <input
+                        type="text"
+                        className="sub-aba-input"
+                        placeholder="Escreva um novo requisito geral..."
+                        value={novoReqGeral}
+                        onChange={(e) => setNovoReqGeral(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddReqGeral();
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="sub-aba-btn-add"
+                        onClick={handleAddReqGeral}
+                      >
+                        <Plus size={14} />
+                        <span>Adicionar</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* GESTOR DE REQUISITOS ESPECÍFICOS */}
+                <div style={{ marginBottom: '1.6rem' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--portal-text-main)', display: 'block', marginBottom: '0.4rem' }}>
+                    Requisitos Específicos & Habilitações ({vagaForm.requisitosEspecificos.length} definidos)
+                  </label>
+                  <div className="sub-aba-req-list-editor">
+                    {vagaForm.requisitosEspecificos.map((req, idx) => (
+                      <div key={idx} className="sub-aba-req-item-row">
+                        <span style={{ flex: 1 }}>{req}</span>
+                        <button
+                          type="button"
+                          className="sub-aba-req-delete-btn"
+                          onClick={() => handleRemoveReqEsp(idx)}
+                          title="Remover requisito"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                    <div className="sub-aba-add-input-group">
+                      <input
+                        type="text"
+                        className="sub-aba-input"
+                        placeholder="Escreva um novo requisito específico..."
+                        value={novoReqEsp}
+                        onChange={(e) => setNovoReqEsp(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddReqEsp();
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="sub-aba-btn-add"
+                        onClick={handleAddReqEsp}
+                      >
+                        <Plus size={14} />
+                        <span>Adicionar</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* BOTÕES DE GRAVAÇÃO DO FORMULÁRIO */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--portal-border)', paddingTop: '1.2rem', marginTop: 'auto' }}>
+                  <button
+                    type="button"
+                    className="btn-draft"
+                    onClick={() => {
+                      if (modalMode === 'create') {
+                        setSelectedVagaModal(null);
+                      } else {
+                        setModalMode('view');
+                      }
+                    }}
+                  >
+                    Cancelar
+                  </button>
+
+                  <div style={{ display: 'flex', gap: '0.8rem' }}>
+                    {modalMode === 'edit' && (
+                      <button
+                        type="button"
+                        className="sub-aba-btn-action danger"
+                        onClick={() => setIsDeletingConfirm(true)}
+                      >
+                        <Trash2 size={15} />
+                        <span>Excluir Concurso</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="submit"
+                      className="gestor-btn-primary-red"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1.4rem' }}
+                    >
+                      <Save size={16} />
+                      <span>{modalMode === 'create' ? 'Publicar Novo Concurso' : 'Guardar Alterações'}</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+          </DraggableSubAba>
+        </div>,
+        document.body
       )}
 
-      {/* 5. MODAL DE VISUALIZAÇÃO E DOWNLOAD DO EDITAL OFICIAL */}
-      {viewEditalModal && (
-        <div className="modal-overlay" style={{ backdropFilter: 'blur(8px)', zIndex: 1000 }}>
-          <div className="comprovativo-print-modal" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
+      {/* ========================================================
+          5. MODAL DE VISUALIZAÇÃO E DOWNLOAD DO EDITAL OFICIAL
+          ======================================================== */}
+      {viewEditalModal && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="modal-overlay" 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setViewEditalModal(null);
+          }}
+        >
+          <DraggableSubAba 
+            className="comprovativo-print-modal" 
+            moveHandleLabel="Mover Documento Oficial"
+            onClose={() => setViewEditalModal(null)}
+          >
             <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.8rem' }}>
               <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f2042' }}>
                 Edital Oficial em PDF • Visualização
@@ -426,8 +1152,9 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </DraggableSubAba>
+        </div>,
+        document.body
       )}
     </div>
   );

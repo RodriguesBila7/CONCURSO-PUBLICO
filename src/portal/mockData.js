@@ -798,6 +798,137 @@ export function validarTelefoneMZ(tel) {
 const STORAGE_KEY_CANDIDATURAS = 'sernic_concurso_candidaturas_v2';
 const STORAGE_KEY_LISTAS = 'sernic_concurso_listas_v2';
 const STORAGE_KEY_AUDITORIA = 'sernic_concurso_auditoria_v2';
+const STORAGE_KEY_VAGAS = 'sernic_concurso_vagas_v2';
+
+// ========================================================
+// CRUD DE VAGAS / CONCURSOS OFICIAIS
+// ========================================================
+
+export function getStoredVagas() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_VAGAS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.warn('Erro ao ler vagas do localStorage', e);
+  }
+  try {
+    localStorage.setItem(STORAGE_KEY_VAGAS, JSON.stringify(INITIAL_VAGAS));
+  } catch {}
+  return INITIAL_VAGAS;
+}
+
+export function saveStoredVagas(list) {
+  try {
+    localStorage.setItem(STORAGE_KEY_VAGAS, JSON.stringify(list));
+    // Dispara evento para sincronização instantânea entre abas e módulos
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sernic-vagas-updated', { detail: list }));
+    }
+  } catch (e) {
+    console.warn('Erro ao salvar vagas no localStorage', e);
+  }
+  return list;
+}
+
+export function createStoredVaga(vagaData, operador = 'Direcção de Recursos Humanos - SERNIC') {
+  const list = getStoredVagas();
+  const year = new Date().getFullYear();
+  const nextNum = list.length + 1;
+  const newId = vagaData.id || `VAG-${year}-${String(nextNum).padStart(2, '0')}`;
+  
+  const novaVaga = {
+    id: newId,
+    codigoEdital: vagaData.codigoEdital || `Aviso n.º 0${nextNum}/SERNIC-DG/DRH/${year}`,
+    titulo: vagaData.titulo || 'Nova Carreira SERNIC',
+    carreira: vagaData.carreira || 'Investigação Criminal e Instrução Processual',
+    regime: vagaData.regime || 'Carreira de Regime Especial - SERNIC',
+    vagas: Number(vagaData.vagas) || 10,
+    local: vagaData.local || 'Nacional',
+    dataAbertura: vagaData.dataAbertura || new Date().toISOString().split('T')[0],
+    dataLimite: vagaData.dataLimite || '2026-12-31',
+    status: vagaData.status || 'Aberto',
+    remuneracao: vagaData.remuneracao || 'Tabela Salarial Única (TSU) + Subsídio de Risco',
+    requisitosGerais: Array.isArray(vagaData.requisitosGerais) ? vagaData.requisitosGerais : [
+      'Nacionalidade Moçambicana originária;',
+      'Idade entre 21 e 35 anos;',
+      'Registo criminal limpo e idoneidade moral comprovada.'
+    ],
+    requisitosEspecificos: Array.isArray(vagaData.requisitosEspecificos) ? vagaData.requisitosEspecificos : [
+      'Licenciatura ou formação específica na área correspondente;',
+      'Robustez física e psicológica comprovada por junta médica.'
+    ],
+    fasesConcurso: Array.isArray(vagaData.fasesConcurso) && vagaData.fasesConcurso.length > 0 ? vagaData.fasesConcurso : [
+      { fase: 1, nome: 'Triagem Documental e Homologação' },
+      { fase: 2, nome: 'Prova Escrita de Conhecimentos' },
+      { fase: 3, nome: 'Exames Médicos e Psicotécnicos' },
+      { fase: 4, nome: 'Curso de Formação Básica Oficial' }
+    ]
+  };
+
+  const updatedList = [novaVaga, ...list];
+  saveStoredVagas(updatedList);
+
+  addStoredAuditoria({
+    acao: 'Abertura de Novo Concurso / Vaga',
+    candidato: `${novaVaga.titulo} (${novaVaga.codigoEdital})`,
+    estadoAnterior: 'Inexistente',
+    novoEstado: novaVaga.status,
+    motivo: `Criação de concurso com quota de ${novaVaga.vagas} vagas para ${novaVaga.local}`,
+    operador: operador
+  });
+
+  return novaVaga;
+}
+
+export function updateStoredVaga(id, updates, operador = 'Direcção de Recursos Humanos - SERNIC') {
+  const list = getStoredVagas();
+  const index = list.findIndex(v => v.id === id);
+  if (index === -1) return null;
+
+  const current = list[index];
+  const updatedVaga = {
+    ...current,
+    ...updates,
+    vagas: updates.vagas !== undefined ? Number(updates.vagas) : current.vagas
+  };
+
+  list[index] = updatedVaga;
+  saveStoredVagas(list);
+
+  addStoredAuditoria({
+    acao: 'Atualização de Concurso / Edital',
+    candidato: `${updatedVaga.titulo} (${updatedVaga.codigoEdital})`,
+    estadoAnterior: current.status,
+    novoEstado: updatedVaga.status,
+    motivo: updates.motivoAudit || `Atualização de parâmetros e requisitos da carreira (${updatedVaga.vagas} vagas)`,
+    operador: operador
+  });
+
+  return updatedVaga;
+}
+
+export function deleteStoredVaga(id, operador = 'Direcção de Recursos Humanos - SERNIC') {
+  const list = getStoredVagas();
+  const target = list.find(v => v.id === id);
+  if (!target) return false;
+
+  const updatedList = list.filter(v => v.id !== id);
+  saveStoredVagas(updatedList);
+
+  addStoredAuditoria({
+    acao: 'Revogação / Exclusão de Concurso',
+    candidato: `${target.titulo} (${target.codigoEdital})`,
+    estadoAnterior: target.status,
+    novoEstado: 'Revogado / Excluído',
+    motivo: `Cancelamento ou remoção do edital do catálogo público`,
+    operador: operador
+  });
+
+  return true;
+}
 
 export function getStoredCandidaturas() {
   try {
@@ -906,6 +1037,26 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
   return updatedCandidate;
 }
 
+export function deleteStoredCandidatura(codigo, operador = 'Comissão de Júri SERNIC') {
+  const list = getStoredCandidaturas();
+  const target = list.find(c => c.codigoCandidatura === codigo);
+  if (!target) return false;
+
+  const updatedList = list.filter(c => c.codigoCandidatura !== codigo);
+  saveStoredCandidaturas(updatedList);
+
+  addStoredAuditoria({
+    acao: 'Remoção de Inscrição / Candidatura',
+    candidato: `${target.nomeCompleto} (${codigo})`,
+    estadoAnterior: target.status,
+    novoEstado: 'Registo Eliminado',
+    motivo: 'Eliminação administrativa de registo por decisão do júri',
+    operador: operador
+  });
+
+  return true;
+}
+
 export function getStoredListasPublicadas() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_LISTAS);
@@ -929,6 +1080,26 @@ export function saveStoredListasPublicadas(list) {
     console.warn('Erro ao salvar listas publicadas', e);
   }
   return list;
+}
+
+export function deleteStoredLista(id, operador = 'Presidente do Júri SERNIC') {
+  const list = getStoredListasPublicadas();
+  const target = list.find(l => l.id === id);
+  if (!target) return false;
+
+  const updatedList = list.filter(l => l.id !== id);
+  saveStoredListasPublicadas(updatedList);
+
+  addStoredAuditoria({
+    acao: 'Revogação de Edital / Pauta Oficial',
+    candidato: `${target.tituloLista} (${target.edital})`,
+    estadoAnterior: 'Publicado',
+    novoEstado: 'Revogado / Despublicado',
+    motivo: `Retirada do edital de circulação pública`,
+    operador: operador
+  });
+
+  return true;
 }
 
 export function getStoredAuditoria() {
