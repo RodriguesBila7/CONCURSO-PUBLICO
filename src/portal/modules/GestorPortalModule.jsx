@@ -463,8 +463,8 @@ export default function GestorPortalModule({
     };
   }, [candidatos, vagas]);
 
-  // Cálculos do Gráfico Donut de Resumo do Júri
-  const donutSegments = useMemo(() => {
+  // Cálculos do Gráfico Donut de Resumo do Júri (Expandido r=68)
+  const donutSegmentsLarge = useMemo(() => {
     const total = stats.total || 1;
     const items = [
       { label: 'Aprovadas / Provimento', value: stats.aprovados, color: '#16a34a' },
@@ -473,7 +473,7 @@ export default function GestorPortalModule({
       { label: 'Em Análise', value: stats.analise, color: '#f59e0b' },
       { label: 'Excluídas', value: stats.excluidos, color: '#c32026' },
     ];
-    const r = 54;
+    const r = 68;
     const circumference = 2 * Math.PI * r;
     let accumulated = 0;
 
@@ -491,6 +491,47 @@ export default function GestorPortalModule({
         dashOffset
       };
     });
+  }, [stats]);
+
+  // Etapas do Pipeline Progressivo do Funil
+  const funnelStages = useMemo(() => {
+    return [
+      {
+        step: 'Fase 1',
+        title: 'Em Análise Curricular & Triagem',
+        count: stats.analise,
+        color: '#f59e0b',
+        desc: 'Processos a aguardar conferência documental e parecer formal do júri examinador.'
+      },
+      {
+        step: 'Fase 2',
+        title: 'Candidaturas Admitidas (Homologadas)',
+        count: stats.admitidos,
+        color: '#0d9488',
+        desc: 'Documentação e requisitos legais validados em conformidade com o Estatuto do SERNIC.'
+      },
+      {
+        step: 'Fase 3',
+        title: 'Convocadas para Provas & Testes',
+        count: stats.convocados,
+        color: '#2563eb',
+        desc: 'Agendados para provas escritas na ACIPOL e perícias práticas laboratoriais.'
+      },
+      {
+        step: 'Fase 4',
+        title: 'Aprovadas / Provimento de Vaga',
+        count: stats.aprovados,
+        color: '#16a34a',
+        desc: 'Apuradas com mérito e classificação final para provimento das quotas autorizadas.'
+      },
+      {
+        step: 'Fase 5',
+        title: 'Candidaturas Excluídas',
+        count: stats.excluidos,
+        color: '#c32026',
+        desc: 'Desclassificadas com fundamento jurídico exarado no livro oficial de atas.'
+      }
+    ];
   }, [stats]);
 
   const taxaAdmissibilidade = stats.total > 0
@@ -1262,79 +1303,166 @@ export default function GestorPortalModule({
               </div>
             </div>
 
-            {/* Coluna 3: Novo Gráfico de Resumo de Deliberação & Eficiência do Júri */}
-            <div className="gestor-panel-card">
-              <div className="gestor-panel-header">
-                <h3>
-                  <PieChart size={18} color="#c32026" />
-                  Resumo do Funil de Deliberação
-                </h3>
-                <span className="gestor-panel-tag">Pipeline & Métricas</span>
-              </div>
-              <div className="gestor-panel-body gestor-summary-chart-body">
-                {/* GRÁFICO DONUT SVG PROFISSIONAL */}
-                <div className="gestor-donut-wrapper">
-                  <div className="gestor-donut-svg-container">
-                    <svg viewBox="0 0 160 160" className="gestor-donut-svg">
-                      <circle
-                        cx="80"
-                        cy="80"
-                        r="54"
-                        fill="none"
-                        stroke="rgba(148, 163, 184, 0.2)"
-                        strokeWidth="18"
-                      />
-                      {donutSegments.map((seg, idx) => (
-                        <circle
-                          key={idx}
-                          cx="80"
-                          cy="80"
-                          r="54"
-                          fill="none"
-                          stroke={seg.color}
-                          strokeWidth="18"
-                          strokeDasharray={`${seg.dashLength} ${seg.dashGap}`}
-                          strokeDashoffset={seg.dashOffset}
-                          strokeLinecap="butt"
-                          transform="rotate(-90 80 80)"
-                          className="donut-segment"
-                        >
-                          <title>{`${seg.label}: ${seg.value} (${seg.percentage}%)`}</title>
-                        </circle>
-                      ))}
-                    </svg>
-                    <div className="gestor-donut-center-content">
-                      <span className="donut-center-num">{stats.total}</span>
-                      <span className="donut-center-txt">Candidatos</span>
-                    </div>
-                  </div>
+          </div>
 
-                  {/* LEGENDA / STATUS BREAKDOWN */}
-                  <div className="gestor-donut-legend">
-                    {donutSegments.map((seg, idx) => (
-                      <div key={idx} className="donut-legend-item">
-                        <div className="legend-indicator-dot" style={{ backgroundColor: seg.color }} />
-                        <span className="legend-label">{seg.label}</span>
-                        <span className="legend-count"><strong>{seg.value}</strong> ({seg.percentage}%)</span>
-                      </div>
+          {/* ========================================================
+              SECÇÃO EM DESTAQUE ABAIXO: FUNIL DE DELIBERAÇÃO EXPANDIDO
+              ======================================================== */}
+          <div className="gestor-funnel-full-card fadeIn">
+            <div className="gestor-funnel-header">
+              <div className="gestor-funnel-header-titles">
+                <div className="gestor-funnel-icon-wrap">
+                  <PieChart size={22} color="#ffffff" />
+                </div>
+                <div>
+                  <h3>Funil Executivo de Deliberação & Triagem do Concurso</h3>
+                  <p>
+                    Fluxo completo de conversão das candidaturas, taxas de admissibilidade e eficiência do Júri Nacional do SERNIC 2026.
+                  </p>
+                </div>
+              </div>
+
+              <div className="gestor-funnel-header-tags">
+                <span className="funnel-badge-live">
+                  <span className="live-dot" /> Sincronização em Tempo Real
+                </span>
+                <span className="funnel-badge-count">
+                  {stats.total} Candidaturas Processadas
+                </span>
+              </div>
+            </div>
+
+            {/* CONTEÚDO PRINCIPAL EXPANDIDO DO FUNIL */}
+            <div className="gestor-funnel-expanded-body">
+              {/* LADO 1: GRÁFICO DONUT GRANDE & PROEMINENTE */}
+              <div className="funnel-expanded-donut-col">
+                <div className="gestor-donut-svg-container large">
+                  <svg viewBox="0 0 200 200" className="gestor-donut-svg">
+                    <circle
+                      cx="100"
+                      cy="100"
+                      r="68"
+                      fill="none"
+                      stroke="rgba(148, 163, 184, 0.2)"
+                      strokeWidth="24"
+                    />
+                    {donutSegmentsLarge.map((seg, idx) => (
+                      <circle
+                        key={idx}
+                        cx="100"
+                        cy="100"
+                        r="68"
+                        fill="none"
+                        stroke={seg.color}
+                        strokeWidth="24"
+                        strokeDasharray={`${seg.dashLength} ${seg.dashGap}`}
+                        strokeDashoffset={seg.dashOffset}
+                        strokeLinecap="butt"
+                        transform="rotate(-90 100 100)"
+                        className="donut-segment"
+                      >
+                        <title>{`${seg.label}: ${seg.value} (${seg.percentage}%)`}</title>
+                      </circle>
                     ))}
+                  </svg>
+                  <div className="gestor-donut-center-content">
+                    <span className="donut-center-num large">{stats.total}</span>
+                    <span className="donut-center-txt">Candidaturas</span>
+                    <span className="donut-center-sub">100% Auditadas</span>
                   </div>
                 </div>
 
-                {/* TAXAS ESTRATÉGICAS DE DESEMPENHO */}
-                <div className="gestor-metrics-strip">
-                  <div className="gestor-metric-chip">
-                    <span className="metric-chip-label">Taxa Admissão</span>
-                    <strong className="metric-chip-value success">{taxaAdmissibilidade}%</strong>
+                <div className="donut-quick-summary">
+                  <div className="donut-summary-row">
+                    <span className="dot-circle" style={{ backgroundColor: '#16a34a' }} />
+                    <span>Aptos p/ Vagas:</span>
+                    <strong>{stats.aprovados + stats.convocados} ({stats.total > 0 ? Math.round(((stats.aprovados + stats.convocados) / stats.total) * 100) : 0}%)</strong>
                   </div>
-                  <div className="gestor-metric-chip">
-                    <span className="metric-chip-label">Taxa Exclusão</span>
-                    <strong className="metric-chip-value danger">{stats.taxaExclusao}%</strong>
+                  <div className="donut-summary-row">
+                    <span className="dot-circle" style={{ backgroundColor: '#f59e0b' }} />
+                    <span>Pendentes Deliberação:</span>
+                    <strong>{stats.analise} ({stats.total > 0 ? Math.round((stats.analise / stats.total) * 100) : 0}%)</strong>
                   </div>
-                  <div className="gestor-metric-chip">
-                    <span className="metric-chip-label">Triagem Feita</span>
-                    <strong className="metric-chip-value info">{taxaTriagemConcluida}%</strong>
+                </div>
+              </div>
+
+              {/* LADO 2: PIPELINE PROGRESSIVO DAS FASES DO FUNIL */}
+              <div className="funnel-expanded-pipeline-col">
+                <h4 className="pipeline-col-title">Etapas Oficiais de Deliberação da Comissão</h4>
+                
+                <div className="pipeline-stages-list">
+                  {funnelStages.map((stage, idx) => {
+                    const pct = stats.total > 0 ? Math.round((stage.count / stats.total) * 100) : 0;
+                    return (
+                      <div key={idx} className="pipeline-stage-card">
+                        <div className="stage-top-meta">
+                          <div className="stage-left-info">
+                            <span className="stage-step-pill" style={{ backgroundColor: stage.color }}>
+                              {stage.step}
+                            </span>
+                            <span className="stage-name">{stage.title}</span>
+                          </div>
+                          <div className="stage-numbers">
+                            <strong className="stage-count">{stage.count}</strong>
+                            <span className="stage-pct">({pct}%)</span>
+                          </div>
+                        </div>
+
+                        <div className="stage-bar-track">
+                          <div
+                            className="stage-bar-fill"
+                            style={{
+                              width: `${Math.max(6, pct)}%`,
+                              backgroundColor: stage.color
+                            }}
+                          />
+                        </div>
+
+                        <div className="stage-desc">{stage.desc}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* LADO 3: CARTÕES DE EFICIÊNCIA & INDICADORES ESTRATÉGICOS */}
+              <div className="funnel-expanded-kpis-col">
+                <h4 className="pipeline-col-title">Indicadores Estratégicos</h4>
+
+                <div className="funnel-kpi-card green">
+                  <div className="funnel-kpi-top">
+                    <span className="kpi-label">Taxa de Admissibilidade</span>
+                    <ShieldCheck size={20} className="kpi-icon" />
                   </div>
+                  <div className="funnel-kpi-value">{taxaAdmissibilidade}%</div>
+                  <div className="funnel-kpi-footnote">Candidatos habilitados a prosseguir no concurso</div>
+                </div>
+
+                <div className="funnel-kpi-card blue">
+                  <div className="funnel-kpi-top">
+                    <span className="kpi-label">Índice de Triagem Concluída</span>
+                    <CheckCircle2 size={20} className="kpi-icon" />
+                  </div>
+                  <div className="funnel-kpi-value">{taxaTriagemConcluida}%</div>
+                  <div className="funnel-kpi-footnote">{stats.total - stats.analise} de {stats.total} candidaturas já avaliadas</div>
+                </div>
+
+                <div className="funnel-kpi-card red">
+                  <div className="funnel-kpi-top">
+                    <span className="kpi-label">Taxa de Exclusão Jurídica</span>
+                    <XCircle size={20} className="kpi-icon" />
+                  </div>
+                  <div className="funnel-kpi-value">{stats.taxaExclusao}%</div>
+                  <div className="funnel-kpi-footnote">{stats.excluidos} excluídos por inconformidade com o edital</div>
+                </div>
+
+                <div className="funnel-kpi-card gold">
+                  <div className="funnel-kpi-top">
+                    <span className="kpi-label">Tempo Médio de Deliberação</span>
+                    <Clock size={20} className="kpi-icon" />
+                  </div>
+                  <div className="funnel-kpi-value">2.4 Dias</div>
+                  <div className="funnel-kpi-footnote">Meta estatutária do SERNIC: até 5 dias úteis</div>
                 </div>
               </div>
             </div>
