@@ -204,8 +204,8 @@ export default function CandidaturaModule({
 
     if (step === 1) {
       if (!formData.nomeCompleto.trim()) newErrors.nomeCompleto = 'O nome completo é obrigatório.';
-      if (!validarNUIT(formData.nuit)) newErrors.nuit = 'Informe um NUIT moçambicano válido (9 dígitos numéricos).';
-      if (!validarBI(formData.biNumero)) newErrors.biNumero = 'Informe um BI válido (12 dígitos seguidos de 1 letra, ex: 110100234567M).';
+      if (!validarNUIT(formData.nuit)) newErrors.nuit = 'Informe um NUIT moçambicano válido (9 dígitos numéricos, ex: 123456789).';
+      if (!validarBI(formData.biNumero)) newErrors.biNumero = 'Informe um BI válido (12 dígitos seguidos de 1 letra, ex: 000000000000M).';
       if (!formData.dataNascimento) {
         newErrors.dataNascimento = 'A data de nascimento é obrigatória.';
       } else {
@@ -535,7 +535,7 @@ export default function CandidaturaModule({
         <div className="module-page-title-group">
           <h2>
             <FileText size={26} color="#c59b27" />
-            Formulário Oficial de Candidatura • SERNIC 2026
+            Formulário de Candidatura-SERNIC
           </h2>
           <p>
             Preencha todos os campos obrigatórios. Pode salvar o seu rascunho e continuar a qualquer momento.
@@ -602,11 +602,7 @@ export default function CandidaturaModule({
         </div>
       </div>
 
-      {/* AVISO DO PADRÃO OFICIAL EM LETRAS MAIÚSCULAS */}
-      <div className="form-uppercase-banner">
-        <Sparkles size={15} color="#c59b27" />
-        <span><strong>PADRÃO OFICIAL:</strong> O preenchimento deste formulário é convertido automaticamente para letras maiúsculas.</span>
-      </div>
+
 
       {/* 3. CONTEÚDO DE CADA ETAPA */}
       <div>
@@ -638,7 +634,7 @@ export default function CandidaturaModule({
                   name="nuit"
                   maxLength={9}
                   className={`form-input ${errors.nuit ? 'error' : ''}`}
-                  placeholder="EX: 100234567"
+                  placeholder="EX: 123456789"
                   value={formData.nuit}
                   onChange={handleChange}
                 />
@@ -652,7 +648,7 @@ export default function CandidaturaModule({
                   name="biNumero"
                   maxLength={13}
                   className={`form-input ${errors.biNumero ? 'error' : ''}`}
-                  placeholder="EX: 110100234567M"
+                  placeholder="EX: 000000000000M"
                   value={formData.biNumero}
                   onChange={handleChange}
                 />

@@ -828,7 +828,7 @@ export default function LoginModule({
                     type="text"
                     maxLength={13}
                     className={`auth-form-input ${regErrors.bi ? 'error' : ''}`}
-                    placeholder="Ex: 110100234567M"
+                    placeholder="Ex: 000000000000M"
                     value={regData.bi}
                     onChange={(e) => setRegData({ ...regData, bi: e.target.value.toUpperCase() })}
                   />
@@ -846,7 +846,7 @@ export default function LoginModule({
                     type="text"
                     maxLength={9}
                     className={`auth-form-input ${regErrors.nuit ? 'error' : ''}`}
-                    placeholder="Ex: 100345678"
+                    placeholder="Ex: 123456789"
                     value={regData.nuit}
                     onChange={(e) => setRegData({ ...regData, nuit: e.target.value })}
                   />

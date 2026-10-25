@@ -203,7 +203,7 @@ export default function ConsultaModule() {
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="Ex: 110100234567M"
+                  placeholder="Ex: 000000000000M"
                   value={biInput}
                   onChange={(e) => setBiInput(e.target.value)}
                 />

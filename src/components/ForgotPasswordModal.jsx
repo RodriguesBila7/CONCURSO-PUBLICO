@@ -82,7 +82,7 @@ export default function ForgotPasswordModal({ isOpen, onClose, t, onNotify }) {
               <input
                 type="text"
                 className="field-input"
-                placeholder="Ex: 100234567 ou email@candidato.mz"
+                placeholder="Ex: 123456789 ou email@candidato.mz"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 autoFocus

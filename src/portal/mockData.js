@@ -1076,7 +1076,7 @@ export function validarNUIT(nuit) {
   return limpo.length === 9;
 }
 
-// Helper para validar BI Moçambicano (12 dígitos numéricos seguidos de 1 letra, ex: 110100234567M)
+// Helper para validar BI Moçambicano (12 dígitos numéricos seguidos de 1 letra, ex: 000000000000M)
 export function validarBI(bi) {
   const padrao = /^[0-9]{12}[A-Za-z]$/;
   return padrao.test(String(bi || '').trim());

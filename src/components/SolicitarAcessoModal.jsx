@@ -122,7 +122,7 @@ export default function SolicitarAcessoModal({ isOpen, onClose, t, onNotify }) {
                   type="text"
                   name="nuit"
                   className="field-input"
-                  placeholder="Ex: 100234567"
+                  placeholder="Ex: 123456789"
                   value={formData.nuit}
                   onChange={handleChange}
                   required
@@ -174,7 +174,7 @@ export default function SolicitarAcessoModal({ isOpen, onClose, t, onNotify }) {
                   type="text"
                   name="bi"
                   className="field-input"
-                  placeholder="Ex: 110100234567M"
+                  placeholder="Ex: 000000000000M"
                   value={formData.bi}
                   onChange={handleChange}
                 />
