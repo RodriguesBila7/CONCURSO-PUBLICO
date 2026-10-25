@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import bcrypt from 'bcryptjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -89,38 +90,34 @@ if (countUsers.count === 0) {
     VALUES (?, ?, ?, ?, ?)
   `);
 
-  // Demo candidate account
   insertUser.run(
     '100234567',
     'Armando Carlos Mondlane',
-    'sernic2026',
+    bcrypt.hashSync('sernic2026', 10),
     'armando.carlos@concurso.mz',
     'candidate'
   );
 
-  // Quick test demo credentials
   insertUser.run(
     'candidato',
     'Maria Helena Nhantumbo',
-    '123456',
+    bcrypt.hashSync('123456', 10),
     'm.nhantumbo@concurso.mz',
     'candidate'
   );
 
-  // Admin account
   insertUser.run(
     'admin',
     'Direcção de Recursos Humanos - SERNIC',
-    'admin123',
+    bcrypt.hashSync('admin123', 10),
     'drh@sernic.gov.mz',
     'admin'
   );
 
-  // Gestor account
   insertUser.run(
     'gestor',
     'Gestor de Recursos Humanos - SERNIC',
-    'admin123',
+    bcrypt.hashSync('admin123', 10),
     'gestor@sernic.gov.mz',
     'admin'
   );

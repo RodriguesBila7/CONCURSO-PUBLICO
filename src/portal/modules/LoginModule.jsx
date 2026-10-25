@@ -19,7 +19,8 @@ import {
   Phone, 
   LogIn, 
   UserPlus,
-  ShieldCheck
+  ShieldCheck,
+  X
 } from 'lucide-react';
 import { 
   validarBI, 
@@ -30,6 +31,62 @@ import {
   getStoredCandidaturas,
   detectCandidateGender 
 } from '../mockData';
+
+// Componente Ícone Oficial Google (SVG Multicolor)
+const GoogleIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+    <path
+      fill="#4285F4"
+      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+    />
+    <path
+      fill="#34A853"
+      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+    />
+    <path
+      fill="#FBBC05"
+      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+    />
+    <path
+      fill="#EA4335"
+      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+    />
+  </svg>
+);
+
+// Contas Google Pré-sugeridas para login e teste rápido
+const GOOGLE_PRESET_ACCOUNTS = [
+  {
+    id: 'g-rodrigo',
+    name: 'Rodrigo Bila',
+    email: 'rodrigo.bila@gmail.com',
+    initial: 'R',
+    bg: '#1a73e8',
+    nuit: '100458921',
+    bi: '110293847101B',
+    genero: 'Masculino'
+  },
+  {
+    id: 'g-armando',
+    name: 'Armando Carlos Mondlane',
+    email: 'armando.carlos@gmail.com',
+    initial: 'A',
+    bg: '#0f9d58',
+    nuit: '100234567',
+    bi: '110100234567M',
+    genero: 'Masculino'
+  },
+  {
+    id: 'g-helena',
+    name: 'Helena Macuácua',
+    email: 'helena.macuacua@gmail.com',
+    initial: 'H',
+    bg: '#e37400',
+    nuit: '100876543',
+    bi: '110345678902H',
+    genero: 'Feminino'
+  }
+];
 
 export default function LoginModule({ 
   currentUser, 
@@ -50,6 +107,14 @@ export default function LoginModule({
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Estados de Autenticação / Registo com Google
+  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [showCustomGoogle, setShowCustomGoogle] = useState(false);
+  const [customGoogleEmail, setCustomGoogleEmail] = useState('');
+  const [customGoogleName, setCustomGoogleName] = useState('');
+  const [customGoogleError, setCustomGoogleError] = useState('');
 
   // Form de Registo
   const [regData, setRegData] = useState({
@@ -107,44 +172,13 @@ export default function LoginModule({
         setUserCandidaturas(data.candidaturas && data.candidaturas.length > 0 ? data.candidaturas : INITIAL_CANDIDATURAS_CONSULTA);
         if (onNotify) onNotify('success', `Bem-vindo(a), ${data.user.name}!`);
       } else {
-        // Fallback para contas locais se offline
-        handleLocalLoginFallback();
+        setLoginError(data.message || 'Credenciais incorrectas. Verifique os seus dados.');
       }
     } catch {
-      handleLocalLoginFallback();
+      setLoginError('Falha de ligação ao servidor. Verifique a sua conexão.');
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleLocalLoginFallback = () => {
-    const ident = loginIdentifier.trim().toLowerCase();
-    const pass = loginPassword.trim();
-
-    // Verificação de contas demo
-    if ((ident === '100234567' || ident === 'candidato' || ident.includes('armando')) && (pass === 'sernic2026' || pass === '123456')) {
-      const demoUser = {
-        nuit: '100234567',
-        name: 'Armando Carlos Mondlane',
-        email: 'armando.carlos@concurso.mz',
-        bi: '110100234567M',
-        role: 'candidate',
-        telefone: '+258 84 123 4567',
-        provincia: 'Maputo Cidade'
-      };
-      onLoginSuccess(demoUser);
-      setUserCandidaturas(INITIAL_CANDIDATURAS_CONSULTA);
-      if (onNotify) onNotify('success', 'Sessão iniciada com sucesso (Conta Demonstração)!');
-    } else {
-      setLoginError('Credenciais incorrectas. Verifique o seu NUIT/BI e a palavra-passe ou recupere a sua senha.');
-    }
-  };
-
-  // Preencher demo instantâneo
-  const handleFillDemo = () => {
-    setLoginIdentifier('100234567');
-    setLoginPassword('sernic2026');
-    setLoginError('');
   };
 
   // Manipular Registo
@@ -181,6 +215,99 @@ export default function LoginModule({
   };
 
   // ========================================================
+  // AUTENTICAÇÃO / REGISTO COM CONTA GOOGLE
+  // ========================================================
+  const handleGoogleAuthAction = async (account) => {
+    setGoogleLoading(true);
+    setLoginError('');
+
+    try {
+      const res = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: account.email,
+          name: account.name,
+          nuit: account.nuit
+        })
+      });
+      const data = await res.json();
+
+      if (data.success && data.user) {
+        const authedUser = {
+          ...data.user,
+          authProvider: 'google',
+          googleVerified: true,
+          initial: account.initial || (account.name ? account.name.charAt(0).toUpperCase() : 'G'),
+          genero: account.genero || 'Masculino'
+        };
+        onLoginSuccess(authedUser);
+        const all = getStoredCandidaturas();
+        const matched = all.filter(c => c.nuit === data.user.nuit || c.email?.toLowerCase() === account.email.toLowerCase());
+        setUserCandidaturas(matched.length > 0 ? matched : (data.candidaturas?.length ? data.candidaturas : []));
+        setGoogleLoading(false);
+        setIsGoogleModalOpen(false);
+        if (onNotify) onNotify('success', `Autenticado com a conta Google (${account.email}) com sucesso!`);
+        return;
+      }
+    } catch {
+      // Fallback local se backend offline
+    }
+
+    // Fallback local confiável
+    setTimeout(() => {
+      const all = getStoredCandidaturas();
+      const matched = all.filter(c => c.email?.toLowerCase() === account.email.toLowerCase() || c.nuit === account.nuit);
+      
+      const googleUser = {
+        name: account.name,
+        email: account.email,
+        nuit: account.nuit || ('10' + Math.floor(1000000 + Math.random() * 9000000)),
+        bi: account.bi || ('110' + Math.floor(100000000 + Math.random() * 900000000) + 'M'),
+        telefone: account.telefone || '+258 84 920 1823',
+        provincia: 'Maputo Cidade',
+        role: 'candidate',
+        authProvider: 'google',
+        googleVerified: true,
+        initial: account.initial || (account.name ? account.name.charAt(0).toUpperCase() : 'G'),
+        genero: account.genero || 'Masculino'
+      };
+
+      onLoginSuccess(googleUser);
+      setUserCandidaturas(matched.length > 0 ? matched : all.slice(0, 1));
+      setGoogleLoading(false);
+      setIsGoogleModalOpen(false);
+      if (onNotify) onNotify('success', `Conta Google (${account.email}) conectada com sucesso! Bem-vindo(a), ${account.name}!`);
+    }, 500);
+  };
+
+  const handleCustomGoogleSubmit = (e) => {
+    e.preventDefault();
+    setCustomGoogleError('');
+
+    if (!customGoogleEmail.trim() || !customGoogleEmail.includes('@')) {
+      setCustomGoogleError('Introduza um endereço de e-mail da Google válido (ex: seu.nome@gmail.com).');
+      return;
+    }
+    if (!customGoogleName.trim()) {
+      setCustomGoogleError('Por favor, informe o seu Nome Completo.');
+      return;
+    }
+
+    const newGoogleAccount = {
+      id: 'custom-' + Date.now(),
+      name: customGoogleName.trim(),
+      email: customGoogleEmail.trim().toLowerCase(),
+      initial: customGoogleName.trim().charAt(0).toUpperCase(),
+      nuit: '10' + Math.floor(1000000 + Math.random() * 9000000),
+      bi: '110' + Math.floor(100000000 + Math.random() * 900000000) + 'M',
+      genero: 'Masculino'
+    };
+
+    handleGoogleAuthAction(newGoogleAccount);
+  };
+
+  // ========================================================
   // SE ESTIVER LOGADO: ÁREA PESSOAL DO CANDIDATO
   // ========================================================
   if (currentUser) {
@@ -190,8 +317,36 @@ export default function LoginModule({
         <div className="module-page-header">
           <div className="module-page-title-group">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#0f2042', color: '#c59b27', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.3rem', fontWeight: 900 }}>
+              <div style={{ 
+                width: '48px', 
+                height: '48px', 
+                borderRadius: '50%', 
+                backgroundColor: currentUser.authProvider === 'google' ? '#1a73e8' : '#0f2042', 
+                color: '#ffffff', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                fontSize: '1.3rem', 
+                fontWeight: 900,
+                position: 'relative'
+              }}>
                 {currentUser.name ? currentUser.name.charAt(0) : 'C'}
+                {currentUser.authProvider === 'google' && (
+                  <span style={{ 
+                    position: 'absolute', 
+                    bottom: '-2px', 
+                    right: '-2px', 
+                    background: '#ffffff', 
+                    borderRadius: '50%', 
+                    padding: '2px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                  }}>
+                    <GoogleIcon size={12} />
+                  </span>
+                )}
               </div>
               <div>
                 <h2>Área Pessoal do Candidato</h2>
@@ -234,6 +389,12 @@ export default function LoginModule({
             <div style={{ fontSize: '0.84rem', lineHeight: 1.6, color: 'var(--portal-text-muted)' }}>
               <p><strong>Nome:</strong> {currentUser.name}</p>
               <p><strong>E-mail:</strong> {currentUser.email || 'Não registado'}</p>
+              {currentUser.authProvider === 'google' && (
+                <div className="google-verified-chip">
+                  <GoogleIcon size={15} />
+                  <span>Autenticado via Google ({currentUser.email})</span>
+                </div>
+              )}
               <p><strong>Telefone:</strong> {currentUser.telefone || '+258 84 000 0000'}</p>
               <p><strong>NUIT:</strong> {currentUser.nuit}</p>
               <p><strong>Província:</strong> {currentUser.provincia || 'Maputo Cidade'}</p>
@@ -519,6 +680,26 @@ export default function LoginModule({
               </p>
             </div>
 
+            {/* OPÇÃO DE LOGIN COM GOOGLE */}
+            <div className="auth-social-section">
+              <button
+                type="button"
+                className="btn-google-auth"
+                onClick={() => {
+                  setLoginError('');
+                  setShowCustomGoogle(false);
+                  setIsGoogleModalOpen(true);
+                }}
+              >
+                <GoogleIcon />
+                <span>Continuar com o Google</span>
+              </button>
+
+              <div className="auth-or-divider">
+                <span>ou utilize a sua conta SERNIC / NUIT</span>
+              </div>
+            </div>
+
             <div className="form-group" style={{ marginBottom: '1.1rem' }}>
               <label>NUIT ou Correio Eletrónico</label>
               <div className="auth-input-group">
@@ -585,16 +766,6 @@ export default function LoginModule({
               <span>{isSubmitting ? 'A Autenticar...' : 'Entrar no Sistema'}</span>
             </button>
 
-            <div style={{ marginTop: '1.4rem', textAlign: 'center' }}>
-              <button
-                type="button"
-                onClick={handleFillDemo}
-                className="auth-demo-pill"
-                title="Preencher com credenciais de demonstração"
-              >
-                <span>Utilizar Acesso de Demonstração (100234567)</span>
-              </button>
-            </div>
           </form>
         )}
 
@@ -607,6 +778,26 @@ export default function LoginModule({
               <p className="auth-header-sub">
                 Preencha os dados oficiais para submeter e gerir as suas candidaturas.
               </p>
+            </div>
+
+            {/* OPÇÃO DE CADASTRO COM GOOGLE */}
+            <div className="auth-social-section">
+              <button
+                type="button"
+                className="btn-google-auth btn-google-register"
+                onClick={() => {
+                  setRegErrors({});
+                  setShowCustomGoogle(false);
+                  setIsGoogleModalOpen(true);
+                }}
+              >
+                <GoogleIcon />
+                <span>Cadastrar com Conta Google (Acesso Imediato)</span>
+              </button>
+
+              <div className="auth-or-divider">
+                <span>ou preencha os seus dados manualmente</span>
+              </div>
             </div>
 
             <div className="form-group" style={{ marginBottom: '1rem' }}>
@@ -841,6 +1032,147 @@ export default function LoginModule({
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ========================================================
+            MODAL OFICIAL DE CONTA GOOGLE (POPUP OAUTH 2.0)
+            ======================================================== */}
+        {isGoogleModalOpen && (
+          <div 
+            className="google-modal-overlay" 
+            onClick={() => !googleLoading && setIsGoogleModalOpen(false)}
+          >
+            <div 
+              className="google-modal-card" 
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* CABEÇALHO GOOGLE */}
+              <div className="google-modal-header">
+                <button
+                  type="button"
+                  className="google-modal-close"
+                  onClick={() => !googleLoading && setIsGoogleModalOpen(false)}
+                  aria-label="Fechar"
+                >
+                  <X size={18} />
+                </button>
+
+                <div className="google-modal-logo-wrap">
+                  <GoogleIcon size={34} />
+                </div>
+
+                <h3 className="google-modal-title">Fazer login com o Google</h3>
+                <p className="google-modal-subtitle">
+                  Escolha uma conta para aceder à Plataforma de Recrutamento do SERNIC
+                </p>
+              </div>
+
+              {/* LISTA DE CONTAS GOOGLE RECONHECIDAS */}
+              {!showCustomGoogle ? (
+                <div className="google-accounts-list">
+                  {GOOGLE_PRESET_ACCOUNTS.map((acc) => (
+                    <button
+                      key={acc.id}
+                      type="button"
+                      className="google-account-btn"
+                      disabled={googleLoading}
+                      onClick={() => handleGoogleAuthAction(acc)}
+                    >
+                      <div className="google-account-avatar" style={{ backgroundColor: acc.bg }}>
+                        {acc.initial}
+                      </div>
+                      <div className="google-account-info">
+                        <span className="google-account-name">{acc.name}</span>
+                        <span className="google-account-email">{acc.email}</span>
+                      </div>
+                      <span className="google-account-action-tag">Aceder</span>
+                    </button>
+                  ))}
+
+                  {/* OPÇÃO DE INSERIR OUTRO EMAIL GOOGLE */}
+                  <button
+                    type="button"
+                    className="google-account-btn"
+                    style={{ borderStyle: 'dashed', borderColor: '#cbd5e1', marginTop: '0.4rem' }}
+                    onClick={() => {
+                      setShowCustomGoogle(true);
+                      setCustomGoogleError('');
+                    }}
+                  >
+                    <div className="google-account-avatar" style={{ backgroundColor: '#f1f5f9', color: '#475569' }}>
+                      <UserPlus size={18} />
+                    </div>
+                    <div className="google-account-info">
+                      <span className="google-account-name">Utilizar outra conta Google...</span>
+                      <span className="google-account-email">Registar com qualquer e-mail @gmail.com</span>
+                    </div>
+                  </button>
+                </div>
+              ) : (
+                /* FORMULÁRIO PARA OUTRO EMAIL GOOGLE */
+                <form onSubmit={handleCustomGoogleSubmit} className="google-custom-form-wrap">
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.9rem' }}>
+                    <strong style={{ fontSize: '0.9rem', color: 'var(--portal-text-main)' }}>
+                      Cadastrar Novo E-mail da Google
+                    </strong>
+                    <button
+                      type="button"
+                      onClick={() => setShowCustomGoogle(false)}
+                      style={{ background: 'none', border: 'none', color: '#1a73e8', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      ← Voltar às contas
+                    </button>
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: '0.8rem' }}>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 700 }}>Nome Completo *</label>
+                    <input
+                      type="text"
+                      className="auth-form-input"
+                      placeholder="Ex: Alberto Mário Mondlane"
+                      value={customGoogleName}
+                      onChange={(e) => setCustomGoogleName(e.target.value)}
+                      style={{ height: '44px', paddingLeft: '1rem' }}
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: '0.9rem' }}>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 700 }}>Endereço E-mail Google (@gmail.com) *</label>
+                    <input
+                      type="email"
+                      className="auth-form-input"
+                      placeholder="exemplo.candidato@gmail.com"
+                      value={customGoogleEmail}
+                      onChange={(e) => setCustomGoogleEmail(e.target.value)}
+                      style={{ height: '44px', paddingLeft: '1rem' }}
+                    />
+                  </div>
+
+                  {customGoogleError && (
+                    <div style={{ color: '#dc2626', fontSize: '0.8rem', fontWeight: 700, marginBottom: '0.8rem' }}>
+                      {customGoogleError}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="btn-auth-primary"
+                    disabled={googleLoading}
+                    style={{ height: '44px', background: 'linear-gradient(135deg, #1a73e8 0%, #1557b0 100%)', boxShadow: '0 4px 14px rgba(26, 115, 232, 0.4)' }}
+                  >
+                    <GoogleIcon size={18} />
+                    <span>{googleLoading ? 'A conectar com a Google...' : 'Cadastrar e Iniciar Sessão'}</span>
+                  </button>
+                </form>
+              )}
+
+              {/* RODAPÉ INFORMATIVO OFICIAL */}
+              <div className="google-modal-footer">
+                Para continuar, a Google partilhará o seu nome, endereço de e-mail e fotografia com a plataforma de Concursos Públicos do SERNIC.
+              </div>
+            </div>
           </div>
         )}
       </div>

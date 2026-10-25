@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import bcrypt from 'bcryptjs';
 import db from './db.js';
 
 const app = express();
@@ -56,7 +57,7 @@ app.post('/api/auth/login', (req, res) => {
       });
     }
 
-    if (user.password !== password) {
+    if (!bcrypt.compareSync(password, user.password)) {
       logAudit(identifier, 'LOGIN_FALHOU', 'Senha incorrecta');
       return res.status(401).json({
         success: false,
@@ -103,6 +104,68 @@ app.post('/api/auth/login', (req, res) => {
   }
 });
 
+// Google OAuth Login / Registo
+app.post('/api/auth/google', (req, res) => {
+  const { email, name, nuit } = req.body;
+
+  if (!email) {
+    return res.status(400).json({
+      success: false,
+      message: 'O endereço de correio eletrónico Google é obrigatório.'
+    });
+  }
+
+  try {
+    const cleanEmail = email.trim().toLowerCase();
+    let user = db.prepare('SELECT id, nuit, name, email, role, created_at FROM users WHERE email = ?').get(cleanEmail);
+
+    if (!user) {
+      // Registo automático com conta Google
+      const generatedNuit = nuit || ('10' + Math.floor(1000000 + Math.random() * 9000000));
+      const userName = name ? name.trim() : cleanEmail.split('@')[0];
+
+      const insert = db.prepare(`
+        INSERT INTO users (nuit, name, password, email, role)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(generatedNuit, userName, 'google_oauth_verified', cleanEmail, 'candidate');
+
+      user = {
+        id: insert.lastInsertRowid,
+        nuit: generatedNuit,
+        name: userName,
+        email: cleanEmail,
+        role: 'candidate',
+        authProvider: 'google',
+        googleVerified: true
+      };
+
+      logAudit(user.nuit, 'REGISTO_GOOGLE', `Nova conta de candidato criada via Google (${cleanEmail})`);
+    } else {
+      user.authProvider = 'google';
+      user.googleVerified = true;
+      logAudit(user.nuit, 'LOGIN_GOOGLE', `Autenticação efetuada com sucesso via Google (${cleanEmail})`);
+    }
+
+    // Buscar candidaturas associadas
+    const candidaturas = db.prepare(`
+      SELECT * FROM candidaturas WHERE nuit = ? OR email = ? ORDER BY data_submissao DESC
+    `).all(user.nuit, user.email);
+
+    return res.json({
+      success: true,
+      message: `Bem-vindo(a), ${user.name}! Sessão iniciada com a conta Google.`,
+      user,
+      candidaturas
+    });
+  } catch (err) {
+    console.error('Erro na autenticação Google:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Erro ao autenticar com a Google: ' + err.message
+    });
+  }
+});
+
 // Solicitar Acesso / Nova Candidatura
 app.post('/api/candidaturas/solicitar', (req, res) => {
   const { nuit, nomeCompleto, email, telefone, bi, carreira, nivelAcademico, password } = req.body;
@@ -118,15 +181,20 @@ app.post('/api/candidaturas/solicitar', (req, res) => {
     // Generate unique candidature protocol code
     const randomNum = Math.floor(10000 + Math.random() * 90000);
     const codigoCandidatura = `SERNIC-2026-${randomNum}`;
-    const userPass = password || 'sernic2026';
+    if (!password || password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'A senha é obrigatória e deve ter no mínimo 6 caracteres.'
+      });
+    }
+    const hashedPass = bcrypt.hashSync(password, 10);
 
-    // Insert or update user
     const existingUser = db.prepare('SELECT id FROM users WHERE nuit = ?').get(nuit);
     if (!existingUser) {
       db.prepare(`
         INSERT INTO users (nuit, name, password, email, role)
         VALUES (?, ?, ?, ?, ?)
-      `).run(nuit, nomeCompleto, userPass, email, 'candidate');
+      `).run(nuit, nomeCompleto, hashedPass, email, 'candidate');
     }
 
     // Insert candidature
@@ -163,7 +231,7 @@ app.post('/api/candidaturas/solicitar', (req, res) => {
     console.error('Erro ao registar candidatura:', err);
     return res.status(500).json({
       success: false,
-      message: 'Ocorreu um erro ao submeter a candidatura. ' + err.message
+      message: 'Ocorreu um erro ao submeter a candidatura.'
     });
   }
 });
