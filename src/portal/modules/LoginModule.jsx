@@ -26,6 +26,7 @@ import {
   validarBI, 
   validarNUIT, 
   validarTelefoneMZ, 
+  formatTelefoneMZInput,
   PROVINCIAS_MOCAMBIQUE,
   PROVINCIAS_GEOGRAFICAS,
   INITIAL_CANDIDATURAS_CONSULTA,
@@ -123,7 +124,7 @@ export default function LoginModule({
     bi: '',
     nuit: '',
     email: '',
-    telefone: '',
+    telefone: '+258 000 000 000',
     password: '',
     confirmPassword: '',
     provincia: 'Maputo Cidade'
@@ -883,9 +884,22 @@ export default function LoginModule({
                   <input
                     type="tel"
                     className={`auth-form-input ${regErrors.telefone ? 'error' : ''}`}
-                    placeholder="+258 00 000 0000"
+                    placeholder="+258 000 000 000"
                     value={regData.telefone}
-                    onChange={(e) => setRegData({ ...regData, telefone: e.target.value })}
+                    onChange={(e) => setRegData({ ...regData, telefone: formatTelefoneMZInput(e.target.value) })}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Backspace' && e.target.selectionStart <= 5 && e.target.selectionEnd <= 5) e.preventDefault();
+                      if (e.key === 'Delete' && e.target.selectionStart < 5) e.preventDefault();
+                    }}
+                    onFocus={(e) => {
+                      if (e.target.value === '+258 000 000 000') {
+                        setTimeout(() => {
+                          try {
+                            e.target.setSelectionRange(5, 16);
+                          } catch {}
+                        }, 20);
+                      }
+                    }}
                   />
                 </div>
                 {regErrors.telefone && <span className="form-error-msg">{regErrors.telefone}</span>}

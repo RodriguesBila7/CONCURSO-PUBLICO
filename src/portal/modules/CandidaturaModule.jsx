@@ -26,6 +26,7 @@ import {
   validarNUIT, 
   validarBI, 
   validarTelefoneMZ,
+  formatTelefoneMZInput,
   getStoredCandidaturas,
   saveStoredCandidaturas,
   addStoredAuditoria,
@@ -79,9 +80,9 @@ export default function CandidaturaModule({
     anoConclusao: '2024',
     mediaFinal: '',
 
-    // Passo 3: Contactos & Residência
-    telefonePrincipal: '',
-    telefoneAlternativo: '',
+    // Passo 3: Contactos & Residência (Padrão +258 com prefixo fixo)
+    telefonePrincipal: currentUser ? (currentUser.telefone || '+258 000 000 000') : '+258 000 000 000',
+    telefoneAlternativo: '+258 000 000 000',
     email: currentUser ? currentUser.email : '',
     provinciaResidencia: 'Maputo Cidade',
     distritoResidencia: '',
@@ -120,6 +121,8 @@ export default function CandidaturaModule({
       processedValue = value.toLowerCase();
     } else if (name === 'genero') {
       processedValue = value;
+    } else if (name === 'telefonePrincipal' || name === 'telefoneAlternativo') {
+      processedValue = formatTelefoneMZInput(value);
     } else if (typeof value === 'string' && type !== 'date') {
       // Conversão padrão automática para letras maiúsculas conforme edital oficial
       processedValue = value.toUpperCase();
@@ -147,6 +150,29 @@ export default function CandidaturaModule({
 
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
+    }
+  };
+
+  // Protege o prefixo "+258 " para não ser apagado pelo utilizador
+  const handlePhoneKeyDown = (e) => {
+    if (e.key === 'Backspace' && e.target.selectionStart <= 5 && e.target.selectionEnd <= 5) {
+      e.preventDefault();
+    }
+    if (e.key === 'Delete' && e.target.selectionStart < 5) {
+      e.preventDefault();
+    }
+  };
+
+  // Ao focar, se estiver com os zeros padrão "+258 000 000 000", seleciona os zeros para edição imediata
+  const handlePhoneFocus = (e) => {
+    if (e.target.value === '+258 000 000 000') {
+      setTimeout(() => {
+        try {
+          e.target.setSelectionRange(5, 16);
+        } catch {
+          // ignore
+        }
+      }, 20);
     }
   };
 
@@ -227,7 +253,7 @@ export default function CandidaturaModule({
 
     if (step === 3) {
       if (!validarTelefoneMZ(formData.telefonePrincipal)) {
-        newErrors.telefonePrincipal = 'Informe um número de telefone moçambicano válido (ex: +258 00 000 0000).';
+        newErrors.telefonePrincipal = 'Informe um número de telefone moçambicano válido (ex: +258 000 000 000).';
       }
       if (!formData.email.trim() || !formData.email.includes('@')) {
         newErrors.email = 'Informe um endereço de e-mail válido para receber notificações.';
@@ -791,9 +817,11 @@ export default function CandidaturaModule({
                   type="tel"
                   name="telefonePrincipal"
                   className={`form-input ${errors.telefonePrincipal ? 'error' : ''}`}
-                  placeholder="EX: +258 00 000 0000"
+                  placeholder="+258 000 000 000"
                   value={formData.telefonePrincipal}
                   onChange={handleChange}
+                  onKeyDown={handlePhoneKeyDown}
+                  onFocus={handlePhoneFocus}
                 />
                 {errors.telefonePrincipal && <span className="form-error-msg">{errors.telefonePrincipal}</span>}
               </div>
@@ -804,9 +832,11 @@ export default function CandidaturaModule({
                   type="tel"
                   name="telefoneAlternativo"
                   className="form-input"
-                  placeholder="EX: +258 00 000 0000"
+                  placeholder="+258 000 000 000"
                   value={formData.telefoneAlternativo}
                   onChange={handleChange}
+                  onKeyDown={handlePhoneKeyDown}
+                  onFocus={handlePhoneFocus}
                 />
               </div>
 

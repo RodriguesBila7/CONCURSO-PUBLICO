@@ -352,7 +352,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     genero: 'Masculino',
     dataNascimento: '1998-05-14',
     idade: 28,
-    telefone: '+258 00 000 0000',
+    telefone: '+258 000 000 000',
     email: 'armando.mondlane@gmail.com',
     provincia: 'Maputo Cidade',
     distrito: 'KaMpfumo',
@@ -410,7 +410,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     genero: 'Feminino',
     dataNascimento: '1996-08-22',
     idade: 30,
-    telefone: '+258 00 000 0000',
+    telefone: '+258 000 000 000',
     email: 'maria.nhantumbo@outlook.com',
     provincia: 'Sofala',
     distrito: 'Beira',
@@ -1087,7 +1087,7 @@ export function validarBI(bi) {
   return padrao.test(String(bi || '').trim());
 }
 
-// Helper para validar telefone moçambicano (+258 8X XXX XXXX ou 8X XXX XXXX ou exemplo fictício +258 00 000 0000)
+// Helper para validar telefone moçambicano (+258 8X XXX XXXX ou 8X XXX XXXX ou exemplo fictício +258 000 000 000)
 export function validarTelefoneMZ(tel) {
   const limpo = String(tel || '').replace(/\D/g, '');
   if (limpo.startsWith('258') && limpo.length === 12) {
@@ -1099,6 +1099,34 @@ export function validarTelefoneMZ(tel) {
     return ['82', '83', '84', '85', '86', '87', '00'].includes(ddd);
   }
   return false;
+}
+
+// Helper para formatar o telefone mantendo o prefixo fixo +258 e padrão +258 000 000 000
+export function formatTelefoneMZInput(val) {
+  if (val === undefined || val === null) return '+258 000 000 000';
+  let str = String(val);
+  if (!str.trim()) return '+258 ';
+
+  let raw = str.trim();
+  if (raw.startsWith('+258')) {
+    raw = raw.slice(4);
+  } else if (raw.startsWith('258')) {
+    raw = raw.slice(3);
+  } else if (raw.startsWith('+')) {
+    raw = raw.slice(1);
+  }
+
+  const digits = raw.replace(/\D/g, '').slice(0, 9);
+  if (!digits) {
+    return '+258 ';
+  }
+  if (digits.length <= 3) {
+    return `+258 ${digits}`;
+  }
+  if (digits.length <= 6) {
+    return `+258 ${digits.slice(0, 3)} ${digits.slice(3)}`;
+  }
+  return `+258 ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 9)}`;
 }
 
 // ========================================================
