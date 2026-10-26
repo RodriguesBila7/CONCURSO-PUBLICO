@@ -2415,6 +2415,106 @@
   border-color: rgba(248, 113, 113, 0.35);
 }
 
+/* ========================================================
+   ESTILOS DE EXEMPLO E PLACEHOLDERS SUAVES / SEMI-TRANSPARENTES
+   ======================================================== */
+::placeholder,
+input::placeholder,
+textarea::placeholder,
+.form-input::placeholder,
+.auth-form-input::placeholder,
+.definicoes-input::placeholder,
+.search-input::placeholder {
+  color: #94a3b8 !important;
+  opacity: 0.55 !important;
+  font-weight: 400 !important;
+  font-style: normal;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+}
+
+/* Valores padrão de exemplo (ex: +258 000 000 000) */
+.input-example-val {
+  color: #94a3b8 !important;
+  opacity: 0.7 !important;
+  font-weight: 400 !important;
+}
+
+/* ========================================================
+   MEDIDOR DE NÍVEL / FORÇA DE PALAVRA-PASSE
+   ======================================================== */
+.pwd-strength-box {
+  margin-top: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  background-color: var(--portal-card-inner);
+  border: 1px solid var(--portal-border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  transition: all 0.25s ease;
+}
+
+.pwd-strength-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+}
+
+.pwd-strength-title {
+  color: var(--portal-text-muted);
+  font-weight: 600;
+}
+
+.pwd-strength-badge {
+  font-weight: 800;
+  font-size: 0.74rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pwd-strength-track {
+  width: 100%;
+  height: 6px;
+  background-color: var(--portal-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.pwd-strength-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.pwd-strength-feedback {
+  font-size: 0.7rem;
+  line-height: 1.35;
+}
+
+.pwd-confirm-status {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  margin-top: 0.4rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+}
+
+.pwd-confirm-status.match {
+  color: #15803d;
+  background-color: rgba(22, 163, 74, 0.08);
+}
+
+.pwd-confirm-status.mismatch {
+  color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.08);
+}
+
 /* Painel do Candidato Autenticado */
 .candidate-dashboard-grid {
   display: grid;

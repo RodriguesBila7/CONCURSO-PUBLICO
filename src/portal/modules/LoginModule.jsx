@@ -27,6 +27,7 @@ import {
   validarNUIT, 
   validarTelefoneMZ, 
   formatTelefoneMZInput,
+  evaluatePasswordStrength,
   PROVINCIAS_MOCAMBIQUE,
   PROVINCIAS_GEOGRAFICAS,
   INITIAL_CANDIDATURAS_CONSULTA,
@@ -192,9 +193,18 @@ export default function LoginModule({
     if (!validarBI(regData.bi)) errors.bi = 'BI inválido (12 dígitos + 1 letra).';
     if (!validarNUIT(regData.nuit)) errors.nuit = 'NUIT inválido (9 dígitos).';
     if (!regData.email.includes('@')) errors.email = 'E-mail inválido.';
-    if (!validarTelefoneMZ(regData.telefone)) errors.telefone = 'Telefone moçambicano inválido (ex: +258 00 000 0000).';
-    if (regData.password.length < 6) errors.password = 'A senha deve ter no mínimo 6 caracteres.';
-    if (regData.password !== regData.confirmPassword) errors.confirmPassword = 'As senhas não coincidem.';
+    if (!validarTelefoneMZ(regData.telefone)) errors.telefone = 'Telefone moçambicano inválido (ex: +258 000 000 000).';
+    
+    // Validação de segurança: apenas nível Normal ou Forte (Baixa/Fraca é recusada)
+    const pwdStrength = evaluatePasswordStrength(regData.password);
+    if (!pwdStrength.isValid) {
+      errors.password = 'A palavra-passe tem nível Baixo. Para segurança oficial, é obrigatório atingir o nível Médio/Normal ou Forte.';
+    }
+    if (!regData.confirmPassword) {
+      errors.confirmPassword = 'Por favor, confirme a sua palavra-passe.';
+    } else if (regData.password !== regData.confirmPassword) {
+      errors.confirmPassword = 'As palavras-passe não coincidem.';
+    }
 
     if (Object.keys(errors).length > 0) {
       setRegErrors(errors);
@@ -883,7 +893,7 @@ export default function LoginModule({
                   </span>
                   <input
                     type="tel"
-                    className={`auth-form-input ${regErrors.telefone ? 'error' : ''}`}
+                    className={`auth-form-input ${regData.telefone === '+258 000 000 000' ? 'input-example-val' : ''} ${regErrors.telefone ? 'error' : ''}`}
                     placeholder="+258 000 000 000"
                     value={regData.telefone}
                     onChange={(e) => setRegData({ ...regData, telefone: formatTelefoneMZInput(e.target.value) })}
@@ -906,6 +916,7 @@ export default function LoginModule({
               </div>
             </div>
 
+            {/* SELECÇÃO DE PALAVRA-PASSE COM MEDIDOR DE NÍVEL DE SEGURANÇA */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.9rem', marginBottom: '1.4rem' }}>
               <div className="form-group">
                 <label>Palavra-passe <span style={{ color: '#c32026' }}>*</span></label>
@@ -931,6 +942,33 @@ export default function LoginModule({
                   </button>
                 </div>
                 {regErrors.password && <span className="form-error-msg">{regErrors.password}</span>}
+
+                {/* BARRA DE NÍVEL DE PALAVRA-PASSE */}
+                {(() => {
+                  const strength = evaluatePasswordStrength(regData.password);
+                  return (
+                    <div className="pwd-strength-box">
+                      <div className="pwd-strength-header">
+                        <span className="pwd-strength-title">Nível da Senha:</span>
+                        <span className="pwd-strength-badge" style={{ color: strength.color }}>
+                          {strength.label}
+                        </span>
+                      </div>
+                      <div className="pwd-strength-track">
+                        <div 
+                          className="pwd-strength-fill" 
+                          style={{ 
+                            width: `${strength.percent}%`, 
+                            backgroundColor: strength.color 
+                          }} 
+                        />
+                      </div>
+                      <span className="pwd-strength-feedback" style={{ color: strength.color }}>
+                        {strength.feedback}
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="form-group">
@@ -957,6 +995,27 @@ export default function LoginModule({
                   </button>
                 </div>
                 {regErrors.confirmPassword && <span className="form-error-msg">{regErrors.confirmPassword}</span>}
+
+                {/* STATUS DE COINCIDÊNCIA DE PALAVRA-PASSE */}
+                {regData.confirmPassword ? (
+                  <div className={`pwd-confirm-status ${regData.password === regData.confirmPassword ? 'match' : 'mismatch'}`}>
+                    {regData.password === regData.confirmPassword ? (
+                      <>
+                        <CheckCircle2 size={15} />
+                        <span>As palavras-passe coincidem</span>
+                      </>
+                    ) : (
+                      <>
+                        <X size={15} />
+                        <span>As palavras-passe não coincidem</span>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '0.74rem', color: 'var(--portal-text-muted)', marginTop: '0.4rem', opacity: 0.7 }}>
+                    Digite a mesma palavra-passe para confirmação.
+                  </div>
+                )}
               </div>
             </div>
 

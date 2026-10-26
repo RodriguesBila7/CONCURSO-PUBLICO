@@ -647,7 +647,7 @@ export default function CandidaturaModule({
                   type="text"
                   name="nomeCompleto"
                   className={`form-input ${errors.nomeCompleto ? 'error' : ''}`}
-                  placeholder="EX: ARMANDO CARLOS MONDLANE"
+                  placeholder="Ex: Armando Carlos Mondlane"
                   value={formData.nomeCompleto}
                   onChange={handleChange}
                 />
@@ -661,7 +661,7 @@ export default function CandidaturaModule({
                   name="nuit"
                   maxLength={9}
                   className={`form-input ${errors.nuit ? 'error' : ''}`}
-                  placeholder="EX: 123456789"
+                  placeholder="Ex: 123456789"
                   value={formData.nuit}
                   onChange={handleChange}
                 />
@@ -675,7 +675,7 @@ export default function CandidaturaModule({
                   name="biNumero"
                   maxLength={13}
                   className={`form-input ${errors.biNumero ? 'error' : ''}`}
-                  placeholder="EX: 000000000000M"
+                  placeholder="Ex: 000000000000M"
                   value={formData.biNumero}
                   onChange={handleChange}
                 />
@@ -767,7 +767,7 @@ export default function CandidaturaModule({
                   type="text"
                   name="cursoNome"
                   className={`form-input ${errors.cursoNome ? 'error' : ''}`}
-                  placeholder="EX: DIREITO, CIÊNCIAS POLICIAIS, INFORMÁTICA..."
+                  placeholder="Ex: Direito, Ciências Policiais, Informática..."
                   value={formData.cursoNome}
                   onChange={handleChange}
                 />
@@ -780,7 +780,7 @@ export default function CandidaturaModule({
                   type="text"
                   name="instituicaoEnsino"
                   className={`form-input ${errors.instituicaoEnsino ? 'error' : ''}`}
-                  placeholder="EX: UEM, ACIPOL, ISCISA, UDM..."
+                  placeholder="Ex: UEM, ACIPOL, ISCISA, UDM..."
                   value={formData.instituicaoEnsino}
                   onChange={handleChange}
                 />
@@ -816,7 +816,7 @@ export default function CandidaturaModule({
                 <input
                   type="tel"
                   name="telefonePrincipal"
-                  className={`form-input ${errors.telefonePrincipal ? 'error' : ''}`}
+                  className={`form-input ${formData.telefonePrincipal === '+258 000 000 000' ? 'input-example-val' : ''} ${errors.telefonePrincipal ? 'error' : ''}`}
                   placeholder="+258 000 000 000"
                   value={formData.telefonePrincipal}
                   onChange={handleChange}
@@ -831,7 +831,7 @@ export default function CandidaturaModule({
                 <input
                   type="tel"
                   name="telefoneAlternativo"
-                  className="form-input"
+                  className={`form-input ${formData.telefoneAlternativo === '+258 000 000 000' ? 'input-example-val' : ''}`}
                   placeholder="+258 000 000 000"
                   value={formData.telefoneAlternativo}
                   onChange={handleChange}
@@ -868,7 +868,7 @@ export default function CandidaturaModule({
                   type="text"
                   name="distritoResidencia"
                   className={`form-input ${errors.distritoResidencia ? 'error' : ''}`}
-                  placeholder="EX: KAMPUFUMO, MATOLA, BEIRA, NAMPULA..."
+                  placeholder="Ex: KaMpfumo, Matola, Beira, Nampula..."
                   value={formData.distritoResidencia}
                   onChange={handleChange}
                 />
@@ -881,7 +881,7 @@ export default function CandidaturaModule({
                   type="text"
                   name="moradaCompleta"
                   className="form-input"
-                  placeholder="EX: BAIRRO CENTRAL, RUA DAS FLORES N.º 45"
+                  placeholder="Ex: Bairro Central, Rua das Flores n.º 45"
                   value={formData.moradaCompleta}
                   onChange={handleChange}
                 />

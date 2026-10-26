@@ -1129,6 +1129,57 @@ export function formatTelefoneMZInput(val) {
   return `+258 ${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 9)}`;
 }
 
+// Avaliador de Segurança da Palavra-passe: Baixo (não aceita), Médio / Normal (aceita), Forte (aceita)
+export function evaluatePasswordStrength(password) {
+  const pwd = String(password || '');
+  if (!pwd) {
+    return {
+      level: 'Vazia',
+      label: 'Insira a palavra-passe',
+      color: '#94a3b8',
+      percent: 0,
+      isValid: false,
+      feedback: 'A senha deve atingir pelo menos o nível Médio / Normal para ser aceite.'
+    };
+  }
+
+  let score = 0;
+  if (pwd.length >= 6) score += 1;
+  if (pwd.length >= 8) score += 1;
+  if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score += 1;
+  if (/\d/.test(pwd)) score += 1;
+  if (/[^a-zA-Z0-9]/.test(pwd)) score += 1;
+
+  if (score <= 2 || pwd.length < 6) {
+    return {
+      level: 'Baixo',
+      label: 'Nível: Baixo (Não aceite)',
+      color: '#ef4444',
+      percent: 33,
+      isValid: false,
+      feedback: 'Fraca / Básica. Misture letras maiúsculas, números ou símbolos para atingir o nível Médio.'
+    };
+  } else if (score === 3 || score === 4) {
+    return {
+      level: 'Normal',
+      label: 'Nível: Médio / Normal (Aceite)',
+      color: '#f59e0b',
+      percent: 66,
+      isValid: true,
+      feedback: 'Segurança adequada e aceite para o registo no sistema.'
+    };
+  } else {
+    return {
+      level: 'Forte',
+      label: 'Nível: Forte (Excelente)',
+      color: '#16a34a',
+      percent: 100,
+      isValid: true,
+      feedback: 'Excelente protecção de segurança recomendada.'
+    };
+  }
+}
+
 // ========================================================
 // PERSISTÊNCIA EM LOCALSTORAGE & HELPERS DE CONEXÃO
 // ========================================================
