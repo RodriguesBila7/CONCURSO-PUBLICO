@@ -63,6 +63,7 @@ import {
   deduplicateCandidaturas,
   getStoredCandidaturas, 
   saveStoredCandidaturas,
+  resetStoredCandidaturasParaInicio,
   updateStoredCandidatura,
   deleteStoredCandidatura,
   getStoredListasPublicadas, 
@@ -1875,6 +1876,24 @@ export default function GestorPortalModule({
                 <button
                   type="button"
                   className="gestor-btn-outline"
+                  style={{ color: '#c32026', borderColor: 'rgba(195, 32, 38, 0.35)', background: 'rgba(195, 32, 38, 0.05)' }}
+                  onClick={() => {
+                    if (window.confirm('Tem a certeza que deseja repor todos os candidatos no estado inicial de candidatura (1ª Fase: Em Análise Documental), sem qualquer intervenção ou deliberação do júri?')) {
+                      const fresh = resetStoredCandidaturasParaInicio();
+                      setCandidatos(fresh);
+                      if (onNotify) {
+                        onNotify('success', 'Todas as candidaturas foram repostas na 1ª Fase (Em Análise Documental), prontas para avaliação pelo júri!');
+                      }
+                    }
+                  }}
+                  title="Repor todos os candidatos no estado inicial da candidatura (sem deliberações do júri para fazermos de novo)"
+                >
+                  <RefreshCw size={15} />
+                  <span>Repor em Análise (Sem Júri)</span>
+                </button>
+                <button
+                  type="button"
+                  className="gestor-btn-outline"
                   onClick={handleExportCSV}
                   title="Descarregar lista em formato CSV"
                 >
@@ -2060,15 +2079,49 @@ export default function GestorPortalModule({
         <div className="gestor-tab-content fadeIn">
           {/* CABEÇALHO DO MÓDULO DE AVALIAÇÃO DOS CANDIDATOS */}
           <div className="deliberacao-module-header">
-            <div className="deliberacao-module-header-info">
-              <div className="deliberacao-header-badge">
-                <ShieldCheck size={16} />
-                <span>COMISSÃO CENTRAL DE JÚRI E AVALIAÇÃO • SERNIC 2026</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+              <div className="deliberacao-module-header-info" style={{ maxWidth: '800px' }}>
+                <div className="deliberacao-header-badge">
+                  <ShieldCheck size={16} />
+                  <span>COMISSÃO CENTRAL DE JÚRI E AVALIAÇÃO • SERNIC 2026</span>
+                </div>
+                <h2>Módulo de Avaliação e Deliberação dos Candidatos</h2>
+                <p>
+                  Homologação de candidaturas, análise documental (1ª Fase com convocatória para data e local de entrevista), e avaliação profissional (2ª Fase com exclusão obrigatória para notas inferiores a 10 valores e admissão sequencial de vagas).
+                </p>
               </div>
-              <h2>Módulo de Avaliação e Deliberação dos Candidatos</h2>
-              <p>
-                Homologação de candidaturas, análise documental (1ª Fase com convocatória para data e local de entrevista), e avaliação profissional (2ª Fase com exclusão obrigatória para notas inferiores a 10 valores e admissão sequencial de vagas).
-              </p>
+
+              <button
+                type="button"
+                className="btn-action-view"
+                style={{
+                  background: 'rgba(195, 32, 38, 0.08)',
+                  borderColor: 'rgba(195, 32, 38, 0.3)',
+                  color: '#c32026',
+                  padding: '0.6rem 1.1rem',
+                  borderRadius: '10px',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  cursor: 'pointer'
+                }}
+                title="Repor todos os candidatos fictícios na fase inicial de candidatura (Em Análise Documental) para reiniciar o teste do júri de concurso"
+                onClick={() => {
+                  if (window.confirm('Deseja repor todos os candidatos fictícios na fase inicial de candidatura (1ª Fase: Em Análise Documental), sem qualquer intervenção ou deliberação do júri, para recomeçar o processo de avaliação do zero?')) {
+                    const fresh = resetStoredCandidaturasParaInicio();
+                    setCandidatos(fresh);
+                    setDeliberandoCandidato(fresh[0] || null);
+                    if (onNotify) {
+                      onNotify('success', 'Todas as candidaturas foram repostas na 1ª Fase (Em Análise Documental), sem qualquer intervenção do júri!');
+                    }
+                  }
+                }}
+              >
+                <RefreshCw size={15} />
+                <span>Repor Candidaturas para Teste Inicial</span>
+              </button>
             </div>
           </div>
 

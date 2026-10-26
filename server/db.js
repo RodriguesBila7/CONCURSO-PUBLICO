@@ -143,7 +143,7 @@ if (countCandidaturas.count === 0) {
     'Investigador Criminal de 2ª Classe',
     'Licenciatura em Direito / Ciências Policiais',
     '110100234567M',
-    'Convocada para provas'
+    'Em Análise Documental'
   );
 
   insertCandidatura.run(
@@ -155,10 +155,10 @@ if (countCandidaturas.count === 0) {
     'Especialista em Cibersegurança e Crimes Cibernéticos',
     'Licenciatura em Engenharia Informática',
     '100200345678A',
-    'Admitida'
+    'Em Análise Documental'
   );
 
-  console.log('[SQLite] Candidaturas de demonstração registadas.');
+  console.log('[SQLite] Candidaturas de demonstração registadas (Em Análise Documental).');
 }
 
 // Pre-seed vagas if empty
