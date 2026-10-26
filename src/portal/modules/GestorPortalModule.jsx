@@ -281,8 +281,8 @@ export default function GestorPortalModule({
   const [eventoLocal, setEventoLocal] = useState('Direcção Geral do SERNIC - Sala de Conferências n.º 1, Maputo');
   const [tipoProva, setTipoProva] = useState('Entrevista Profissional e de Competências');
 
-  // MODO FILTRO E PESQUISA NA AVALIAÇÃO DOS CANDIDATOS
-  const [filtroDeliberacaoModo, setFiltroDeliberacaoModo] = useState('todos'); // 'todos' | 'admitidos' | 'excluidos' | 'convocados' | 'pendentes' | 'suplentes'
+  // MODO FILTRO E PESQUISA NA AVALIAÇÃO DOS CANDIDATOS (INICIA EM PENDENTES DE AVALIAÇÃO)
+  const [filtroDeliberacaoModo, setFiltroDeliberacaoModo] = useState('pendentes'); // 'pendentes' | 'admitidos' | 'excluidos' | 'convocados' | 'suplentes'
   const [buscaDeliberacao, setBuscaDeliberacao] = useState('');
   const [filtroDeliberacaoVaga, setFiltroDeliberacaoVaga] = useState('todas');
   const [filtroDeliberacaoProvincia, setFiltroDeliberacaoProvincia] = useState('todas');
@@ -342,7 +342,24 @@ export default function GestorPortalModule({
     if (updated) {
       reloadData();
       setSelectedDossier(updated);
-      if (onNotify) onNotify('success', `Candidatura de ${candidato.nomeCompleto} atualizada para "${status}" com sucesso!`);
+
+      // Encaminha de imediato para a pasta onde foi decidido, retirando dos pendentes
+      let targetModo = 'admitidos';
+      let nomePasta = 'Admitidos';
+      if (status.includes('Excluíd')) {
+        targetModo = 'excluidos';
+        nomePasta = 'Excluídos';
+      } else if (status.includes('Suplente')) {
+        targetModo = 'suplentes';
+        nomePasta = 'Suplentes (Reserva)';
+      } else if (status.includes('Entrevista') || status.includes('Admitid')) {
+        targetModo = (status === 'Admitido' || status === 'Admitida') ? 'admitidos' : 'convocados';
+        nomePasta = (status === 'Admitido' || status === 'Admitida') ? 'Admitidos' : 'Convocados para Entrevista';
+      }
+      setFiltroDeliberacaoModo(targetModo);
+      setDeliberandoCandidato(updated);
+
+      if (onNotify) onNotify('success', `Candidatura de ${candidato.nomeCompleto} homologada como "${status}" e transferida para a pasta de "${nomePasta}"!`);
     }
   };
 
@@ -722,6 +739,13 @@ export default function GestorPortalModule({
     });
   }, [candidatos, filtroDeliberacaoModo, buscaDeliberacao, filtroDeliberacaoVaga, filtroDeliberacaoProvincia]);
 
+  // Se nenhum candidato estiver selecionado na estação de deliberação, seleciona o primeiro da pasta ativa
+  useEffect(() => {
+    if (gestorTab === 'deliberacao' && !deliberandoCandidato && filteredDeliberacaoCandidatos.length > 0) {
+      iniciarDeliberacao(filteredDeliberacaoCandidatos[0]);
+    }
+  }, [gestorTab, deliberandoCandidato, filteredDeliberacaoCandidatos]);
+
   // ========================================================
   // ABRIR DELIBERAÇÃO PARA UM CANDIDATO ESPECÍFICO
   // ========================================================
@@ -764,6 +788,22 @@ export default function GestorPortalModule({
     if (candidato.detalhesFase?.dataEvento) {
       setEventoData(candidato.detalhesFase.dataEvento);
     }
+
+    // Ajusta a pasta ativa na estação de avaliação para o estado do candidato
+    if (candidato.status === 'Em Análise Documental' || candidato.status === 'Em análise' || candidato.status === 'Submetida') {
+      setFiltroDeliberacaoModo('pendentes');
+    } else if (candidato.status === 'Admitido na Análise Documental' || candidato.status === 'Admitida na Análise Documental' || candidato.status === 'Entrevista Profissional' || candidato.status?.includes('Convocad')) {
+      setFiltroDeliberacaoModo('convocados');
+    } else if (candidato.status === 'Admitido' || candidato.status === 'Admitida') {
+      setFiltroDeliberacaoModo('admitidos');
+    } else if (candidato.status?.includes('Excluíd')) {
+      setFiltroDeliberacaoModo('excluidos');
+    } else if (candidato.status?.includes('Suplente')) {
+      setFiltroDeliberacaoModo('suplentes');
+    } else {
+      setFiltroDeliberacaoModo('pendentes');
+    }
+
     setGestorTab('deliberacao');
     setSelectedDossier(null);
   };
@@ -831,8 +871,31 @@ export default function GestorPortalModule({
 
     if (updated) {
       reloadData();
-      if (onNotify) onNotify('success', `Decisão guardada com sucesso para ${deliberandoCandidato.nomeCompleto}!`);
+
+      // Determinar a pasta de destino consoante a decisão oficial tomada
+      let targetModo = 'admitidos';
+      let nomePasta = 'Admitidos';
+      if (novoEstado.includes('Excluíd') || novoEstado === 'Excluído' || novoEstado === 'Excluída') {
+        targetModo = 'excluidos';
+        nomePasta = 'Excluídos';
+      } else if (novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)') {
+        targetModo = 'suplentes';
+        nomePasta = 'Suplentes (Reserva)';
+      } else if (novoEstado === 'Admitido na Análise Documental' || novoEstado === 'Admitida na Análise Documental' || novoEstado === 'Entrevista Profissional' || novoEstado.includes('Convocad')) {
+        targetModo = 'convocados';
+        nomePasta = 'Convocados para Entrevista';
+      } else if (novoEstado === 'Admitido' || novoEstado === 'Admitida') {
+        targetModo = 'admitidos';
+        nomePasta = 'Admitidos';
+      }
+
+      // O candidato sai da fila de pendentes e é encaminhado para a pasta onde foi decidido
+      setFiltroDeliberacaoModo(targetModo);
       setDeliberandoCandidato(updated);
+
+      if (onNotify) {
+        onNotify('success', `Decisão homologada e guardada! ${deliberandoCandidato.nomeCompleto} saiu dos pendentes e foi transferido(a) para a pasta de "${nomePasta}".`);
+      }
     }
   };
 
@@ -2115,33 +2178,32 @@ export default function GestorPortalModule({
             </div>
           </div>
 
-          {/* MODO FILTRO: SEPARAÇÃO CLARA ENTRE PENDENTES, ADMITIDOS, EXCLUÍDOS, CONVOCADOS E SUPLENTES */}
+          {/* MODO FILTRO: SEPARAÇÃO INTELIGENTE ENTRE PENDENTES DE AVALIAÇÃO, ADMITIDOS, CONVOCADOS, EXCLUÍDOS E SUPLENTES */}
           <div className="deliberacao-filter-toolbar">
             <div className="deliberacao-filter-tabs">
-              <button
-                type="button"
-                className={`deliberacao-filter-pill ${filtroDeliberacaoModo === 'todos' ? 'active' : ''}`}
-                onClick={() => setFiltroDeliberacaoModo('todos')}
-              >
-                <span>📋 Todos os Inscritos</span>
-                <span className="pill-counter">{candidatos.length}</span>
-              </button>
-
-              {/* 2ª ABA: PENDENTES (EM ANÁLISE) LOGO APÓS TODOS OS INSCRITOS */}
+              {/* 1ª ABA PRINCIPAL: PENDENTES (AGUARDANDO AVALIAÇÃO DO JÚRI) */}
               <button
                 type="button"
                 className={`deliberacao-filter-pill pendentes ${filtroDeliberacaoModo === 'pendentes' ? 'active' : ''}`}
-                onClick={() => setFiltroDeliberacaoModo('pendentes')}
+                onClick={() => {
+                  setFiltroDeliberacaoModo('pendentes');
+                  const first = candidatos.find(c => c.status === 'Em Análise Documental' || c.status === 'Em análise' || c.status === 'Submetida');
+                  if (first) iniciarDeliberacao(first);
+                }}
               >
                 <span className="dot dot-pendente" />
-                <span>🟡 Pendentes (Em Análise)</span>
+                <span>🟡 Pendentes de Avaliação</span>
                 <span className="pill-counter">{stats.pendentesTotal}</span>
               </button>
 
               <button
                 type="button"
                 className={`deliberacao-filter-pill admitidos ${filtroDeliberacaoModo === 'admitidos' ? 'active' : ''}`}
-                onClick={() => setFiltroDeliberacaoModo('admitidos')}
+                onClick={() => {
+                  setFiltroDeliberacaoModo('admitidos');
+                  const first = candidatos.find(c => c.status === 'Admitido na Análise Documental' || c.status === 'Admitida na Análise Documental' || c.status === 'Admitido' || c.status === 'Admitida');
+                  if (first) iniciarDeliberacao(first);
+                }}
               >
                 <span className="dot dot-admitido" />
                 <span>🟢 Admitidos</span>
@@ -2150,18 +2212,12 @@ export default function GestorPortalModule({
 
               <button
                 type="button"
-                className={`deliberacao-filter-pill excluidos ${filtroDeliberacaoModo === 'excluidos' ? 'active' : ''}`}
-                onClick={() => setFiltroDeliberacaoModo('excluidos')}
-              >
-                <span className="dot dot-excluido" />
-                <span>🔴 Excluídos</span>
-                <span className="pill-counter">{stats.excluidosTotal}</span>
-              </button>
-
-              <button
-                type="button"
                 className={`deliberacao-filter-pill convocados ${filtroDeliberacaoModo === 'convocados' ? 'active' : ''}`}
-                onClick={() => setFiltroDeliberacaoModo('convocados')}
+                onClick={() => {
+                  setFiltroDeliberacaoModo('convocados');
+                  const first = candidatos.find(c => c.status === 'Entrevista Profissional' || c.status === 'Convocada para provas' || c.status === 'Convocado para provas' || c.status === 'Admitido na Análise Documental' || c.status === 'Admitida na Análise Documental');
+                  if (first) iniciarDeliberacao(first);
+                }}
               >
                 <span className="dot dot-convocado" />
                 <span>🔵 Convocados p/ Entrevista</span>
@@ -2170,8 +2226,26 @@ export default function GestorPortalModule({
 
               <button
                 type="button"
+                className={`deliberacao-filter-pill excluidos ${filtroDeliberacaoModo === 'excluidos' ? 'active' : ''}`}
+                onClick={() => {
+                  setFiltroDeliberacaoModo('excluidos');
+                  const first = candidatos.find(c => (c.status && c.status.includes('Excluíd')) || (c.deliberacaoJuri?.notaFinal && parseFloat(c.deliberacaoJuri.notaFinal) < 10));
+                  if (first) iniciarDeliberacao(first);
+                }}
+              >
+                <span className="dot dot-excluido" />
+                <span>🔴 Excluídos</span>
+                <span className="pill-counter">{stats.excluidosTotal}</span>
+              </button>
+
+              <button
+                type="button"
                 className={`deliberacao-filter-pill suplentes ${filtroDeliberacaoModo === 'suplentes' ? 'active' : ''}`}
-                onClick={() => setFiltroDeliberacaoModo('suplentes')}
+                onClick={() => {
+                  setFiltroDeliberacaoModo('suplentes');
+                  const first = candidatos.find(c => c.status === 'Aprovado (Suplente)' || c.status === 'Aprovada (Suplente)');
+                  if (first) iniciarDeliberacao(first);
+                }}
               >
                 <span className="dot dot-suplente" />
                 <span>🟠 Suplentes (Reserva)</span>
@@ -2190,7 +2264,7 @@ export default function GestorPortalModule({
                     <span>Candidatos para Avaliação</span>
                   </h3>
                   <span className="sidebar-count">
-                    A exibir <strong>{filteredDeliberacaoCandidatos.length}</strong> de {candidatos.length}
+                    A exibir <strong>{filteredDeliberacaoCandidatos.length}</strong> {filtroDeliberacaoModo === 'pendentes' ? 'candidatos pendentes de avaliação' : 'candidatos nesta pasta'}
                   </span>
                 </div>
               </div>
@@ -2335,22 +2409,32 @@ export default function GestorPortalModule({
 
                 {filteredDeliberacaoCandidatos.length === 0 && (
                   <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: 'var(--portal-text-muted)' }}>
-                    <AlertCircle size={28} color="#94a3b8" style={{ margin: '0 auto 0.5rem' }} />
-                    <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem' }}>
-                      Nenhum candidato encontrado no filtro "{filtroDeliberacaoModo}".
+                    <CheckCircle2 size={32} color="#16a34a" style={{ margin: '0 auto 0.5rem' }} />
+                    <p style={{ margin: 0, fontWeight: 800, fontSize: '0.95rem', color: 'var(--portal-text-main)' }}>
+                      {filtroDeliberacaoModo === 'pendentes'
+                        ? 'Todas as candidaturas pendentes foram avaliadas!'
+                        : `Nenhum candidato nesta pasta (${filtroDeliberacaoModo}).`}
+                    </p>
+                    <p style={{ margin: '0.35rem 0 0.8rem 0', fontSize: '0.82rem' }}>
+                      {filtroDeliberacaoModo === 'pendentes'
+                        ? 'Todas as decisões foram homologadas pelo Júri e organizadas nas respectivas pastas.'
+                        : 'Utilize os filtros superiores para navegar entre as pastas de decisão.'}
                     </p>
                     <button
                       type="button"
                       className="btn-reset-filters"
-                      style={{ marginTop: '0.6rem' }}
                       onClick={() => {
-                        setFiltroDeliberacaoModo('todos');
+                        if (filtroDeliberacaoModo === 'pendentes') {
+                          setFiltroDeliberacaoModo('admitidos');
+                        } else {
+                          setFiltroDeliberacaoModo('pendentes');
+                        }
                         setBuscaDeliberacao('');
                         setFiltroDeliberacaoVaga('todas');
                         setFiltroDeliberacaoProvincia('todas');
                       }}
                     >
-                      Ver Todos os Inscritos
+                      {filtroDeliberacaoModo === 'pendentes' ? 'Ver Candidatos Admitidos' : 'Voltar para Pendentes de Avaliação'}
                     </button>
                   </div>
                 )}
@@ -2447,6 +2531,45 @@ export default function GestorPortalModule({
                       </span>
                     </div>
                   </div>
+
+                  {/* BANNER INTELIGENTE: SE O CANDIDATO JÁ FOI DELIBERADO, MOSTRA CONCLUÍDO E BOTÃO PARA O PRÓXIMO PENDENTE */}
+                  {stats.pendentesTotal > 0 && !['Em Análise Documental', 'Em análise', 'Submetida'].includes(deliberandoCandidato.status) && (
+                    <div className="deliberacao-proximo-pendente-banner">
+                      <div className="banner-left">
+                        <CheckCircle2 size={18} color="#16a34a" />
+                        <span>
+                          Decisão arquivada em <strong>{deliberandoCandidato.status}</strong>. Restam <strong>{stats.pendentesTotal}</strong> candidatos pendentes de avaliação.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn-proximo-pendente"
+                        onClick={() => {
+                          setFiltroDeliberacaoModo('pendentes');
+                          const nextPendente = candidatos.find(c => 
+                            c.status === 'Em Análise Documental' || c.status === 'Em análise' || c.status === 'Submetida'
+                          );
+                          if (nextPendente) {
+                            iniciarDeliberacao(nextPendente);
+                          }
+                        }}
+                      >
+                        <ArrowRight size={14} />
+                        <span>Avaliar Próximo Pendente</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {stats.pendentesTotal === 0 && (
+                    <div className="deliberacao-proximo-pendente-banner" style={{ borderLeftColor: '#c59b27' }}>
+                      <div className="banner-left">
+                        <Award size={18} color="#c59b27" />
+                        <span>
+                          <strong>Processo Concluído:</strong> Todas as candidaturas pendentes foram avaliadas e deliberadas pelo Júri!
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
                   {/* FORMULÁRIO DE DELIBERAÇÃO FORMAL */}
                   <form onSubmit={handleGravarDeliberacao} className="deliberacao-form-body">
