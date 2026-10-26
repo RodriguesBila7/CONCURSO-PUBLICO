@@ -13,7 +13,8 @@ import {
   FileText,
   Sparkles,
   ShieldCheck,
-  Award
+  Award,
+  FileCheck
 } from 'lucide-react';
 import { 
   INITIAL_CANDIDATURAS_CONSULTA, 
@@ -25,6 +26,7 @@ import {
   getGenderText
 } from '../mockData';
 import DraggableSubAba from '../components/DraggableSubAba';
+import ComprovativoInscricaoDocument from '../components/ComprovativoInscricaoDocument';
 
 export default function ConsultaModule() {
   const [activeTab, setActiveTab] = useState('individual'); // 'individual' | 'listas'
@@ -38,6 +40,7 @@ export default function ConsultaModule() {
   const [biInput, setBiInput] = useState('');
   const [searchResult, setSearchResult] = useState(null);
   const [searchError, setSearchError] = useState('');
+  const [showComprovativoModal, setShowComprovativoModal] = useState(false);
 
   // Estado das Listas Públicas
   const [filterTipoLista, setFilterTipoLista] = useState('todos'); // 'todos' | 'Admitidos' | 'Convocados' | 'Excluídos'
@@ -351,15 +354,26 @@ export default function ConsultaModule() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => window.print()}
-                  className="btn-draft"
-                  style={{ padding: '0.5rem 0.9rem' }}
-                >
-                  <Printer size={16} />
-                  <span>Imprimir Ficha</span>
-                </button>
+                <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowComprovativoModal(true)}
+                    className="btn-vaga-candidatar"
+                    style={{ padding: '0.5rem 1rem', fontSize: '0.84rem' }}
+                  >
+                    <FileCheck size={16} />
+                    <span>Comprovativo Oficial</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="btn-draft"
+                    style={{ padding: '0.5rem 0.9rem', fontSize: '0.84rem' }}
+                  >
+                    <Printer size={16} />
+                    <span>Imprimir Ficha</span>
+                  </button>
+                </div>
               </div>
 
               {/* TIMELINE VISUAL DE PROGRESSÃO (ESTRUTURA OFICIAL DE 3 ETAPAS) */}
@@ -773,6 +787,24 @@ export default function ConsultaModule() {
           </DraggableSubAba>
         </div>,
         document.body
+      )}
+
+      {/* MODAL DO COMPROVATIVO OFICIAL DE CANDIDATURA */}
+      {showComprovativoModal && searchResult && (
+        <div 
+          className="comprovativo-modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowComprovativoModal(false);
+          }}
+        >
+          <div className="comprovativo-modal-container">
+            <ComprovativoInscricaoDocument
+              candidato={searchResult}
+              onClose={() => setShowComprovativoModal(false)}
+              showActions={true}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

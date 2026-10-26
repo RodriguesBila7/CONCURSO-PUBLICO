@@ -1194,7 +1194,7 @@ export function evaluatePasswordStrength(password) {
 // PERSISTÊNCIA EM LOCALSTORAGE & HELPERS DE CONEXÃO
 // ========================================================
 
-const STORAGE_KEY_CANDIDATURAS = 'sernic_concurso_candidaturas_v7';
+const STORAGE_KEY_CANDIDATURAS = 'sernic_concurso_candidaturas_v8';
 const STORAGE_KEY_LISTAS = 'sernic_concurso_listas_v2';
 const STORAGE_KEY_AUDITORIA = 'sernic_concurso_auditoria_v2';
 const STORAGE_KEY_VAGAS = 'sernic_concurso_vagas_v2';
@@ -1363,6 +1363,26 @@ export function deduplicateCandidaturas(list) {
   return uniqueList;
 }
 
+/**
+ * Retorna o número de candidato sequencial (00001 assim em diante)
+ * de acordo com a ordem de submissão do concurso.
+ */
+export function getCandidateSeqNumber(candidato, allCandidatos = null) {
+  if (!candidato) return '00001';
+  if (candidato.numeroCandidato) {
+    const num = parseInt(candidato.numeroCandidato, 10);
+    if (!isNaN(num) && num > 0) return String(num).padStart(5, '0');
+  }
+  const list = allCandidatos || getStoredCandidaturas();
+  const index = list.findIndex(c => 
+    (c.codigoCandidatura && candidato.codigoCandidatura && c.codigoCandidatura === candidato.codigoCandidatura) ||
+    (c.biNumero && candidato.biNumero && c.biNumero.trim().toUpperCase() === candidato.biNumero.trim().toUpperCase()) ||
+    (c.nuit && candidato.nuit && c.nuit.trim() === candidato.nuit.trim())
+  );
+  const seq = index >= 0 ? index + 1 : list.length + 1;
+  return String(seq).padStart(5, '0');
+}
+
 export function getStoredCandidaturas() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_CANDIDATURAS);
@@ -1376,6 +1396,12 @@ export function getStoredCandidaturas() {
         const normalized = uniqueParsed.map((c, i) => {
           let updated = { ...c };
           const isFem = detectCandidateGender(c) === 'Feminino';
+
+          // Assegura número sequencial 00001 em diante
+          if (!updated.numeroCandidato) {
+            hasChanges = true;
+            updated.numeroCandidato = String(i + 1).padStart(5, '0');
+          }
 
           if (!updated.fotoUrl || !updated.validacaoFacial) {
             hasChanges = true;
@@ -1407,8 +1433,11 @@ export function getStoredCandidaturas() {
   } catch (e) {
     console.warn('Erro ao ler candidaturas do localStorage', e);
   }
-  // Inicializa com as candidaturas padrão com unicidade garantida
-  const deduplicatedInitial = deduplicateCandidaturas(INITIAL_CANDIDATURAS_CONSULTA);
+  // Inicializa com as candidaturas padrão com unicidade garantida e número sequencial
+  const deduplicatedInitial = deduplicateCandidaturas(INITIAL_CANDIDATURAS_CONSULTA).map((c, i) => ({
+    ...c,
+    numeroCandidato: String(i + 1).padStart(5, '0')
+  }));
   try {
     localStorage.setItem(STORAGE_KEY_CANDIDATURAS, JSON.stringify(deduplicatedInitial));
   } catch {}
@@ -1436,8 +1465,9 @@ export function saveStoredCandidaturas(list) {
  * sem qualquer intervenção ou deliberação do júri, para permitir testar todo o processo de novo.
  */
 export function resetStoredCandidaturasParaInicio() {
-  const freshList = INITIAL_CANDIDATURAS_CONSULTA.map(c => ({
+  const freshList = INITIAL_CANDIDATURAS_CONSULTA.map((c, i) => ({
     ...c,
+    numeroCandidato: String(i + 1).padStart(5, '0'),
     status: 'Em Análise Documental',
     faseAtual: 1,
     validacaoFacial: getDefaultValidacaoFacial('Em Análise Documental'),

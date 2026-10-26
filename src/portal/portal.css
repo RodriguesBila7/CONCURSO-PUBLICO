@@ -8274,9 +8274,486 @@ textarea::placeholder,
   .deliberacao-options-grid.three-cards {
     grid-template-columns: 1fr;
   }
+}/* ========================================================
+   COMPROVATIVO OFICIAL DE CANDIDATURA - SERNIC (MODELO OFICIAL A4)
+   Conforme especificação da Direcção-Geral e DRH do SERNIC
+   ======================================================== */
+.comprovativo-oficial-page-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin: 1.5rem auto 3rem auto;
+  box-sizing: border-box;
 }
 
+.comprovativo-oficial-page-wrapper.embedded-mode {
+  margin: 1rem 0;
+}
 
+/* Modal de sobreposição para Comprovativo Oficial */
+.comprovativo-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-y: auto;
+  padding: 2rem 1rem;
+  box-sizing: border-box;
+}
 
+.comprovativo-modal-container {
+  width: 100%;
+  max-width: 860px;
+  position: relative;
+  animation: comprovativoFadeIn 0.25s ease-out;
+}
 
+@keyframes comprovativoFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Barra de Acções Superior (Ecrã apenas) */
+.comprovativo-actions-toolbar {
+  width: 100%;
+  max-width: 210mm;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-bottom: 2px solid #0f2042;
+  border-radius: 12px 12px 0 0;
+  padding: 0.85rem 1.4rem;
+  box-sizing: border-box;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.portal-theme-preto .comprovativo-actions-toolbar {
+  background: #111c2e;
+  border-color: #263852;
+  border-bottom-color: #c59b27;
+}
+
+.toolbar-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.toolbar-info strong {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--portal-text-main, #0f172a);
+}
+
+.toolbar-info span {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--portal-text-muted, #64748b);
+}
+
+.toolbar-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.btn-print-comprovativo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: linear-gradient(135deg, #0f2042 0%, #1e3a8a 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 1.15rem;
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(15, 32, 66, 0.25);
+  transition: all 0.2s ease;
+}
+
+.btn-print-comprovativo:hover {
+  background: linear-gradient(135deg, #162c5c 0%, #2563eb 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 32, 66, 0.35);
+}
+
+.btn-close-comprovativo {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-close-comprovativo:hover {
+  background: #fee2e2;
+  color: #c32026;
+  border-color: #fca5a5;
+}
+
+/* Folha Oficial A4 Timbrada do SERNIC */
+.comprovativo-oficial-sheet {
+  width: 100%;
+  max-width: 210mm;
+  min-height: 297mm;
+  background-color: #ffffff !important;
+  color: #111827 !important;
+  margin: 0 auto;
+  padding: 24mm 26mm 20mm 26mm;
+  box-sizing: border-box;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.14);
+  font-family: "Times New Roman", Times, Georgia, serif !important;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.doc-logo-center {
+  text-align: center;
+  margin-bottom: 0.75rem;
+}
+
+.doc-emblem {
+  width: 82px;
+  height: 82px;
+  object-fit: contain;
+  margin: 0 auto;
+  display: block;
+}
+
+.doc-header-institutional {
+  text-align: center;
+  margin-bottom: 2.2rem;
+}
+
+.doc-header-institutional h1 {
+  font-family: "Times New Roman", Times, serif !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+  color: #000000 !important;
+  letter-spacing: 0.04em !important;
+  margin: 0 0 0.25rem 0 !important;
+  text-transform: uppercase !important;
+  line-height: 1.3 !important;
+}
+
+.doc-header-institutional h2 {
+  font-family: "Times New Roman", Times, serif !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  color: #000000 !important;
+  letter-spacing: 0.04em !important;
+  margin: 0 0 0.25rem 0 !important;
+  text-transform: uppercase !important;
+}
+
+.doc-header-institutional h3 {
+  font-family: "Times New Roman", Times, serif !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  color: #000000 !important;
+  letter-spacing: 0.04em !important;
+  margin: 0 !important;
+  text-transform: uppercase !important;
+}
+
+.doc-recipient-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-top: 1rem;
+  margin-bottom: 1.8rem;
+  font-family: "Times New Roman", Times, serif !important;
+}
+
+.doc-recipient-left {
+  flex: 1;
+}
+
+.doc-recipient-title {
+  font-size: 0.98rem !important;
+  font-weight: 600 !important;
+  margin: 0 0 0.35rem 0 !important;
+  color: #000000 !important;
+}
+
+.doc-candidate-name {
+  font-size: 1.05rem !important;
+  font-weight: 800 !important;
+  margin: 0 !important;
+  color: #000000 !important;
+  letter-spacing: 0.03em !important;
+  text-transform: uppercase !important;
+}
+
+.doc-reference-right {
+  font-size: 0.92rem !important;
+  color: #000000 !important;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.doc-subject-line {
+  font-size: 0.98rem !important;
+  font-weight: 800 !important;
+  color: #000000 !important;
+  margin: 1.8rem 0 1.3rem 0 !important;
+  text-transform: uppercase !important;
+  font-family: "Times New Roman", Times, serif !important;
+}
+
+.doc-body-paragraph {
+  font-size: 0.96rem !important;
+  line-height: 1.65 !important;
+  text-align: justify !important;
+  margin: 0 0 1.6rem 0 !important;
+  color: #000000 !important;
+  font-family: "Times New Roman", Times, serif !important;
+}
+
+.doc-fields-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin: 1.6rem 0 2rem 0;
+  font-family: "Times New Roman", Times, serif !important;
+  font-size: 0.96rem !important;
+}
+
+.doc-field-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  border-bottom: 1px dotted #94a3b8;
+  padding-bottom: 0.25rem;
+}
+
+.doc-field-label {
+  color: #000000 !important;
+  white-space: nowrap;
+  font-weight: 600 !important;
+}
+
+.doc-field-value {
+  color: #000000 !important;
+  flex: 1;
+}
+
+.doc-field-value.bold {
+  font-weight: 700 !important;
+}
+
+.doc-field-status {
+  color: #0f2042 !important;
+}
+
+.doc-statutory-paragraph {
+  font-size: 0.93rem !important;
+  line-height: 1.6 !important;
+  text-align: justify !important;
+  margin: 1.2rem 0 !important;
+  color: #1e293b !important;
+  font-family: "Times New Roman", Times, serif !important;
+}
+
+.doc-closing-paragraph {
+  font-size: 0.96rem !important;
+  margin: 1.6rem 0 2rem 0 !important;
+  color: #000000 !important;
+  font-family: "Times New Roman", Times, serif !important;
+}
+
+.doc-signature-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  margin-top: 2rem;
+  margin-bottom: 2.5rem;
+  font-family: "Times New Roman", Times, serif !important;
+}
+
+.doc-location-date {
+  font-size: 0.96rem !important;
+  margin: 0 0 1.2rem 0 !important;
+  color: #000000 !important;
+  text-align: center;
+  width: 320px;
+}
+
+.doc-signature-box {
+  text-align: center;
+  width: 320px;
+}
+
+.doc-signature-title {
+  font-size: 0.98rem !important;
+  font-weight: 700 !important;
+  margin: 0 0 0.8rem 0 !important;
+  color: #000000 !important;
+}
+
+.doc-signature-space {
+  position: relative;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.4rem 0;
+}
+
+.doc-signature-stamp {
+  border: 2px dashed #b91c1c;
+  border-radius: 50%;
+  width: 125px;
+  height: 125px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #b91c1c;
+  font-size: 0.58rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  transform: rotate(-9deg);
+  opacity: 0.78;
+  pointer-events: none;
+  padding: 6px;
+  box-sizing: border-box;
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+
+.stamp-entity {
+  font-size: 0.6rem;
+  font-weight: 900;
+  border-bottom: 1px solid rgba(185, 28, 28, 0.4);
+  padding-bottom: 2px;
+  margin-bottom: 2px;
+}
+
+.stamp-sub {
+  font-size: 0.52rem;
+  font-weight: 800;
+  margin: 2px 0;
+}
+
+.stamp-drh {
+  font-size: 0.52rem;
+  font-weight: 900;
+  color: #991b1b;
+  border-top: 1px solid rgba(185, 28, 28, 0.4);
+  padding-top: 2px;
+  margin-top: 2px;
+}
+
+.doc-signatory-name {
+  font-size: 1.02rem !important;
+  font-weight: 700 !important;
+  margin: 0.4rem 0 0.15rem 0 !important;
+  color: #000000 !important;
+}
+
+.doc-signatory-rank {
+  font-size: 0.85rem !important;
+  font-style: italic !important;
+  margin: 0 !important;
+  color: #334155 !important;
+}
+
+.doc-footer-institutional {
+  margin-top: auto;
+  padding-top: 1.5rem;
+  text-align: center;
+}
+
+.doc-footer-divider {
+  height: 1px;
+  background-color: #000000;
+  width: 100%;
+  margin-bottom: 0.7rem;
+}
+
+.doc-footer-address {
+  font-size: 0.8rem !important;
+  color: #000000 !important;
+  margin: 0 !important;
+  font-family: "Times New Roman", Times, serif !important;
+  letter-spacing: 0.02em;
+}
+
+/* REGRAS OFICIAIS DE IMPRESSÃO (A4 COMPROVATIVO) */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 15mm 15mm 15mm;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .comprovativo-oficial-page-wrapper,
+  .comprovativo-oficial-page-wrapper .comprovativo-oficial-sheet,
+  .comprovativo-oficial-page-wrapper .comprovativo-oficial-sheet * {
+    visibility: visible;
+  }
+
+  .comprovativo-oficial-page-wrapper {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  .comprovativo-oficial-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 10mm 15mm !important;
+  }
+
+  .no-print,
+  .comprovativo-actions-toolbar,
+  .comprovativo-modal-overlay > :not(.comprovativo-modal-container) {
+    display: none !important;
+  }
+
+  .comprovativo-modal-overlay {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+}
 

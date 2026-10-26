@@ -34,6 +34,7 @@ import {
   getStoredCandidaturas,
   detectCandidateGender 
 } from '../mockData';
+import ComprovativoInscricaoDocument from '../components/ComprovativoInscricaoDocument';
 
 // Componente Ícone Oficial Google (SVG Multicolor)
 const GoogleIcon = ({ size = 20 }) => (
@@ -137,6 +138,9 @@ export default function LoginModule({
   // Form de Recuperação
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState(false);
+
+  // Modal de Comprovativo Oficial de Candidatura
+  const [comprovativoModalCandidato, setComprovativoModalCandidato] = useState(null);
 
   // Candidaturas associadas ao candidato logado
   const [userCandidaturas, setUserCandidaturas] = useState(() => {
@@ -601,7 +605,7 @@ export default function LoginModule({
                               type="button"
                               className="btn-vaga-candidatar"
                               style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem' }}
-                              onClick={() => window.print()}
+                              onClick={() => setComprovativoModalCandidato(c)}
                             >
                               <Printer size={14} />
                               <span>2ª Via Comprovativo</span>
@@ -1326,6 +1330,24 @@ export default function LoginModule({
               <div className="google-modal-footer">
                 Para continuar, a Google partilhará o seu nome, endereço de e-mail e fotografia com a plataforma de Concursos Públicos do SERNIC.
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL DO COMPROVATIVO OFICIAL DE CANDIDATURA */}
+        {comprovativoModalCandidato && (
+          <div 
+            className="comprovativo-modal-overlay" 
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setComprovativoModalCandidato(null);
+            }}
+          >
+            <div className="comprovativo-modal-container">
+              <ComprovativoInscricaoDocument 
+                candidato={comprovativoModalCandidato} 
+                onClose={() => setComprovativoModalCandidato(null)}
+                showActions={true}
+              />
             </div>
           </div>
         )}

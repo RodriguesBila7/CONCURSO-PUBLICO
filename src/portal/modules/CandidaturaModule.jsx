@@ -37,6 +37,7 @@ import {
   CANDIDATO_PHOTOS_FEMALE
 } from '../mockData';
 import sernicLogo from '../../assets/sernic-logo.png';
+import ComprovativoInscricaoDocument from '../components/ComprovativoInscricaoDocument';
 
 const STORAGE_DRAFT_KEY = 'sernic_candidatura_draft_v1';
 
@@ -333,13 +334,26 @@ export default function CandidaturaModule({
 
     setIsSubmitting(true);
     const vagaSelecionada = INITIAL_VAGAS.find(v => v.id === formData.vagaId) || INITIAL_VAGAS[0];
-    const randomProtocol = Math.floor(10000 + Math.random() * 90000);
-    const codigoCandidaturaGerado = `SERNIC-2026-REC-${randomProtocol}`;
-    const dataSubmissaoFormatada = new Date().toLocaleDateString('pt-MZ') + ' às ' + new Date().toLocaleTimeString('pt-MZ');
+    
+    // Gerar número de candidato sequencial 00001 assim em diante
+    const listaAtual = getStoredCandidaturas();
+    let maxNum = listaAtual.length;
+    listaAtual.forEach(c => {
+      if (c.numeroCandidato) {
+        const val = parseInt(c.numeroCandidato, 10);
+        if (!isNaN(val) && val > maxNum) maxNum = val;
+      }
+    });
+    const seqNum = maxNum + 1;
+    const numeroCandidatoFormatado = String(seqNum).padStart(5, '0');
+    const codigoCandidaturaGerado = `SERNIC-2026-REC-${numeroCandidatoFormatado}`;
+    const dataSubmissaoISO = new Date().toISOString();
+    const dataSubmissaoFormatada = new Date().toLocaleDateString('pt-MZ') + ' às ' + new Date().toLocaleTimeString('pt-MZ', { hour: '2-digit', minute: '2-digit' });
     const chaveAuth = 'MZ-SERNIC-AUTH-' + Math.floor(100000 + Math.random() * 900000);
 
     const payload = {
       codigoCandidatura: codigoCandidaturaGerado,
+      numeroCandidato: numeroCandidatoFormatado,
       nuit: formData.nuit,
       nomeCompleto: formData.nomeCompleto,
       bi: formData.biNumero,
@@ -348,13 +362,14 @@ export default function CandidaturaModule({
       carreira: vagaSelecionada.titulo,
       nivelAcademico: `${formData.nivelAcademico} em ${formData.cursoNome}`,
       provincia: formData.provinciaResidencia,
-      dataSubmissao: new Date().toISOString()
+      dataSubmissao: dataSubmissaoISO
     };
 
     const codigoFinal = codigoCandidaturaGerado;
 
     // Persistir novo candidato diretamente para visualização imediata no módulo Inscritos no Concurso
     const novoCandidato = {
+      numeroCandidato: numeroCandidatoFormatado,
       codigoCandidatura: codigoFinal,
       biNumero: formData.biNumero,
       nuit: formData.nuit,
@@ -375,8 +390,8 @@ export default function CandidaturaModule({
       vagaId: vagaSelecionada.id,
       vagaTitulo: vagaSelecionada.titulo,
       carreira: vagaSelecionada.carreira || vagaSelecionada.titulo,
-      dataSubmissao: new Date().toISOString(),
-      status: 'Em Análise Documental',
+      dataSubmissao: dataSubmissaoISO,
+      status: 'Submetida (Em Análise Documental)',
       faseAtual: 1,
       habilitacoes: {
         grau: formData.nivelAcademico,
@@ -411,14 +426,13 @@ export default function CandidaturaModule({
     };
 
     try {
-      const listaAtual = getStoredCandidaturas();
       saveStoredCandidaturas([novoCandidato, ...listaAtual]);
       addStoredAuditoria({
         acao: 'Nova Inscrição no Concurso',
         candidato: `${novoCandidato.nomeCompleto} (${novoCandidato.codigoCandidatura})`,
         estadoAnterior: 'Sem inscrição',
-        novoEstado: 'Em Análise Documental',
-        motivo: `Candidatura submetida para ${novoCandidato.vagaTitulo} (${novoCandidato.provincia})`,
+        novoEstado: 'Submetida (Em Análise Documental)',
+        motivo: `Candidatura n.º ${numeroCandidatoFormatado} submetida para ${novoCandidato.vagaTitulo} (${novoCandidato.provincia})`,
         operador: 'Sistema SERNIC (Portal do Candidato)'
       });
     } catch (err) {
@@ -435,27 +449,33 @@ export default function CandidaturaModule({
       if (data.success) {
         setSubmissionSuccess({
           codigo: data.codigoCandidatura || codigoFinal,
+          numeroCandidato: numeroCandidatoFormatado,
           dados: payload,
           vaga: vagaSelecionada,
           dataTexto: dataSubmissaoFormatada,
-          chaveAuth
+          chaveAuth,
+          candidatoCompleto: novoCandidato
         });
       } else {
         setSubmissionSuccess({
           codigo: codigoFinal,
+          numeroCandidato: numeroCandidatoFormatado,
           dados: payload,
           vaga: vagaSelecionada,
           dataTexto: dataSubmissaoFormatada,
-          chaveAuth
+          chaveAuth,
+          candidatoCompleto: novoCandidato
         });
       }
     } catch {
       setSubmissionSuccess({
         codigo: codigoFinal,
+        numeroCandidato: numeroCandidatoFormatado,
         dados: payload,
         vaga: vagaSelecionada,
         dataTexto: dataSubmissaoFormatada,
-        chaveAuth
+        chaveAuth,
+        candidatoCompleto: novoCandidato
       });
     } finally {
       setIsSubmitting(false);
@@ -534,55 +554,21 @@ export default function CandidaturaModule({
           </div>
         </div>
 
-        {/* COMPROVATIVO FORMAL PARA IMPRESSÃO / ARQUIVO */}
-        <div className="comprovativo-print-modal" style={{ border: '1px solid #cbd5e1', boxShadow: 'none' }}>
-          <div style={{ textAlign: 'center', borderBottom: '2px solid #0f2042', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
-            <img src={sernicLogo} alt="Logótipo SERNIC" style={{ width: '64px', height: '64px', margin: '0 auto 0.4rem auto' }} />
-            <h3 style={{ fontSize: '1rem', fontWeight: 900, margin: 0, textTransform: 'uppercase' }}>
-              República de Moçambique • Procuradoria-Geral da República
-            </h3>
-            <h4 style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0f2042', margin: '0.2rem 0', textTransform: 'uppercase' }}>
-              SERVIÇO NACIONAL DE INVESTIGAÇÃO CRIMINAL
-            </h4>
-            <p style={{ fontSize: '0.8rem', fontWeight: 700, margin: 0, color: '#64748b' }}>
-              COMPROVATIVO OFICIAL DE SUBMISSÃO DE CANDIDATURA ONLINE
-            </p>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', fontSize: '0.88rem', marginBottom: '1.5rem' }}>
-            <div>
-              <p><strong>N.º de Candidatura:</strong> {submissionSuccess.codigo}</p>
-              <p><strong>Nome Completo:</strong> {formData.nomeCompleto}</p>
-              <p><strong>Bilhete de Identidade:</strong> {formData.biNumero}</p>
-              <p><strong>NUIT:</strong> {formData.nuit}</p>
-              <p><strong>Data de Nascimento:</strong> {formData.dataNascimento}</p>
-            </div>
-            <div>
-              <p><strong>Carreira Pretendida:</strong> {submissionSuccess.vaga.titulo}</p>
-              <p><strong>Código do Edital:</strong> {submissionSuccess.vaga.codigoEdital}</p>
-              <p><strong>Contacto Telefónico:</strong> {formData.telefonePrincipal}</p>
-              <p><strong>Correio Eletrónico:</strong> {formData.email}</p>
-              <p><strong>Data de Submissão:</strong> {submissionSuccess.dataTexto}</p>
-            </div>
-          </div>
-
-          <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '0.8rem', fontSize: '0.78rem', color: '#475569', lineHeight: 1.5 }}>
-            <p><strong>Documentos Homologados no Processo:</strong> BI/Passaporte, Certificado de Habilitações, Curriculum Vitae e Registo Criminal anexados electronicamente.</p>
-            <p style={{ marginTop: '0.4rem', fontStyle: 'italic' }}>
-              Nota: Este documento comprova a inscrição do candidato e deverá ser obrigatoriamente apresentado no dia da realização das provas de conhecimentos e testes psicotécnicos acompanhado do documento de identificação original.
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid #cbd5e1' }}>
-            <div style={{ fontSize: '0.74rem', color: '#64748b' }}>
-              Chave Criptográfica de Validação:<br />
-              <strong style={{ color: '#0f2042' }}>{submissionSuccess.chaveAuth}</strong>
-            </div>
-            <div style={{ textAlign: 'center', fontSize: '0.8rem' }}>
-              <p style={{ borderBottom: '1px solid #000', width: '220px', margin: '0 auto 0.3rem auto' }}></p>
-              <span>Comissão do Concurso Público SERNIC</span>
-            </div>
-          </div>
+        {/* COMPROVATIVO OFICIAL CONFORME O MODELO OFICIAL SERNIC */}
+        <div style={{ marginTop: '1.5rem' }}>
+          <ComprovativoInscricaoDocument 
+            candidato={submissionSuccess.candidatoCompleto || {
+              nomeCompleto: formData.nomeCompleto,
+              genero: formData.genero,
+              numeroCandidato: submissionSuccess.numeroCandidato,
+              vagaTitulo: submissionSuccess.vaga?.titulo,
+              carreira: submissionSuccess.vaga?.carreira || submissionSuccess.vaga?.titulo,
+              dataSubmissao: submissionSuccess.dataTexto,
+              status: 'Submetida (Em Análise Documental)'
+            }}
+            showActions={false}
+            embedded={true}
+          />
         </div>
       </div>
     );
