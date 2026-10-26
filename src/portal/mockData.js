@@ -1330,6 +1330,78 @@ export function deleteStoredVaga(id, operador = 'Direcção de Recursos Humanos 
 }
 
 /**
+ * Verifica com rigor regulamentar se o prazo legal de submissão de documentos / candidatura expirou.
+ * A submissão encerra impreterivelmente às 23:59:59.999 do dia estabelecido em dataLimite.
+ * @param {string|Date} dataLimite - Data no formato YYYY-MM-DD ou objeto Date
+ * @returns {boolean} true se expirou, false se ainda está dentro do prazo legal
+ */
+export function isPrazoSubmissaoExpirado(dataLimite) {
+  if (!dataLimite) return false;
+  try {
+    let ano, mes, dia;
+    if (typeof dataLimite === 'string' && dataLimite.includes('-')) {
+      const parts = dataLimite.split('T')[0].split('-');
+      ano = parseInt(parts[0], 10);
+      mes = parseInt(parts[1], 10) - 1;
+      dia = parseInt(parts[2], 10);
+    } else {
+      const d = new Date(dataLimite);
+      if (isNaN(d.getTime())) return false;
+      ano = d.getFullYear();
+      mes = d.getMonth();
+      dia = d.getDate();
+    }
+    const prazoLimite = new Date(ano, mes, dia, 23, 59, 59, 999);
+    const agora = new Date();
+    return agora.getTime() > prazoLimite.getTime();
+  } catch (e) {
+    console.warn('Erro ao verificar prazo de submissão', e);
+    return false;
+  }
+}
+
+/**
+ * Formata a data limite por extenso para avisos legais de encerramento do concurso.
+ * Ex: "30 de Novembro de 2026 às 23:59h"
+ */
+export function formatarDataLimiteExtenso(dataLimite) {
+  if (!dataLimite) return 'Data não especificada';
+  try {
+    let ano, mes, dia;
+    if (typeof dataLimite === 'string' && dataLimite.includes('-')) {
+      const parts = dataLimite.split('T')[0].split('-');
+      ano = parseInt(parts[0], 10);
+      mes = parseInt(parts[1], 10) - 1;
+      dia = parseInt(parts[2], 10);
+    } else {
+      const d = new Date(dataLimite);
+      ano = d.getFullYear();
+      mes = d.getMonth();
+      dia = d.getDate();
+    }
+    const meses = [
+      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+    return `${dia} de ${meses[mes] || ''} de ${ano} às 23:59h`;
+  } catch {
+    return String(dataLimite);
+  }
+}
+
+/**
+ * Retorna o estado estatutário efetivo de uma vaga/concurso.
+ * Se o prazo tiver expirado, retorna 'Encerrado (Prazo Expirado)'.
+ */
+export function getStatusEfetivoVaga(vaga) {
+  if (!vaga) return 'Inativo';
+  if (isPrazoSubmissaoExpirado(vaga.dataLimite)) {
+    return 'Encerrado (Prazo Expirado)';
+  }
+  return vaga.status || 'Aberto';
+}
+
+/**
  * Garante unicidade estrita de cada candidato no concurso público.
  * Cada candidato é único: elimina quaisquer repetições ou duplicações por Bilhete de Identidade (BI), NUIT ou Código de Candidatura.
  */

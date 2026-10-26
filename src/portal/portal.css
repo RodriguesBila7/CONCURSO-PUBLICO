@@ -9357,3 +9357,182 @@ textarea::placeholder,
   color: #4ade80;
 }
 
+/* ========================================================
+   BLOQUEIO ESTATUTÁRIO DE SUBMISSÕES FORA DE PRAZO (EGFAE)
+   ======================================================== */
+
+/* Banner Oficial de Submissões Encerradas */
+.submissao-expirada-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.1rem;
+  padding: 1.25rem 1.45rem;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.09) 0%, rgba(185, 28, 28, 0.05) 100%);
+  border: 1.5px solid rgba(220, 38, 38, 0.35);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 16px rgba(220, 38, 38, 0.08);
+}
+
+.portal-theme-preto .submissao-expirada-banner {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(185, 28, 28, 0.12) 100%);
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+.submissao-expirada-banner .banner-icon-col {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(220, 38, 38, 0.12);
+  border: 2px solid rgba(220, 38, 38, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.submissao-expirada-banner .banner-text-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.submissao-expirada-banner .banner-text-col h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #b91c1c;
+  letter-spacing: 0.03em;
+}
+
+.portal-theme-preto .submissao-expirada-banner .banner-text-col h4 {
+  color: #fca5a5;
+}
+
+.submissao-expirada-banner .banner-text-col p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--portal-text-main, #1e293b);
+  line-height: 1.45;
+}
+
+.submissao-expirada-banner .banner-legal-note {
+  font-size: 0.78rem;
+  color: #991b1b;
+  line-height: 1.4;
+  margin-top: 0.2rem;
+  font-weight: 600;
+}
+
+.portal-theme-preto .submissao-expirada-banner .banner-legal-note {
+  color: #f87171;
+}
+
+/* Aviso Inline Abaixo do Select de Vagas */
+.vaga-expirada-inline-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+  padding: 0.65rem 0.9rem;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.28);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: #b91c1c;
+  line-height: 1.4;
+}
+
+.portal-theme-preto .vaga-expirada-inline-warning {
+  background: rgba(239, 68, 68, 0.16);
+  color: #fca5a5;
+}
+
+/* Aviso na Etapa 4 de Documentos */
+.docs-blocked-deadline-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 1.1rem;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+  font-size: 0.84rem;
+  color: #b91c1c;
+}
+
+.portal-theme-preto .docs-blocked-deadline-notice {
+  background: rgba(239, 68, 68, 0.16);
+  color: #fca5a5;
+}
+
+/* Caixas de Upload de Documentos Desabilitadas / Expiradas */
+.doc-upload-box.disabled-expired {
+  opacity: 0.65;
+  cursor: not-allowed !important;
+  background: rgba(239, 68, 68, 0.03) !important;
+  border-color: rgba(239, 68, 68, 0.25) !important;
+}
+
+.doc-upload-box.disabled-expired:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  border-color: rgba(239, 68, 68, 0.25) !important;
+}
+
+/* Botão de Submissão Bloqueado */
+.btn-submit-candidatura.btn-disabled-expired {
+  background: linear-gradient(135deg, #475569 0%, #334155 100%) !important;
+  border-color: #334155 !important;
+  color: #cbd5e1 !important;
+  cursor: not-allowed !important;
+  opacity: 0.75;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.portal-theme-preto .btn-submit-candidatura.btn-disabled-expired {
+  background: linear-gradient(135deg, #334155 0%, #1e293b 100%) !important;
+  border-color: #1e293b !important;
+  color: #94a3b8 !important;
+}
+
+/* Tags de Prazo no Card do Gestor */
+.tag-prazo-expirado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  margin-left: 0.45rem;
+}
+
+.portal-theme-preto .tag-prazo-expirado {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.tag-prazo-aberto {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(22, 101, 52, 0.1);
+  color: #166534;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  margin-left: 0.45rem;
+}
+
+.portal-theme-preto .tag-prazo-aberto {
+  background: rgba(34, 197, 94, 0.15);
+  color: #86efac;
+}
+
+

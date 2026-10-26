@@ -94,7 +94,10 @@ import {
   updateStoredPaleta,
   deleteStoredPaleta,
   detectCandidateGender,
-  getGenderText
+  getGenderText,
+  isPrazoSubmissaoExpirado,
+  formatarDataLimiteExtenso,
+  getStatusEfetivoVaga
 } from '../mockData';
 import sernicLogo from '../../assets/sernic-logo.png';
 import DraggableSubAba from '../components/DraggableSubAba';
@@ -3517,12 +3520,12 @@ export default function GestorPortalModule({
                   <div className="vaga-gestor-top">
                     <span className="vaga-edital-cod">{vaga.codigoEdital}</span>
                     <span 
-                      className={`vaga-status-chip ${vaga.status === 'Aberto' ? 'aberto' : 'fechado'}`}
+                      className={`vaga-status-chip ${isPrazoSubmissaoExpirado(vaga.dataLimite) ? 'fechado' : vaga.status === 'Aberto' ? 'aberto' : 'fechado'}`}
                       style={{ cursor: 'pointer' }}
                       onClick={() => handleToggleVagaStatusGestor(vaga.id)}
                       title="Clique para alternar estado Aberto / Encerrado"
                     >
-                      {vaga.status} (Alternar)
+                      {isPrazoSubmissaoExpirado(vaga.dataLimite) ? 'Prazo Expirado' : vaga.status} (Alternar)
                     </span>
                   </div>
 
@@ -3550,8 +3553,19 @@ export default function GestorPortalModule({
                       <span>{vaga.local}</span>
                     </div>
                     <div className="detail-line">
-                      <Calendar size={14} color="#64748b" />
-                      <span>Prazo: {vaga.dataLimite}</span>
+                      <Calendar size={14} color={isPrazoSubmissaoExpirado(vaga.dataLimite) ? '#dc2626' : '#64748b'} />
+                      <span>
+                        Prazo: <strong>{vaga.dataLimite}</strong>
+                        {isPrazoSubmissaoExpirado(vaga.dataLimite) ? (
+                          <span className="tag-prazo-expirado">
+                            <Lock size={11} /> Prazo Expirado
+                          </span>
+                        ) : (
+                          <span className="tag-prazo-aberto">
+                            <CheckCircle2 size={11} /> Submissões Abertas
+                          </span>
+                        )}
+                      </span>
                     </div>
                   </div>
 

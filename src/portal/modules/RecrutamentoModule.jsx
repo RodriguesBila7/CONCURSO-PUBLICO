@@ -27,7 +27,8 @@ import {
   Check,
   RefreshCw,
   Plus,
-  FileCheck
+  FileCheck,
+  Lock
 } from 'lucide-react';
 import { 
   INITIAL_VAGAS, 
@@ -35,7 +36,10 @@ import {
   saveStoredVagas, 
   createStoredVaga, 
   updateStoredVaga, 
-  deleteStoredVaga 
+  deleteStoredVaga,
+  isPrazoSubmissaoExpirado,
+  formatarDataLimiteExtenso,
+  getStatusEfetivoVaga
 } from '../mockData';
 import sernicLogo from '../../assets/sernic-logo.png';
 import DraggableSubAba from '../components/DraggableSubAba';
@@ -306,7 +310,13 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
   });
 
   const handleCandidatarClick = (vaga) => {
-    if (vaga.status !== 'Aberto') return;
+    if (vaga.status !== 'Aberto' || isPrazoSubmissaoExpirado(vaga.dataLimite)) {
+      setToastMessage({
+        type: 'error',
+        text: `Submissão Bloqueada: O prazo legal para envio de documentos para "${vaga.titulo}" encerrou a ${formatarDataLimiteExtenso(vaga.dataLimite)}.`
+      });
+      return;
+    }
     if (onSelectVagaParaCandidatura) {
       onSelectVagaParaCandidatura(vaga);
     }
@@ -429,18 +439,25 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
           </div>
         ) : (
           filteredVagas.map((vaga) => {
-            const isAberto = vaga.status === 'Aberto';
+            const isExpirado = isPrazoSubmissaoExpirado(vaga.dataLimite);
+            const isAberto = vaga.status === 'Aberto' && !isExpirado;
             return (
               <div key={vaga.id} className="vaga-card">
                 <div className="vaga-main-info">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                     <span 
                       className={`vaga-badge-status ${isAberto ? 'vaga-status-aberto' : 'vaga-status-encerrado'}`}
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => handleQuickToggleStatus(vaga.id)}
-                      title="Clique para alternar estado Aberto / Encerrado"
+                      style={{ cursor: isGestor ? 'pointer' : 'default' }}
+                      onClick={() => isGestor && handleQuickToggleStatus(vaga.id)}
+                      title={isGestor ? "Clique para alternar estado Aberto / Encerrado" : isExpirado ? "Prazo legal de submissão de documentos expirado" : vaga.status}
                     >
-                      {vaga.status} (Clique p/ alternar)
+                      {isExpirado ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <Clock size={12} /> Prazo Expirado
+                        </span>
+                      ) : (
+                        `${vaga.status}${isGestor ? ' (Clique p/ alternar)' : ''}`
+                      )}
                     </span>
                     <span style={{ fontSize: '0.8rem', color: 'var(--portal-text-muted)', fontFamily: 'monospace' }}>
                       {vaga.codigoEdital}
@@ -460,8 +477,11 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
                       <span>{vaga.local}</span>
                     </div>
                     <div className="vaga-meta-item">
-                      <Calendar size={16} color="#c32026" />
-                      <span>Limite: <strong>{new Date(vaga.dataLimite).toLocaleDateString('pt-MZ')}</strong></span>
+                      <Calendar size={16} color={isExpirado ? '#dc2626' : '#c32026'} />
+                      <span>
+                        Limite: <strong>{new Date(vaga.dataLimite).toLocaleDateString('pt-MZ')}</strong>
+                        {isExpirado && <span style={{ color: '#dc2626', fontWeight: 800, marginLeft: '0.35rem' }}>(Terminado)</span>}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -482,9 +502,11 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
                       type="button"
                       className="btn-vaga-candidatar"
                       disabled
-                      style={{ opacity: 0.6, cursor: 'not-allowed', background: '#94a3b8', borderColor: '#94a3b8' }}
+                      style={{ opacity: 0.65, cursor: 'not-allowed', background: '#dc2626', borderColor: '#b91c1c' }}
+                      title={`Submissões encerradas: O prazo legal para envio de documentos expirou a ${formatarDataLimiteExtenso(vaga.dataLimite)}`}
                     >
-                      <span>Prazo Expirado</span>
+                      <Lock size={14} />
+                      <span>Submissões Encerradas</span>
                     </button>
                   )}
 
@@ -713,6 +735,26 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
                   )}
                 </div>
 
+                {/* Aviso Regulamentar de Prazo Expirado */}
+                {isPrazoSubmissaoExpirado(selectedVagaModal.dataLimite) && (
+                  <div style={{
+                    background: 'rgba(239, 68, 68, 0.08)',
+                    border: '1.5px solid rgba(239, 68, 68, 0.3)',
+                    borderRadius: '10px',
+                    padding: '0.85rem 1rem',
+                    marginBottom: '1.25rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.65rem',
+                    color: '#b91c1c'
+                  }}>
+                    <Lock size={20} color="#dc2626" style={{ flexShrink: 0 }} />
+                    <span style={{ fontSize: '0.85rem', lineHeight: '1.4' }}>
+                      <strong>Submissões Encerradas:</strong> O prazo limite para envio de documentos desta vaga expirou a <strong>{formatarDataLimiteExtenso(selectedVagaModal.dataLimite)}</strong>. Novas candidaturas não são admitidas pelo sistema.
+                    </span>
+                  </div>
+                )}
+
                 {/* Métricas e Prazos */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', backgroundColor: 'var(--portal-card-inner)', padding: '1.1rem', borderRadius: '12px', marginBottom: '1.5rem', border: '1px solid var(--portal-border)' }}>
                   <div>
@@ -807,7 +849,7 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
                     >
                       Fechar
                     </button>
-                    {selectedVagaModal.status === 'Aberto' && (
+                    {selectedVagaModal.status === 'Aberto' && (!isPrazoSubmissaoExpirado(selectedVagaModal.dataLimite) ? (
                       <button
                         type="button"
                         className="btn-vaga-candidatar"
@@ -820,7 +862,18 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
                         <ArrowRight size={16} />
                         <span>Candidatar-me a esta Vaga</span>
                       </button>
-                    )}
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn-vaga-candidatar"
+                        disabled
+                        style={{ opacity: 0.65, cursor: 'not-allowed', background: '#dc2626', borderColor: '#b91c1c' }}
+                        title={`Submissões encerradas: O prazo expirou a ${formatarDataLimiteExtenso(selectedVagaModal.dataLimite)}`}
+                      >
+                        <Lock size={15} />
+                        <span>Submissões Encerradas</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>

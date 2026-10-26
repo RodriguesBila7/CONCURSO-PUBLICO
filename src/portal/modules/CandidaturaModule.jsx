@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   FileText, 
   User, 
@@ -18,10 +18,18 @@ import {
   Camera,
   Eye,
   UserCheck,
-  AlertTriangle
+  AlertTriangle,
+  Lock,
+  Clock,
+  CalendarX,
+  XCircle
 } from 'lucide-react';
 import { 
   INITIAL_VAGAS, 
+  getStoredVagas,
+  isPrazoSubmissaoExpirado,
+  formatarDataLimiteExtenso,
+  getStatusEfetivoVaga,
   PROVINCIAS_MOCAMBIQUE, 
   PROVINCIAS_GEOGRAFICAS,
   validarNUIT, 
@@ -59,6 +67,15 @@ export default function CandidaturaModule({
       return false;
     }
   });
+
+  // Vagas sincronizadas com o repositório central e eventos do sistema
+  const [vagasDisponiveis, setVagasDisponiveis] = useState(() => getStoredVagas());
+
+  useEffect(() => {
+    const handleSync = () => setVagasDisponiveis(getStoredVagas());
+    window.addEventListener('sernic-vagas-updated', handleSync);
+    return () => window.removeEventListener('sernic-vagas-updated', handleSync);
+  }, []);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -111,6 +128,16 @@ export default function CandidaturaModule({
   });
 
   const [errors, setErrors] = useState({});
+
+  // Vaga atualmente selecionada
+  const vagaAtiva = useMemo(() => {
+    return vagasDisponiveis.find(v => v.id === formData.vagaId) || vagasDisponiveis[0] || null;
+  }, [vagasDisponiveis, formData.vagaId]);
+
+  // Verificação estrita se o prazo de submissão de documentos / candidatura expirou
+  const isPrazoExpirado = useMemo(() => {
+    return vagaAtiva ? isPrazoSubmissaoExpirado(vagaAtiva.dataLimite) : false;
+  }, [vagaAtiva]);
 
   // Manipular alteração de inputs de texto com padrão em MAIÚSCULAS e detecção de GÊNERO
   const handleChange = (e) => {
@@ -176,8 +203,18 @@ export default function CandidaturaModule({
     }
   };
 
-  // Simular upload de arquivo
+  // Simular upload de arquivo com bloqueio de prazo
   const handleFileUpload = (docKey, fileName) => {
+    if (isPrazoExpirado) {
+      const msg = `Submissão Bloqueada: O prazo legal para envio de documentos para "${vagaAtiva?.titulo}" expirou em ${formatarDataLimiteExtenso(vagaAtiva?.dataLimite)}.`;
+      if (onNotify) {
+        onNotify('error', msg);
+      } else {
+        alert(`⚠️ SUBMISSÃO BLOQUEADA:\n\n${msg}\n\nO sistema encontra-se encerrado para novas submissões de documentos.`);
+      }
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
       docsAnexados: {
@@ -267,6 +304,9 @@ export default function CandidaturaModule({
 
     if (step === 2) {
       if (!formData.vagaId) newErrors.vagaId = 'Selecione uma vaga a concurso.';
+      if (isPrazoExpirado) {
+        newErrors.vagaId = `O prazo legal para submissão de documentos desta carreira encerrou a ${formatarDataLimiteExtenso(vagaAtiva?.dataLimite)}. Selecione uma vaga aberta para poder avançar.`;
+      }
       if (!formData.cursoNome.trim()) newErrors.cursoNome = 'Informe o curso ou área de formação.';
       if (!formData.instituicaoEnsino.trim()) newErrors.instituicaoEnsino = 'Informe a instituição de ensino.';
     }
@@ -284,6 +324,9 @@ export default function CandidaturaModule({
     }
 
     if (step === 4) {
+      if (isPrazoExpirado) {
+        newErrors.biDoc = `Submissão de documentos bloqueada: O prazo regulamentar expirou a ${formatarDataLimiteExtenso(vagaAtiva?.dataLimite)}.`;
+      }
       if (!formData.docsAnexados.biDoc) newErrors.biDoc = 'O documento de identificação (BI/Passaporte) é obrigatório.';
       if (!formData.docsAnexados.certificadoDoc) newErrors.certificadoDoc = 'O certificado de habilitações é obrigatório.';
       if (!formData.docsAnexados.cvDoc) newErrors.cvDoc = 'O Curriculum Vitae em formato PDF é obrigatório.';
@@ -291,6 +334,9 @@ export default function CandidaturaModule({
     }
 
     if (step === 5) {
+      if (isPrazoExpirado) {
+        newErrors.declaracaoVeracidade = `Submissão bloqueada pelo sistema: O prazo legal deste concurso expirou a ${formatarDataLimiteExtenso(vagaAtiva?.dataLimite)}.`;
+      }
       if (!formData.declaracaoVeracidade) {
         newErrors.declaracaoVeracidade = 'Deve declarar por sua honra a veracidade das informações para submeter a candidatura.';
       }
@@ -316,6 +362,14 @@ export default function CandidaturaModule({
 
   // Submeter Candidatura
   const handleSubmitCandidatura = async () => {
+    // Bloqueio rigoroso de prazo legal
+    if (isPrazoExpirado) {
+      const aviso = `⚠️ SUBMISSÃO RECUSADA PELO SISTEMA (EXTEMPORANEIDADE):\n\nO prazo legal para submissão de documentos e formalização de candidatura para "${vagaAtiva?.titulo}" encerrou impreterivelmente a ${formatarDataLimiteExtenso(vagaAtiva?.dataLimite)}.\n\nNos termos do Estatuto Geral dos Funcionários e Agentes do Estado (EGFAE) e do Regulamento do SERNIC, o sistema encontra-se bloqueado e não aceita mais submissões fora de prazo.`;
+      alert(aviso);
+      if (onNotify) onNotify('error', 'Submissão recusada: O prazo regulamentar para envio de documentos desta vaga já expirou.');
+      return;
+    }
+
     if (!validateStep(5)) return;
 
     // Dupla verificação de segurança contra repetições de candidatos
@@ -333,7 +387,7 @@ export default function CandidaturaModule({
     }
 
     setIsSubmitting(true);
-    const vagaSelecionada = INITIAL_VAGAS.find(v => v.id === formData.vagaId) || INITIAL_VAGAS[0];
+    const vagaSelecionada = vagasDisponiveis.find(v => v.id === formData.vagaId) || vagasDisponiveis[0] || INITIAL_VAGAS[0];
     
     // Gerar número de candidato sequencial 00001 assim em diante
     const listaAtual = getStoredCandidaturas();
@@ -652,6 +706,24 @@ export default function CandidaturaModule({
 
       {/* 3. CONTEÚDO DE CADA ETAPA */}
       <div>
+        {/* BANNER REGULAMENTAR DE BLOQUEIO POR PRAZO EXPIRADO */}
+        {isPrazoExpirado && (
+          <div className="submissao-expirada-banner">
+            <div className="banner-icon-col">
+              <Lock size={28} color="#dc2626" />
+            </div>
+            <div className="banner-text-col">
+              <h4>SUBMISSÕES ENCERRADAS • PRAZO LEGAL EXPIRADO</h4>
+              <p>
+                O prazo legal para submissão de documentos e candidatura à carreira de <strong>{vagaAtiva?.titulo}</strong> ({vagaAtiva?.codigoEdital}) encerrou improrrogavelmente a <strong>{formatarDataLimiteExtenso(vagaAtiva?.dataLimite)}</strong>.
+              </p>
+              <span className="banner-legal-note">
+                Em estrito cumprimento ao Estatuto Geral dos Funcionários e Agentes do Estado (EGFAE) e ao Regulamento de Concursos do SERNIC, o sistema encontra-se bloqueado e não aceita mais submissões de documentos. Caso pretenda concorrer a outra carreira que ainda esteja aberta, selecione outra vaga na <strong>Etapa 2 (Habilitações)</strong>.
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* ETAPA 1: DADOS PESSOAIS */}
         {currentStep === 1 && (
           <div className="form-section-card">
@@ -755,16 +827,26 @@ export default function CandidaturaModule({
               <label>Concurso / Vaga Pretendida <span className="required">*</span></label>
               <select 
                 name="vagaId" 
-                className={`form-select ${errors.vagaId ? 'error' : ''}`}
+                className={`form-select ${errors.vagaId || isPrazoExpirado ? 'error' : ''}`}
                 value={formData.vagaId} 
                 onChange={handleChange}
               >
-                {INITIAL_VAGAS.filter(v => v.status === 'Aberto').map(v => (
-                  <option key={v.id} value={v.id}>
-                    {v.titulo} ({v.codigoEdital}) • {v.vagas} Vagas • Prazo: {new Date(v.dataLimite).toLocaleDateString('pt-MZ')}
-                  </option>
-                ))}
+                {vagasDisponiveis.map(v => {
+                  const expirada = isPrazoSubmissaoExpirado(v.dataLimite);
+                  return (
+                    <option key={v.id} value={v.id}>
+                      {v.titulo} ({v.codigoEdital}) • {v.vagas} Vagas • Prazo: {new Date(v.dataLimite).toLocaleDateString('pt-MZ')}{expirada ? ' ⚠️ [SUBMISSÕES ENCERRADAS - PRAZO EXPIRADO]' : ' [ABERTO]'}
+                    </option>
+                  );
+                })}
               </select>
+              {isPrazoExpirado && (
+                <div className="vaga-expirada-inline-warning">
+                  <AlertTriangle size={15} color="#dc2626" />
+                  <span><strong>Submissões Fechadas:</strong> O prazo desta carreira encerrou a {formatarDataLimiteExtenso(vagaAtiva?.dataLimite)}. Por favor escolha outra vaga com prazo aberto para poder submeter a sua candidatura.</span>
+                </div>
+              )}
+              {errors.vagaId && <span className="form-error-msg">{errors.vagaId}</span>}
             </div>
 
             <div className="form-grid-2">
@@ -916,15 +998,23 @@ export default function CandidaturaModule({
             <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--portal-text-main)', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               <UploadCloud size={20} color="#c59b27" /> Documentação Obrigatória em Anexo
             </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--portal-text-muted)', marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: '0.85rem', color: 'var(--portal-text-muted)', marginBottom: '1.2rem' }}>
               Carregue os ficheiros em formato PDF ou imagem (JPG/PNG). Tamanho máximo: 5 MB por documento.
             </p>
+
+            {isPrazoExpirado && (
+              <div className="docs-blocked-deadline-notice">
+                <Lock size={18} color="#dc2626" />
+                <span><strong>Submissão de Documentos Bloqueada:</strong> O prazo limite para a carreira de "{vagaAtiva?.titulo}" encerrou a <strong>{formatarDataLimiteExtenso(vagaAtiva?.dataLimite)}</strong>. Novos documentos não são admitidos nos termos do EGFAE.</span>
+              </div>
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.2rem' }}>
               {/* Doc 1: BI */}
               <div 
-                className={`doc-upload-box ${formData.docsAnexados.biDoc ? 'uploaded' : ''}`}
+                className={`doc-upload-box ${formData.docsAnexados.biDoc ? 'uploaded' : ''} ${isPrazoExpirado ? 'disabled-expired' : ''}`}
                 onClick={() => handleFileUpload('biDoc', 'Bilhete_Identidade_Digitalizado.pdf')}
+                title={isPrazoExpirado ? 'Submissão de documentos bloqueada: Prazo expirado' : 'Clique para carregar'}
               >
                 {formData.docsAnexados.biDoc ? (
                   <>
@@ -938,7 +1028,9 @@ export default function CandidaturaModule({
                     <UploadCloud size={32} color="#c59b27" />
                     <strong style={{ fontSize: '0.9rem' }}>Bilhete de Identidade (BI) <span style={{ color: '#c32026' }}>*</span></strong>
                     <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Cópia autenticada e legível</span>
-                    <span style={{ fontSize: '0.75rem', color: '#c59b27', fontWeight: 700 }}>Carregar Ficheiro</span>
+                    <span style={{ fontSize: '0.75rem', color: isPrazoExpirado ? '#dc2626' : '#c59b27', fontWeight: 700 }}>
+                      {isPrazoExpirado ? 'Prazo Expirado' : 'Carregar Ficheiro'}
+                    </span>
                   </>
                 )}
                 {errors.biDoc && <span className="form-error-msg">{errors.biDoc}</span>}
@@ -946,8 +1038,9 @@ export default function CandidaturaModule({
 
               {/* Doc 2: Certificado */}
               <div 
-                className={`doc-upload-box ${formData.docsAnexados.certificadoDoc ? 'uploaded' : ''}`}
+                className={`doc-upload-box ${formData.docsAnexados.certificadoDoc ? 'uploaded' : ''} ${isPrazoExpirado ? 'disabled-expired' : ''}`}
                 onClick={() => handleFileUpload('certificadoDoc', 'Certificado_Habilitacoes_Homologado.pdf')}
+                title={isPrazoExpirado ? 'Submissão de documentos bloqueada: Prazo expirado' : 'Clique para carregar'}
               >
                 {formData.docsAnexados.certificadoDoc ? (
                   <>
@@ -961,7 +1054,9 @@ export default function CandidaturaModule({
                     <UploadCloud size={32} color="#c59b27" />
                     <strong style={{ fontSize: '0.9rem' }}>Certificado de Habilitações <span style={{ color: '#c32026' }}>*</span></strong>
                     <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Certificado ou Diploma de Curso</span>
-                    <span style={{ fontSize: '0.75rem', color: '#c59b27', fontWeight: 700 }}>Carregar Ficheiro</span>
+                    <span style={{ fontSize: '0.75rem', color: isPrazoExpirado ? '#dc2626' : '#c59b27', fontWeight: 700 }}>
+                      {isPrazoExpirado ? 'Prazo Expirado' : 'Carregar Ficheiro'}
+                    </span>
                   </>
                 )}
                 {errors.certificadoDoc && <span className="form-error-msg">{errors.certificadoDoc}</span>}
@@ -969,8 +1064,9 @@ export default function CandidaturaModule({
 
               {/* Doc 3: CV */}
               <div 
-                className={`doc-upload-box ${formData.docsAnexados.cvDoc ? 'uploaded' : ''}`}
+                className={`doc-upload-box ${formData.docsAnexados.cvDoc ? 'uploaded' : ''} ${isPrazoExpirado ? 'disabled-expired' : ''}`}
                 onClick={() => handleFileUpload('cvDoc', 'Curriculum_Vitae_SERNIC.pdf')}
+                title={isPrazoExpirado ? 'Submissão de documentos bloqueada: Prazo expirado' : 'Clique para carregar'}
               >
                 {formData.docsAnexados.cvDoc ? (
                   <>
@@ -984,7 +1080,9 @@ export default function CandidaturaModule({
                     <UploadCloud size={32} color="#c59b27" />
                     <strong style={{ fontSize: '0.9rem' }}>Curriculum Vitae (CV) <span style={{ color: '#c32026' }}>*</span></strong>
                     <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Actualizado e assinado</span>
-                    <span style={{ fontSize: '0.75rem', color: '#c59b27', fontWeight: 700 }}>Carregar Ficheiro</span>
+                    <span style={{ fontSize: '0.75rem', color: isPrazoExpirado ? '#dc2626' : '#c59b27', fontWeight: 700 }}>
+                      {isPrazoExpirado ? 'Prazo Expirado' : 'Carregar Ficheiro'}
+                    </span>
                   </>
                 )}
                 {errors.cvDoc && <span className="form-error-msg">{errors.cvDoc}</span>}
@@ -992,7 +1090,7 @@ export default function CandidaturaModule({
 
               {/* Doc 4: Fotografia Obrigatória com Biometria e Análise Facial */}
               <div 
-                className={`doc-upload-box biometric-upload-card ${formData.docsAnexados.fotoDoc ? 'uploaded' : ''}`}
+                className={`doc-upload-box biometric-upload-card ${formData.docsAnexados.fotoDoc ? 'uploaded' : ''} ${isPrazoExpirado ? 'disabled-expired' : ''}`}
                 style={{ gridColumn: 'span 2' }}
               >
                 <div className="biometric-form-inner">
@@ -1257,12 +1355,15 @@ export default function CandidaturaModule({
           ) : (
             <button
               type="button"
-              className="btn-submit-candidatura"
+              className={`btn-submit-candidatura ${isPrazoExpirado ? 'btn-disabled-expired' : ''}`}
               onClick={handleSubmitCandidatura}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isPrazoExpirado}
+              title={isPrazoExpirado ? `Submissão de documentos encerrada: Prazo expirou a ${formatarDataLimiteExtenso(vagaAtiva?.dataLimite)}` : 'Submeter Candidatura Oficial'}
             >
-              <ShieldCheck size={20} />
-              <span>{isSubmitting ? 'A Processar Submissão...' : 'Submeter Candidatura Oficial'}</span>
+              {isPrazoExpirado ? <Lock size={20} /> : <ShieldCheck size={20} />}
+              <span>
+                {isPrazoExpirado ? 'Submissões Encerradas (Prazo Expirado)' : isSubmitting ? 'A Processar Submissão...' : 'Submeter Candidatura Oficial'}
+              </span>
             </button>
           )}
         </div>
