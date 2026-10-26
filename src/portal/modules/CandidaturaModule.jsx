@@ -232,6 +232,26 @@ export default function CandidaturaModule({
       if (!formData.nomeCompleto.trim()) newErrors.nomeCompleto = 'O nome completo é obrigatório.';
       if (!validarNUIT(formData.nuit)) newErrors.nuit = 'Informe um NUIT moçambicano válido (9 dígitos numéricos, ex: 123456789).';
       if (!validarBI(formData.biNumero)) newErrors.biNumero = 'Informe um BI válido (12 dígitos seguidos de 1 letra, ex: 000000000000M).';
+
+      // Validação de unicidade estrita: Cada candidato é único, sem repetições
+      const candidaturasExistentes = getStoredCandidaturas();
+      const biLimpo = String(formData.biNumero || '').trim().toUpperCase();
+      const nuitLimpo = String(formData.nuit || '').trim();
+
+      const duplicadoPorBI = candidaturasExistentes.find(c => 
+        c.biNumero && String(c.biNumero).trim().toUpperCase() === biLimpo
+      );
+      if (duplicadoPorBI) {
+        newErrors.biNumero = `Este Bilhete de Identidade já possui a candidatura n.º ${duplicadoPorBI.codigoCandidatura} registada (${duplicadoPorBI.vagaTitulo || 'Concurso'}). Cada candidato é único e não são permitidas duplicações.`;
+      }
+
+      const duplicadoPorNuit = candidaturasExistentes.find(c => 
+        c.nuit && String(c.nuit).trim() === nuitLimpo
+      );
+      if (duplicadoPorNuit && !duplicadoPorBI) {
+        newErrors.nuit = `Este NUIT já possui a candidatura n.º ${duplicadoPorNuit.codigoCandidatura} registada. Cada candidato é único no concurso público.`;
+      }
+
       if (!formData.dataNascimento) {
         newErrors.dataNascimento = 'A data de nascimento é obrigatória.';
       } else {
@@ -296,6 +316,20 @@ export default function CandidaturaModule({
   // Submeter Candidatura
   const handleSubmitCandidatura = async () => {
     if (!validateStep(5)) return;
+
+    // Dupla verificação de segurança contra repetições de candidatos
+    const candidaturasExistentes = getStoredCandidaturas();
+    const biLimpo = String(formData.biNumero || '').trim().toUpperCase();
+    const nuitLimpo = String(formData.nuit || '').trim();
+    const duplicado = candidaturasExistentes.find(c => 
+      (c.biNumero && String(c.biNumero).trim().toUpperCase() === biLimpo) ||
+      (c.nuit && String(c.nuit).trim() === nuitLimpo)
+    );
+
+    if (duplicado) {
+      alert(`⚠️ CANDIDATO JÁ REGISTADO NO CONCURSO PÚBLICO:\n\nJá se encontra registada no sistema a candidatura n.º ${duplicado.codigoCandidatura} em nome de "${duplicado.nomeCompleto}" (BI: ${duplicado.biNumero}).\n\nRegra Regulamentar: Cada candidato é único e não são permitidas repetições ou duplicações de candidaturas.`);
+      return;
+    }
 
     setIsSubmitting(true);
     const vagaSelecionada = INITIAL_VAGAS.find(v => v.id === formData.vagaId) || INITIAL_VAGAS[0];

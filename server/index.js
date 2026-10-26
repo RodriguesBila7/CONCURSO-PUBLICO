@@ -187,6 +187,21 @@ app.post('/api/candidaturas/solicitar', (req, res) => {
         message: 'A senha é obrigatória e deve ter no mínimo 6 caracteres.'
       });
     }
+
+    // Regra estrita: cada candidato é único, sem repetições
+    const existingCandidatura = db.prepare(`
+      SELECT codigo_candidatura, bi_numero, nuit FROM candidaturas 
+      WHERE nuit = ? OR (bi_numero IS NOT NULL AND bi_numero != '' AND bi_numero = ?)
+    `).get(nuit, bi || '');
+
+    if (existingCandidatura) {
+      logAudit(nuit, 'TENTATIVA_DUPLICACAO', `Candidato tentou reinscrever-se. Já possui candidatura ${existingCandidatura.codigo_candidatura}`);
+      return res.status(409).json({
+        success: false,
+        message: `Já existe uma candidatura registada no sistema para este candidato (Protocolo: ${existingCandidatura.codigo_candidatura}). Cada candidato é único e não são permitidas duplicações de candidaturas.`
+      });
+    }
+
     const hashedPass = bcrypt.hashSync(password, 10);
 
     const existingUser = db.prepare('SELECT id FROM users WHERE nuit = ?').get(nuit);

@@ -60,6 +60,7 @@ import {
   INITIAL_VAGAS, 
   PROVINCIAS_MOCAMBIQUE,
   getCandidatePhotoUrl,
+  deduplicateCandidaturas,
   getStoredCandidaturas, 
   saveStoredCandidaturas,
   updateStoredCandidatura,
@@ -124,8 +125,8 @@ export default function GestorPortalModule({
     }
   };
 
-  // Dados sincronizados a partir do localStorage
-  const [candidatos, setCandidatos] = useState(() => getStoredCandidaturas());
+  // Dados sincronizados a partir do localStorage com garantia de unicidade estrita
+  const [candidatos, setCandidatos] = useState(() => deduplicateCandidaturas(getStoredCandidaturas()));
   const [listas, setListas] = useState(() => getStoredListasPublicadas());
   const [auditoria, setAuditoria] = useState(() => getStoredAuditoria());
   const [vagas, setVagas] = useState(() => getStoredVagas());
@@ -138,7 +139,7 @@ export default function GestorPortalModule({
 
   // Recarregar dados
   const reloadData = () => {
-    setCandidatos(getStoredCandidaturas());
+    setCandidatos(deduplicateCandidaturas(getStoredCandidaturas()));
     setListas(getStoredListasPublicadas());
     setAuditoria(getStoredAuditoria());
     setVagas(getStoredVagas());
@@ -155,7 +156,7 @@ export default function GestorPortalModule({
   useEffect(() => {
     const handleSync = () => {
       setVagas(getStoredVagas());
-      setCandidatos(getStoredCandidaturas());
+      setCandidatos(deduplicateCandidaturas(getStoredCandidaturas()));
       setListas(getStoredListasPublicadas());
       setAuditoria(getStoredAuditoria());
       setPaletasCores(getStoredPaletasCores());
@@ -460,25 +461,26 @@ export default function GestorPortalModule({
   const [selectedPautaPrint, setSelectedPautaPrint] = useState(null);
 
   // ========================================================
-  // CÁLCULOS ESTATÍSTICOS DO DASHBOARD E MÓDULOS
+  // CÁLCULOS ESTATÍSTICOS DO DASHBOARD E MÓDULOS (CADA CANDIDATO É ÚNICO)
   // ========================================================
   const stats = useMemo(() => {
-    const total = candidatos.length;
-    const analise = candidatos.filter(c => c.status === 'Em Análise Documental' || c.status === 'Em análise' || c.status === 'Submetida').length;
-    const entrevista = candidatos.filter(c => c.status === 'Entrevista Profissional' || c.status === 'Convocada para provas' || c.status === 'Convocado para provas' || c.status === 'Admitido na Análise Documental' || c.status === 'Admitida na Análise Documental').length;
+    const uniqueCandidatos = deduplicateCandidaturas(candidatos);
+    const total = uniqueCandidatos.length;
+    const analise = uniqueCandidatos.filter(c => c.status === 'Em Análise Documental' || c.status === 'Em análise' || c.status === 'Submetida').length;
+    const entrevista = uniqueCandidatos.filter(c => c.status === 'Entrevista Profissional' || c.status === 'Convocada para provas' || c.status === 'Convocado para provas' || c.status === 'Admitido na Análise Documental' || c.status === 'Admitida na Análise Documental').length;
     
     // Admitidos na 1ª fase (Documental) e na 3ª fase (Efetivo na Vaga)
-    const admitidosFase1 = candidatos.filter(c => c.status === 'Admitido na Análise Documental' || c.status === 'Admitida na Análise Documental').length;
-    const admitidosEfetivos = candidatos.filter(c => c.status === 'Admitido' || c.status === 'Admitida').length;
+    const admitidosFase1 = uniqueCandidatos.filter(c => c.status === 'Admitido na Análise Documental' || c.status === 'Admitida na Análise Documental').length;
+    const admitidosEfetivos = uniqueCandidatos.filter(c => c.status === 'Admitido' || c.status === 'Admitida').length;
     const admitidosTotal = admitidosFase1 + admitidosEfetivos;
     
     // Suplentes (Lista de reserva de recrutamento)
-    const suplentesTotal = candidatos.filter(c => c.status === 'Aprovado (Suplente)' || c.status === 'Aprovada (Suplente)').length;
+    const suplentesTotal = uniqueCandidatos.filter(c => c.status === 'Aprovado (Suplente)' || c.status === 'Aprovada (Suplente)').length;
     
     // Excluídos na 1ª Fase e na Entrevista (< 10 valores)
-    const excluidosFase1 = candidatos.filter(c => c.status === 'Excluído na Análise Documental' || c.status === 'Excluída na Análise Documental').length;
-    const excluidosEntrevista = candidatos.filter(c => c.status === 'Excluído na Entrevista' || c.status === 'Excluída na Entrevista' || (c.deliberacaoJuri?.notaFinal && parseFloat(c.deliberacaoJuri.notaFinal) < 10)).length;
-    const excluidosTotal = candidatos.filter(c => (c.status && c.status.includes('Excluíd'))).length;
+    const excluidosFase1 = uniqueCandidatos.filter(c => c.status === 'Excluído na Análise Documental' || c.status === 'Excluída na Análise Documental').length;
+    const excluidosEntrevista = uniqueCandidatos.filter(c => c.status === 'Excluído na Entrevista' || c.status === 'Excluída na Entrevista' || (c.deliberacaoJuri?.notaFinal && parseFloat(c.deliberacaoJuri.notaFinal) < 10)).length;
+    const excluidosTotal = uniqueCandidatos.filter(c => (c.status && c.status.includes('Excluíd'))).length;
 
     const convocadosTotal = entrevista;
     const pendentesTotal = analise;
@@ -489,7 +491,7 @@ export default function GestorPortalModule({
     // Distribuição por vaga
     const porVaga = {};
     vagas.forEach(v => {
-      porVaga[v.titulo] = candidatos.filter(c => c.vagaTitulo === v.titulo).length;
+      porVaga[v.titulo] = uniqueCandidatos.filter(c => c.vagaTitulo === v.titulo).length;
     });
 
     // Distribuição por província (12 unidades oficiais: Direcção Geral + 11 Províncias)
@@ -497,7 +499,7 @@ export default function GestorPortalModule({
     PROVINCIAS_MOCAMBIQUE.forEach(p => {
       porProvincia[p] = 0;
     });
-    candidatos.forEach(c => {
+    uniqueCandidatos.forEach(c => {
       const p = c.provincia || 'Maputo Cidade';
       if (porProvincia[p] !== undefined) {
         porProvincia[p] += 1;
@@ -615,10 +617,11 @@ export default function GestorPortalModule({
     : 0;
 
   // ========================================================
-  // FILTRAGEM DE INSCRITOS
+  // FILTRAGEM DE INSCRITOS (CADA CANDIDATO É ÚNICO)
   // ========================================================
   const filteredCandidatos = useMemo(() => {
-    return candidatos.filter(c => {
+    const uniqueCandidatos = deduplicateCandidaturas(candidatos);
+    return uniqueCandidatos.filter(c => {
       // Busca
       const search = buscaInscrito.trim().toLowerCase();
       if (search) {
@@ -666,10 +669,11 @@ export default function GestorPortalModule({
   }, [candidatos, buscaInscrito, filtroVaga, filtroProvincia, filtroStatus, filtroGenero]);
 
   // ========================================================
-  // FILTRAGEM DO MÓDULO "AVALIAÇÃO DOS CANDIDATOS" (MODO FILTRO)
+  // FILTRAGEM DO MÓDULO "AVALIAÇÃO DOS CANDIDATOS" (MODO FILTRO COM UNICIDADE ESTRITA)
   // ========================================================
   const filteredDeliberacaoCandidatos = useMemo(() => {
-    return candidatos.filter(c => {
+    const uniqueCandidatos = deduplicateCandidaturas(candidatos);
+    return uniqueCandidatos.filter(c => {
       // Modo Filtro por Abas
       if (filtroDeliberacaoModo === 'admitidos') {
         const isAdmitido = c.status === 'Admitido na Análise Documental' || 

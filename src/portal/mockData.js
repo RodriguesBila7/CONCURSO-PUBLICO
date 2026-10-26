@@ -951,7 +951,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
   },
   {
     codigoCandidatura: 'SERNIC-2026-00428',
-    biNumero: '060200789012F',
+    biNumero: '060200789012L',
     nuit: '100654321',
     nomeCompleto: 'Graça Inês Machava',
     fotoUrl: CANDIDATO_PHOTOS_FEMALE[5],
@@ -1004,7 +1004,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
   },
   {
     codigoCandidatura: 'SERNIC-2026-00652',
-    biNumero: '090800345678H',
+    biNumero: '090800345678N',
     nuit: '100987654',
     nomeCompleto: 'Aníbal Salvador Muando',
     fotoUrl: CANDIDATO_PHOTOS_MALE[6],
@@ -1321,14 +1321,51 @@ export function deleteStoredVaga(id, operador = 'Direcção de Recursos Humanos 
   return true;
 }
 
+/**
+ * Garante unicidade estrita de cada candidato no concurso público.
+ * Cada candidato é único: elimina quaisquer repetições ou duplicações por Bilhete de Identidade (BI), NUIT ou Código de Candidatura.
+ */
+export function deduplicateCandidaturas(list) {
+  if (!Array.isArray(list)) return [];
+  const seenBi = new Set();
+  const seenNuit = new Set();
+  const seenCodigo = new Set();
+  const uniqueList = [];
+
+  for (const c of list) {
+    if (!c) continue;
+    
+    // Normalização das chaves únicas do cidadão moçambicano
+    const bi = c.biNumero ? String(c.biNumero).trim().toUpperCase() : null;
+    const nuit = c.nuit ? String(c.nuit).trim() : null;
+    const codigo = c.codigoCandidatura ? String(c.codigoCandidatura).trim().toUpperCase() : null;
+
+    // Se já foi registado por BI, NUIT ou Código, é uma repetição/duplicado -> ignora
+    if (bi && seenBi.has(bi)) continue;
+    if (nuit && seenNuit.has(nuit)) continue;
+    if (codigo && seenCodigo.has(codigo)) continue;
+
+    if (bi) seenBi.add(bi);
+    if (nuit) seenNuit.add(nuit);
+    if (codigo) seenCodigo.add(codigo);
+
+    uniqueList.push(c);
+  }
+
+  return uniqueList;
+}
+
 export function getStoredCandidaturas() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_CANDIDATURAS);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        let hasChanges = false;
-        const normalized = parsed.map((c, i) => {
+        // Aplica deduplicação estrita de imediato para eliminar quaisquer repetições
+        const uniqueParsed = deduplicateCandidaturas(parsed);
+        let hasChanges = uniqueParsed.length !== parsed.length;
+
+        const normalized = uniqueParsed.map((c, i) => {
           let updated = { ...c };
           const isFem = detectCandidateGender(c) === 'Feminino';
 
@@ -1352,6 +1389,7 @@ export function getStoredCandidaturas() {
           }
           return updated;
         });
+
         if (hasChanges) {
           saveStoredCandidaturas(normalized);
         }
@@ -1361,16 +1399,24 @@ export function getStoredCandidaturas() {
   } catch (e) {
     console.warn('Erro ao ler candidaturas do localStorage', e);
   }
-  // Inicializa com as candidaturas padrão
+  // Inicializa com as candidaturas padrão com unicidade garantida
+  const deduplicatedInitial = deduplicateCandidaturas(INITIAL_CANDIDATURAS_CONSULTA);
   try {
-    localStorage.setItem(STORAGE_KEY_CANDIDATURAS, JSON.stringify(INITIAL_CANDIDATURAS_CONSULTA));
+    localStorage.setItem(STORAGE_KEY_CANDIDATURAS, JSON.stringify(deduplicatedInitial));
   } catch {}
-  return INITIAL_CANDIDATURAS_CONSULTA;
+  return deduplicatedInitial;
 }
 
 export function saveStoredCandidaturas(list) {
   try {
-    localStorage.setItem(STORAGE_KEY_CANDIDATURAS, JSON.stringify(list));
+    // Garante que cada candidato é estritamente único antes de persistir
+    const uniqueList = deduplicateCandidaturas(list);
+    localStorage.setItem(STORAGE_KEY_CANDIDATURAS, JSON.stringify(uniqueList));
+    // Dispara evento para sincronização instantânea entre abas e módulos
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sernic-candidaturas-updated', { detail: uniqueList }));
+    }
+    return uniqueList;
   } catch (e) {
     console.warn('Erro ao salvar candidaturas no localStorage', e);
   }
