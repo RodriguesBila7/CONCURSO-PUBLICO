@@ -83,7 +83,7 @@ export default function CandidaturaModule({
     // Passo 3: Contactos & Residência (Padrão +258 com prefixo fixo)
     telefonePrincipal: currentUser ? (currentUser.telefone || '+258 000 000 000') : '+258 000 000 000',
     telefoneAlternativo: '+258 000 000 000',
-    email: currentUser ? currentUser.email : '',
+    email: currentUser ? (currentUser.email || '').toUpperCase() : '',
     provinciaResidencia: 'Maputo Cidade',
     distritoResidencia: '',
     bairroResidencia: '',
@@ -117,14 +117,12 @@ export default function CandidaturaModule({
 
     if (type === 'checkbox') {
       processedValue = checked;
-    } else if (name === 'email') {
-      processedValue = value.toLowerCase();
     } else if (name === 'genero') {
       processedValue = value;
     } else if (name === 'telefonePrincipal' || name === 'telefoneAlternativo') {
       processedValue = formatTelefoneMZInput(value);
     } else if (typeof value === 'string' && type !== 'date') {
-      // Conversão padrão automática para letras maiúsculas conforme edital oficial
+      // Conversão padrão automática para letras maiúsculas em todos os campos, incluindo correio eletrónico
       processedValue = value.toUpperCase();
     }
 
@@ -846,9 +844,10 @@ export default function CandidaturaModule({
                   type="email"
                   name="email"
                   className={`form-input ${errors.email ? 'error' : ''}`}
-                  placeholder="Ex: seu.nome@exemplo.mz"
+                  placeholder="Ex: SEU.NOME@EXEMPLO.MZ"
                   value={formData.email}
                   onChange={handleChange}
+                  style={{ textTransform: 'uppercase' }}
                 />
                 {errors.email && <span className="form-error-msg">{errors.email}</span>}
               </div>
