@@ -8808,3 +8808,552 @@ textarea::placeholder,
   transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(15, 32, 66, 0.35);
 }
+
+/* ========================================================
+   SERNIC SECURITY GATES, HOMOLOGAÇÃO & REPOSIÇÃO REGULAMENTAR
+   ======================================================== */
+
+/* Botões de Repor Candidato */
+.btn-repor-candidato-small {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  background: rgba(217, 119, 6, 0.08);
+  border: 1px solid rgba(217, 119, 6, 0.3);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #b45309;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.portal-theme-preto .btn-repor-candidato-small {
+  background: rgba(217, 119, 6, 0.16);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+}
+
+.btn-repor-candidato-small:hover {
+  background: #d97706;
+  color: #ffffff;
+  border-color: #b45309;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(217, 119, 6, 0.25);
+}
+
+.btn-action-repor {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.65rem;
+  background: rgba(217, 119, 6, 0.08);
+  border: 1px solid rgba(217, 119, 6, 0.25);
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #b45309;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.portal-theme-preto .btn-action-repor {
+  background: rgba(217, 119, 6, 0.15);
+  border-color: rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+}
+
+.btn-action-repor:hover {
+  background: #d97706;
+  color: #ffffff;
+  border-color: #b45309;
+  transform: translateY(-1px);
+}
+
+/* Card do Homologador / Perfil Autorizador no Topo da Deliberação */
+.homologador-badge-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem 1.1rem;
+  background: linear-gradient(135deg, rgba(22, 101, 52, 0.07) 0%, rgba(15, 32, 66, 0.04) 100%);
+  border: 1px solid rgba(22, 101, 52, 0.25);
+  border-radius: 10px;
+  margin-top: 0.85rem;
+}
+
+.portal-theme-preto .homologador-badge-card {
+  background: linear-gradient(135deg, rgba(22, 101, 52, 0.18) 0%, rgba(15, 32, 66, 0.2) 100%);
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.homologador-badge-card .homologador-icon-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #15803d;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(21, 128, 61, 0.3);
+}
+
+.homologador-badge-card .homologador-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.homologador-badge-card .homologador-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #166534;
+}
+
+.portal-theme-preto .homologador-badge-card .homologador-title {
+  color: #4ade80;
+}
+
+.homologador-badge-card .homologador-nome {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--portal-text-main, #0f172a);
+}
+
+.homologador-badge-card .homologador-meta {
+  font-size: 0.75rem;
+  color: var(--portal-text-muted, #64748b);
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Indicador de quem admitiu na Tabela e na Lista */
+.table-admitido-por-sub {
+  margin-top: 0.3rem;
+  font-size: 0.73rem;
+  color: #166534;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(22, 101, 52, 0.08);
+  padding: 0.15rem 0.45rem;
+  border-radius: 5px;
+  width: fit-content;
+}
+
+.portal-theme-preto .table-admitido-por-sub {
+  background: rgba(34, 197, 94, 0.14);
+  color: #86efac;
+}
+
+.deliberacao-item-homologador {
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  color: #166534;
+  background: rgba(22, 101, 52, 0.08);
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.portal-theme-preto .deliberacao-item-homologador {
+  background: rgba(34, 197, 94, 0.15);
+  color: #86efac;
+}
+
+/* Statutory Lock Gate Banner (Fase 1 Não Terminada) */
+.statutory-lock-gate-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.1rem 1.3rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(185, 28, 28, 0.05) 100%);
+  border: 1.5px solid rgba(239, 68, 68, 0.3);
+  margin-bottom: 1.3rem;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.08);
+}
+
+.portal-theme-preto .statutory-lock-gate-banner {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.16) 0%, rgba(185, 28, 28, 0.1) 100%);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.statutory-lock-gate-banner .lock-gate-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.15);
+  border: 2px solid rgba(239, 68, 68, 0.3);
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.statutory-lock-gate-banner .lock-gate-content h4 {
+  margin: 0 0 0.35rem 0;
+  font-size: 0.96rem;
+  font-weight: 800;
+  color: #b91c1c;
+}
+
+.portal-theme-preto .statutory-lock-gate-banner .lock-gate-content h4 {
+  color: #f87171;
+}
+
+.statutory-lock-gate-banner .lock-gate-content p {
+  margin: 0 0 0.65rem 0;
+  font-size: 0.84rem;
+  color: var(--portal-text-main, #1e293b);
+  line-height: 1.45;
+}
+
+.statutory-lock-gate-banner .lock-gate-kpis {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.statutory-lock-gate-banner .kpi-lock-tag {
+  background: rgba(239, 68, 68, 0.12);
+  color: #991b1b;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.portal-theme-preto .statutory-lock-gate-banner .kpi-lock-tag {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.25);
+}
+
+/* Card de Desbloqueio com Código Administrador do Gestor */
+.admin-unlock-gate-card {
+  background: linear-gradient(135deg, rgba(15, 32, 66, 0.04) 0%, rgba(195, 32, 38, 0.04) 100%);
+  border: 1.5px solid rgba(15, 32, 66, 0.25);
+  border-radius: 12px;
+  padding: 1.25rem 1.4rem;
+  margin-bottom: 1.35rem;
+  box-shadow: 0 4px 14px rgba(15, 32, 66, 0.06);
+}
+
+.portal-theme-preto .admin-unlock-gate-card {
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.15) 0%, rgba(195, 32, 38, 0.12) 100%);
+  border-color: rgba(96, 165, 250, 0.3);
+}
+
+.admin-unlock-gate-card .admin-unlock-header {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.65rem;
+}
+
+.admin-unlock-gate-card .admin-unlock-header h4 {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #0f2042;
+}
+
+.portal-theme-preto .admin-unlock-gate-card .admin-unlock-header h4 {
+  color: #93c5fd;
+}
+
+.admin-unlock-gate-card .admin-unlock-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  background: #c32026;
+  color: #ffffff;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  letter-spacing: 0.04em;
+}
+
+.admin-unlock-gate-card .admin-unlock-desc {
+  font-size: 0.84rem;
+  color: var(--portal-text-muted, #64748b);
+  margin: 0 0 1rem 0;
+  line-height: 1.45;
+}
+
+.admin-unlock-gate-card .admin-unlock-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.admin-unlock-gate-card .input-pass-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 240px;
+}
+
+.admin-unlock-gate-card .admin-code-input {
+  width: 100%;
+  padding: 0.65rem 2.6rem 0.65rem 0.9rem;
+  border: 1.5px solid var(--portal-border, #cbd5e1);
+  border-radius: 8px;
+  background: var(--portal-input-bg, #ffffff);
+  color: var(--portal-input-text, #0f172a);
+  font-size: 0.92rem;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.03em;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.admin-unlock-gate-card .admin-code-input:focus {
+  border-color: #0f2042;
+  box-shadow: 0 0 0 3px rgba(15, 32, 66, 0.15);
+}
+
+.admin-unlock-gate-card .btn-unlock-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 1.2rem;
+  background: linear-gradient(135deg, #0f2042 0%, #1e3a8a 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(15, 32, 66, 0.25);
+  white-space: nowrap;
+}
+
+.admin-unlock-gate-card .btn-unlock-submit:hover {
+  background: linear-gradient(135deg, #162c5c 0%, #2563eb 100%);
+  transform: translateY(-1px);
+}
+
+.admin-unlock-gate-card .unlock-error-msg {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #dc2626;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-top: 0.45rem;
+}
+
+.admin-unlock-gate-card .unlock-hint-msg {
+  font-size: 0.76rem;
+  color: var(--portal-text-muted, #64748b);
+  margin-top: 0.45rem;
+}
+
+/* Banner de Homologação Desbloqueada com Sucesso */
+.homologacao-unlocked-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.2rem;
+  background: linear-gradient(135deg, rgba(22, 101, 52, 0.09) 0%, rgba(34, 197, 94, 0.06) 100%);
+  border: 1px solid rgba(22, 101, 52, 0.3);
+  border-radius: 10px;
+  margin-bottom: 1.25rem;
+}
+
+.portal-theme-preto .homologacao-unlocked-banner {
+  background: linear-gradient(135deg, rgba(22, 101, 52, 0.2) 0%, rgba(34, 197, 94, 0.12) 100%);
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.homologacao-unlocked-banner .unlocked-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.homologacao-unlocked-banner .unlocked-icon-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #15803d;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.homologacao-unlocked-banner .unlocked-title {
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: #166534;
+}
+
+.portal-theme-preto .homologacao-unlocked-banner .unlocked-title {
+  color: #86efac;
+}
+
+.homologacao-unlocked-banner .unlocked-sub {
+  font-size: 0.74rem;
+  color: var(--portal-text-muted, #64748b);
+}
+
+.homologacao-unlocked-banner .btn-relock {
+  background: transparent;
+  border: 1px solid rgba(22, 101, 52, 0.35);
+  color: #166534;
+  padding: 0.35rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.portal-theme-preto .homologacao-unlocked-banner .btn-relock {
+  color: #86efac;
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.homologacao-unlocked-banner .btn-relock:hover {
+  background: rgba(22, 101, 52, 0.15);
+}
+
+/* Modais de Segurança SERNIC */
+.security-modal-card {
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.28);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--portal-card-bg, #ffffff);
+  border: 1px solid var(--portal-border, #e2e8f0);
+}
+
+.modal-security-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.modal-security-icon-circle.danger {
+  background: rgba(195, 32, 38, 0.12);
+  border: 2px solid rgba(195, 32, 38, 0.3);
+}
+
+.modal-security-icon-circle.warning {
+  background: rgba(217, 119, 6, 0.12);
+  border: 2px solid rgba(217, 119, 6, 0.3);
+}
+
+.modal-security-icon-circle.success {
+  background: rgba(22, 101, 52, 0.12);
+  border: 2px solid rgba(22, 101, 52, 0.3);
+}
+
+.candidate-repor-preview-card,
+.homologacao-details-box {
+  background: var(--portal-card-inner, #f8fafc);
+  border: 1px solid var(--portal-border, #e2e8f0);
+  border-radius: 10px;
+  padding: 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.portal-theme-preto .candidate-repor-preview-card,
+.portal-theme-preto .homologacao-details-box {
+  background: #152033;
+  border-color: #27354f;
+}
+
+.candidate-repor-row,
+.homologacao-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.84rem;
+  border-bottom: 1px dashed rgba(148, 163, 184, 0.25);
+  padding-bottom: 0.4rem;
+}
+
+.candidate-repor-row:last-child,
+.homologacao-detail-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.candidate-repor-row .label,
+.homologacao-detail-row .label {
+  font-weight: 700;
+  color: var(--portal-text-muted, #64748b);
+  font-size: 0.78rem;
+}
+
+.candidate-repor-row .value,
+.homologacao-detail-row span:not(.label) {
+  color: var(--portal-text-main, #0f172a);
+}
+
+.candidate-repor-row .tag-current-status {
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  background: rgba(195, 32, 38, 0.1);
+  color: #c32026;
+}
+
+.homologacao-detail-row .val-highlight {
+  font-weight: 800;
+  color: #0f2042;
+  font-size: 0.92rem;
+}
+
+.portal-theme-preto .homologacao-detail-row .val-highlight {
+  color: #93c5fd;
+}
+
+.homologacao-detail-row .badge-homolog-fase1 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(22, 101, 52, 0.12);
+  color: #166534;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.portal-theme-preto .homologacao-detail-row .badge-homolog-fase1 {
+  background: rgba(34, 197, 94, 0.18);
+  color: #86efac;
+}
+
+.homologacao-detail-row .val-perfil {
+  font-size: 0.8rem;
+  color: #15803d;
+}
+
+.portal-theme-preto .homologacao-detail-row .val-perfil {
+  color: #4ade80;
+}
+

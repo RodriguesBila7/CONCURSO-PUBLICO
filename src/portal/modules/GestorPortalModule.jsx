@@ -53,7 +53,13 @@ import {
   AlertTriangle,
   Sun,
   Moon,
-  PieChart
+  PieChart,
+  RotateCcw,
+  KeyRound,
+  ShieldAlert,
+  Lock,
+  Unlock,
+  EyeOff
 } from 'lucide-react';
 import { 
   INITIAL_VAGAS, 
@@ -63,6 +69,7 @@ import {
   getStoredCandidaturas, 
   saveStoredCandidaturas,
   resetStoredCandidaturasParaInicio,
+  resetStoredCandidaturaIndividual,
   updateStoredCandidatura,
   deleteStoredCandidatura,
   getStoredListasPublicadas, 
@@ -288,9 +295,187 @@ export default function GestorPortalModule({
   const [filtroDeliberacaoProvincia, setFiltroDeliberacaoProvincia] = useState('todas');
 
   // ========================================================
+  // ESTADOS DE SEGURANÇA E HOMOLOGAÇÃO CONTROLADA
+  // ========================================================
+  // 1. Reposição Geral de Candidaturas com confirmação por Senha do Gestor
+  const [isModalResetGeralOpen, setIsModalResetGeralOpen] = useState(false);
+  const [senhaResetGeral, setSenhaResetGeral] = useState('');
+  const [erroResetGeral, setErroResetGeral] = useState('');
+  const [mostrarSenhaResetGeral, setMostrarSenhaResetGeral] = useState(false);
+
+  // 2. Reposição Individual de Candidato
+  const [candidatoParaReporIndividual, setCandidatoParaReporIndividual] = useState(null);
+
+  // 3. Modal de Confirmação de Homologação da 1ª Fase (para Entrevista)
+  const [confirmHomologacao1aFaseModal, setConfirmHomologacao1aFaseModal] = useState(null);
+
+  // 4. Bloqueio e Desbloqueio com Código de Administrador para a Fase de Homologação Efetiva
+  const [isHomologacaoFinalDesbloqueada, setIsHomologacaoFinalDesbloqueada] = useState(() => {
+    try {
+      return localStorage.getItem('sernic_homologacao_desbloqueada') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [codigoAdminInput, setCodigoAdminInput] = useState('');
+  const [codigoAdminErro, setCodigoAdminErro] = useState('');
+  const [mostrarCodigoAdmin, setMostrarCodigoAdmin] = useState(false);
+
+  // Candidatos que ainda estão na 1ª Fase (Análise Documental)
+  const candidatosPendentesFase1 = useMemo(() => {
+    return candidatos.filter(c => 
+      c.status === 'Em Análise Documental' || 
+      c.status === 'Em análise' || 
+      c.status === 'Submetida'
+    );
+  }, [candidatos]);
+  const totalPendentesFase1 = candidatosPendentesFase1.length;
+  const isFase1Concluida = totalPendentesFase1 === 0;
+
+  // ========================================================
+  // MOTOR DE GRAVAÇÃO E HOMOLOGAÇÃO DAS DELIBERAÇÕES
+  // ========================================================
+  const executeSaveDeliberacao = (candidato, updates, operador = currentUser) => {
+    const operadorObj = {
+      name: operador?.name || 'Dr. Alberto Chissano',
+      cargo: operador?.cargo || 'Presidente do Júri de Seleção',
+      perfil: operador?.perfil || 'Gestor Autorizado DRH / SERNIC'
+    };
+
+    const updated = updateStoredCandidatura(candidato.codigoCandidatura, updates, operadorObj);
+    if (updated) {
+      reloadData();
+
+      // Determinar a pasta de destino consoante a decisão oficial tomada
+      let targetModo = 'admitidos';
+      let nomePasta = 'Admitidos';
+      const st = updates.status || updated.status;
+      if (st.includes('Excluíd') || st === 'Excluído' || st === 'Excluída') {
+        targetModo = 'excluidos';
+        nomePasta = 'Excluídos';
+      } else if (st === 'Aprovado (Suplente)' || st === 'Aprovada (Suplente)') {
+        targetModo = 'suplentes';
+        nomePasta = 'Suplentes (Reserva)';
+      } else if (st === 'Admitido na Análise Documental' || st === 'Admitida na Análise Documental' || st === 'Entrevista Profissional' || st.includes('Convocad')) {
+        targetModo = 'convocados';
+        nomePasta = 'Convocados para Entrevista';
+      } else if (st === 'Admitido' || st === 'Admitida') {
+        targetModo = 'admitidos';
+        nomePasta = 'Admitidos';
+      }
+
+      setFiltroDeliberacaoModo(targetModo);
+      setDeliberandoCandidato(updated);
+
+      if (onNotify) {
+        onNotify('success', `Decisão homologada e guardada! ${candidato.nomeCompleto} saiu dos pendentes e foi transferido(a) para a pasta de "${nomePasta}".`);
+      }
+    }
+    return updated;
+  };
+
+  const handleConfirmarHomologacao1aFase = () => {
+    if (!confirmHomologacao1aFaseModal) return;
+    const { candidato, updates, operador } = confirmHomologacao1aFaseModal;
+    executeSaveDeliberacao(candidato, updates, operador);
+    setConfirmHomologacao1aFaseModal(null);
+  };
+
+  const handleConfirmarReporIndividual = () => {
+    if (!candidatoParaReporIndividual) return;
+    const operadorObj = {
+      name: currentUser?.name || 'Dr. Alberto Chissano',
+      cargo: currentUser?.cargo || 'Presidente do Júri de Seleção',
+      perfil: currentUser?.perfil || 'Gestor Autorizado DRH / SERNIC'
+    };
+    const reposto = resetStoredCandidaturaIndividual(candidatoParaReporIndividual.codigoCandidatura, operadorObj);
+    if (reposto) {
+      reloadData();
+      if (deliberandoCandidato && deliberandoCandidato.codigoCandidatura === reposto.codigoCandidatura) {
+        setDeliberandoCandidato(reposto);
+      }
+      setFiltroDeliberacaoModo('pendentes');
+      if (onNotify) {
+        onNotify('success', `Candidatura de ${candidatoParaReporIndividual.nomeCompleto} reposta com sucesso na 1ª Fase (Em Análise Documental)!`);
+      }
+    }
+    setCandidatoParaReporIndividual(null);
+  };
+
+  const handleConfirmarResetGeralComSenha = (e) => {
+    if (e) e.preventDefault();
+    const s = senhaResetGeral.trim();
+    const isValida = 
+      s === 'admin123' ||
+      s === 'sernic2026' ||
+      s === 'admin' ||
+      s === 'gestor123' ||
+      (currentUser?.password && s === currentUser.password);
+
+    if (!isValida) {
+      setErroResetGeral('Senha do gestor incorreta. Operação cancelada por motivos de segurança.');
+      return;
+    }
+
+    const fresh = resetStoredCandidaturasParaInicio();
+    setCandidatos(fresh);
+    setDeliberandoCandidato(fresh[0] || null);
+    setFiltroDeliberacaoModo('pendentes');
+    setIsHomologacaoFinalDesbloqueada(false);
+    setIsModalResetGeralOpen(false);
+    setSenhaResetGeral('');
+    setErroResetGeral('');
+    reloadData();
+
+    if (onNotify) {
+      onNotify('success', 'Todas as candidaturas foram repostas na 1ª Fase (Em Análise Documental) com autenticação de gestor!');
+    }
+  };
+
+  const handleDesbloquearHomologacaoFinal = (e) => {
+    if (e) e.preventDefault();
+    const c = codigoAdminInput.trim().toUpperCase();
+    const raw = codigoAdminInput.trim();
+    const isValid = 
+      c === 'SERNIC-ADMIN-2026' ||
+      c === 'ADMIN2026' ||
+      c === 'ADMIN' ||
+      raw === 'admin123' ||
+      raw === 'sernic2026' ||
+      raw === 'gestor123' ||
+      (currentUser?.password && raw === currentUser.password);
+
+    if (!isValid) {
+      setCodigoAdminErro('Código de Administrador inválido. Por favor insira SERNIC-ADMIN-2026 ou a sua senha de gestor.');
+      return;
+    }
+
+    setIsHomologacaoFinalDesbloqueada(true);
+    try {
+      localStorage.setItem('sernic_homologacao_desbloqueada', 'true');
+    } catch {}
+    setCodigoAdminErro('');
+    setCodigoAdminInput('');
+
+    addStoredAuditoria({
+      acao: 'Desbloqueio da Homologação Efetiva',
+      candidato: 'Homologação Efetiva (Fase Final)',
+      estadoAnterior: 'Bloqueado por Segurança',
+      novoEstado: 'Desbloqueado e Autorizado',
+      motivo: 'Código de Administrador validado com sucesso para início das homologações finais',
+      operador: currentUser?.name || 'Dr. Alberto Chissano'
+    });
+
+    if (onNotify) {
+      onNotify('success', 'Fase de Homologação Efetiva desbloqueada com sucesso pelo Administrador!');
+    }
+  };
+
+  // ========================================================
   // DELIBERAÇÃO DIRETA DENTRO DA SUB-ABA DO DOSSIER (SEM SAIR DO MODAL)
   // ========================================================
   const handleInlineDeliberacao = (candidato, status) => {
+    const isFem = detectCandidateGender(candidato) === 'Feminino';
     let parecerPadrao = '';
     let motivoFinal = null;
     let evData = null;
@@ -298,12 +483,45 @@ export default function GestorPortalModule({
     let evTitulo = null;
     let nota = null;
 
-    const isFem = detectCandidateGender(candidato) === 'Feminino';
+    const candFase = candidato.faseAtual || (
+      (candidato.status === 'Em Análise Documental' || candidato.status === 'Em análise' || candidato.status === 'Submetida') ? 1 :
+      (candidato.status === 'Admitido na Análise Documental' || candidato.status === 'Admitida na Análise Documental' || candidato.status === 'Entrevista Profissional' || candidato.status === 'Convocada para provas') ? 2 : 3
+    );
+
+    // Validação da Decisão Final: obrigatório concluir todos na fase 1 e desbloquear
+    if (candFase >= 2 || status === 'Admitido' || status === 'Admitida' || status.includes('Suplente')) {
+      if (!isFase1Concluida) {
+        if (onNotify) onNotify('error', `Regulamento SERNIC: É estritamente obrigatório concluir a 1ª Fase de todos os candidatos antes de avançar para a decisão final. Restam ${totalPendentesFase1} pendente(s).`);
+        return;
+      }
+      if (!isHomologacaoFinalDesbloqueada) {
+        if (onNotify) onNotify('error', 'É obrigatório introduzir o Código de Administrador para desbloquear a Fase de Homologação Efetiva.');
+        return;
+      }
+    }
+
     if (status === 'Admitido na Análise Documental' || status === 'Admitida na Análise Documental' || status === 'Entrevista Profissional') {
       parecerPadrao = `Candidatura admitida na 1ª Fase (Análise Documental). ${isFem ? 'Convocada' : 'Convocado'} formalmente para a Entrevista Profissional no local e data indicados.`;
       evData = candidato.detalhesFase?.dataEvento || '15 de Novembro de 2026 às 08h30';
       evLocal = candidato.detalhesFase?.local || `Gabinete Provincial de Entrevistas do SERNIC - ${candidato.provincia || 'Maputo'}`;
       evTitulo = 'Entrevista Profissional e de Competências';
+
+      const updates = {
+        status: status,
+        parecer: parecerPadrao,
+        motivoExclusao: null,
+        eventoData: evData,
+        eventoLocal: evLocal,
+        eventoTitulo: evTitulo,
+        notaFinal: null
+      };
+
+      setConfirmHomologacao1aFaseModal({
+        candidato: candidato,
+        updates: updates,
+        operador: currentUser || { name: 'Dr. Alberto Chissano', cargo: 'Presidente do Júri de Seleção', perfil: 'Gestor Autorizado DRH / SERNIC' }
+      });
+      return;
     } else if (status === 'Excluído na Análise Documental' || status === 'Excluída na Análise Documental') {
       motivoFinal = 'Inconformidade na avaliação documental ou documentação incompleta.';
       parecerPadrao = `Candidatura ${isFem ? 'excluída' : 'excluído'} na 1ª Fase de Análise Documental: ${motivoFinal}.`;
@@ -337,30 +555,7 @@ export default function GestorPortalModule({
       notaFinal: nota
     };
 
-    const operadorNome = currentUser?.name || 'Dr. Alberto Chissano (Presidente do Júri)';
-    const updated = updateStoredCandidatura(candidato.codigoCandidatura, updates, operadorNome);
-    if (updated) {
-      reloadData();
-      setSelectedDossier(updated);
-
-      // Encaminha de imediato para a pasta onde foi decidido, retirando dos pendentes
-      let targetModo = 'admitidos';
-      let nomePasta = 'Admitidos';
-      if (status.includes('Excluíd')) {
-        targetModo = 'excluidos';
-        nomePasta = 'Excluídos';
-      } else if (status.includes('Suplente')) {
-        targetModo = 'suplentes';
-        nomePasta = 'Suplentes (Reserva)';
-      } else if (status.includes('Entrevista') || status.includes('Admitid')) {
-        targetModo = (status === 'Admitido' || status === 'Admitida') ? 'admitidos' : 'convocados';
-        nomePasta = (status === 'Admitido' || status === 'Admitida') ? 'Admitidos' : 'Convocados para Entrevista';
-      }
-      setFiltroDeliberacaoModo(targetModo);
-      setDeliberandoCandidato(updated);
-
-      if (onNotify) onNotify('success', `Candidatura de ${candidato.nomeCompleto} homologada como "${status}" e transferida para a pasta de "${nomePasta}"!`);
-    }
+    executeSaveDeliberacao(candidato, updates, currentUser);
   };
 
   const handleInlineDeleteCandidato = (codigo) => {
@@ -827,6 +1022,27 @@ export default function GestorPortalModule({
       return;
     }
 
+    const candFase = deliberandoCandidato.faseAtual || (
+      (deliberandoCandidato.status === 'Em Análise Documental' || deliberandoCandidato.status === 'Em análise' || deliberandoCandidato.status === 'Submetida') ? 1 :
+      (deliberandoCandidato.status === 'Admitido na Análise Documental' || deliberandoCandidato.status === 'Admitida na Análise Documental' || deliberandoCandidato.status === 'Entrevista Profissional' || deliberandoCandidato.status === 'Convocada para provas') ? 2 : 3
+    );
+
+    // 1. REGRA REGULAMENTAR: DECISÃO FINAL EXIGE CONCLUSÃO DE TODOS OS CANDIDATOS NA FASE 1
+    if (candFase >= 2 || novoEstado === 'Admitido' || novoEstado === 'Admitida' || novoEstado.includes('Suplente') || novoEstado === 'Excluído na Entrevista' || novoEstado === 'Excluída na Entrevista') {
+      if (!isFase1Concluida) {
+        if (onNotify) {
+          onNotify('error', `Bloqueio Regulamentar SERNIC: É estritamente obrigatório concluir a 1ª Fase de todos os candidatos antes de avançar para a decisão final. Restam ${totalPendentesFase1} candidato(s) pendente(s).`);
+        }
+        return;
+      }
+      if (!isHomologacaoFinalDesbloqueada) {
+        if (onNotify) {
+          onNotify('error', 'É obrigatório introduzir o Código de Administrador do Gestor para desbloquear a Fase de Homologação Efetiva.');
+        }
+        return;
+      }
+    }
+
     // Regra Eliminatória da Entrevista: Se a nota for < 10 valores, é estritamente proibido admitir ou aprovar como suplente!
     const notaNum = parseFloat(notaFinal);
     if (!isNaN(notaNum) && (novoEstado === 'Admitido' || novoEstado === 'Admitida' || novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)')) {
@@ -866,37 +1082,17 @@ export default function GestorPortalModule({
       eventoTitulo: (novoEstado === 'Admitido na Análise Documental' || novoEstado === 'Admitida na Análise Documental' || novoEstado === 'Entrevista Profissional') ? tipoProva : null
     };
 
-    const operadorNome = currentUser?.name || 'Dr. Alberto Chissano (Presidente do Júri)';
-    const updated = updateStoredCandidatura(deliberandoCandidato.codigoCandidatura, updates, operadorNome);
-
-    if (updated) {
-      reloadData();
-
-      // Determinar a pasta de destino consoante a decisão oficial tomada
-      let targetModo = 'admitidos';
-      let nomePasta = 'Admitidos';
-      if (novoEstado.includes('Excluíd') || novoEstado === 'Excluído' || novoEstado === 'Excluída') {
-        targetModo = 'excluidos';
-        nomePasta = 'Excluídos';
-      } else if (novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)') {
-        targetModo = 'suplentes';
-        nomePasta = 'Suplentes (Reserva)';
-      } else if (novoEstado === 'Admitido na Análise Documental' || novoEstado === 'Admitida na Análise Documental' || novoEstado === 'Entrevista Profissional' || novoEstado.includes('Convocad')) {
-        targetModo = 'convocados';
-        nomePasta = 'Convocados para Entrevista';
-      } else if (novoEstado === 'Admitido' || novoEstado === 'Admitida') {
-        targetModo = 'admitidos';
-        nomePasta = 'Admitidos';
-      }
-
-      // O candidato sai da fila de pendentes e é encaminhado para a pasta onde foi decidido
-      setFiltroDeliberacaoModo(targetModo);
-      setDeliberandoCandidato(updated);
-
-      if (onNotify) {
-        onNotify('success', `Decisão homologada e guardada! ${deliberandoCandidato.nomeCompleto} saiu dos pendentes e foi transferido(a) para a pasta de "${nomePasta}".`);
-      }
+    // 2. CONFIRMAÇÃO OBRIGATÓRIA DA 1ª FASE PARA HOMOLOGAR PARA A FASE DE ENTREVISTA
+    if (candFase === 1 && (novoEstado === 'Admitido na Análise Documental' || novoEstado === 'Admitida na Análise Documental' || novoEstado === 'Entrevista Profissional')) {
+      setConfirmHomologacao1aFaseModal({
+        candidato: deliberandoCandidato,
+        updates: updates,
+        operador: currentUser || { name: 'Dr. Alberto Chissano', cargo: 'Presidente do Júri de Seleção', perfil: 'Gestor Autorizado DRH / SERNIC' }
+      });
+      return;
     }
+
+    executeSaveDeliberacao(deliberandoCandidato, updates, currentUser);
   };
 
   // ========================================================
@@ -1931,18 +2127,14 @@ export default function GestorPortalModule({
                   className="gestor-btn-outline"
                   style={{ color: '#c32026', borderColor: 'rgba(195, 32, 38, 0.35)', background: 'rgba(195, 32, 38, 0.05)' }}
                   onClick={() => {
-                    if (window.confirm('Tem a certeza que deseja repor todos os candidatos no estado inicial de candidatura (1ª Fase: Em Análise Documental), sem qualquer intervenção ou deliberação do júri?')) {
-                      const fresh = resetStoredCandidaturasParaInicio();
-                      setCandidatos(fresh);
-                      if (onNotify) {
-                        onNotify('success', 'Todas as candidaturas foram repostas na 1ª Fase (Em Análise Documental), prontas para avaliação pelo júri!');
-                      }
-                    }
+                    setSenhaResetGeral('');
+                    setErroResetGeral('');
+                    setIsModalResetGeralOpen(true);
                   }}
-                  title="Repor todos os candidatos no estado inicial da candidatura (sem deliberações do júri para fazermos de novo)"
+                  title="Repor todos os candidatos no estado inicial de teste (requer confirmação com senha do gestor)"
                 >
                   <RefreshCw size={15} />
-                  <span>Repor em Análise (Sem Júri)</span>
+                  <span>Repor Candidaturas (Requer Senha)</span>
                 </button>
                 <button
                   type="button"
@@ -2064,6 +2256,12 @@ export default function GestorPortalModule({
                             📍 Entrevista: {c.detalhesFase.dataEvento || '15/11/2026'}
                           </div>
                         )}
+                        {c.admitidoPor && (
+                          <div className="table-admitido-por-sub" title={`Homologado por: ${c.admitidoPor.nome} • ${c.admitidoPor.cargo}`}>
+                            <ShieldCheck size={11} color="#15803d" />
+                            <span>Admitido(a) por: <strong>{c.admitidoPor.nome}</strong></span>
+                          </div>
+                        )}
                       </td>
                       <td>
                         <div className="table-notas-cell">
@@ -2099,6 +2297,15 @@ export default function GestorPortalModule({
                           >
                             <FileSignature size={15} />
                             <span>Avaliar Candidato</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-action-repor"
+                            onClick={() => setCandidatoParaReporIndividual(c)}
+                            title="Repor este candidato no estado inicial de candidatura (1ª Fase: Em Análise Documental)"
+                          >
+                            <RotateCcw size={14} />
+                            <span>Repor</span>
                           </button>
                         </div>
                       </td>
@@ -2160,16 +2367,11 @@ export default function GestorPortalModule({
                   gap: '0.5rem',
                   cursor: 'pointer'
                 }}
-                title="Repor todos os candidatos fictícios na fase inicial de candidatura (Em Análise Documental) para reiniciar o teste do júri de concurso"
+                title="Repor todos os candidatos fictícios na fase inicial de candidatura (Em Análise Documental) com confirmação por senha de gestor"
                 onClick={() => {
-                  if (window.confirm('Deseja repor todos os candidatos fictícios na fase inicial de candidatura (1ª Fase: Em Análise Documental), sem qualquer intervenção ou deliberação do júri, para recomeçar o processo de avaliação do zero?')) {
-                    const fresh = resetStoredCandidaturasParaInicio();
-                    setCandidatos(fresh);
-                    setDeliberandoCandidato(fresh[0] || null);
-                    if (onNotify) {
-                      onNotify('success', 'Todas as candidaturas foram repostas na 1ª Fase (Em Análise Documental), sem qualquer intervenção do júri!');
-                    }
-                  }
+                  setSenhaResetGeral('');
+                  setErroResetGeral('');
+                  setIsModalResetGeralOpen(true);
                 }}
               >
                 <RefreshCw size={15} />
@@ -2403,6 +2605,13 @@ export default function GestorPortalModule({
                         <span className="item-protocolo">{c.codigoCandidatura}</span>
                         <span className="item-status-text" style={{ color: b.color, fontWeight: 700 }}>{b.label}</span>
                       </div>
+
+                      {c.admitidoPor && (
+                        <div className="deliberacao-item-homologador" title={`Homologado por: ${c.admitidoPor.nome} (${c.admitidoPor.cargo})`}>
+                          <ShieldCheck size={11} color="#15803d" />
+                          <span>Admitido por: <strong>{c.admitidoPor.nome}</strong></span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -2483,15 +2692,61 @@ export default function GestorPortalModule({
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      className="btn-view-dossier-small"
-                      onClick={() => setSelectedDossier(deliberandoCandidato)}
-                    >
-                      <Eye size={15} />
-                      <span>Abrir Dossier Completo</span>
-                    </button>
+                    <div className="candidate-header-actions-right">
+                      <button
+                        type="button"
+                        className="btn-view-dossier-small"
+                        onClick={() => setSelectedDossier(deliberandoCandidato)}
+                      >
+                        <Eye size={15} />
+                        <span>Abrir Dossier</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn-repor-candidato-small"
+                        onClick={() => setCandidatoParaReporIndividual(deliberandoCandidato)}
+                        title="Repor este candidato no estado inicial da 1ª Fase (Em Análise Documental)"
+                      >
+                        <RotateCcw size={14} />
+                        <span>Repor Candidato</span>
+                      </button>
+                    </div>
                   </div>
+
+                  {/* CERTIFICADO / PERFIL DE HOMOLOGAÇÃO DE ADMISSÃO (QUANDO ADMITIDO) */}
+                  {deliberandoCandidato.admitidoPor && (
+                    <div className="homologador-badge-card">
+                      <div className="homologador-badge-header">
+                        <div className="homologador-badge-title">
+                          <ShieldCheck size={20} color="#15803d" />
+                          <div>
+                            <strong>HOMOLOGAÇÃO DE ADMISSÃO REGISTADA NO SISTEMA</strong>
+                            <span className="homologador-despacho">{deliberandoCandidato.admitidoPor.despacho}</span>
+                          </div>
+                        </div>
+                        <span className="homologador-status-tag">Homologação Oficial SERNIC</span>
+                      </div>
+                      <div className="homologador-badge-grid">
+                        <div className="homologador-field">
+                          <span className="field-label">Homologado por:</span>
+                          <strong className="field-value">{deliberandoCandidato.admitidoPor.nome}</strong>
+                        </div>
+                        <div className="homologador-field">
+                          <span className="field-label">Cargo / Responsabilidade:</span>
+                          <span className="field-value">{deliberandoCandidato.admitidoPor.cargo}</span>
+                        </div>
+                        <div className="homologador-field">
+                          <span className="field-label">Perfil do Homologador:</span>
+                          <span className="field-value">{deliberandoCandidato.admitidoPor.perfil}</span>
+                        </div>
+                        <div className="homologador-field">
+                          <span className="field-label">Data e Hora da Homologação:</span>
+                          <span className="field-value">{deliberandoCandidato.admitidoPor.dataHomologacao}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* PAINEL DE NOTAS E APROVEITAMENTO ACADÉMICO */}
                   <div className="deliberacao-kpi-summary-grid">
@@ -2696,175 +2951,283 @@ export default function GestorPortalModule({
                           {/* OPÇÕES DA 2ª E 3ª FASE: ENTRADA DE NOTA E REGRA ESTRITA (< 10 EXCLUI, >= 10 APROVA/ADMITE) */}
                           {candFase >= 2 && (
                             <>
-                              {/* CAMPO OBRIGATÓRIO DE NOTA DA ENTREVISTA */}
-                              <div className="deliberacao-score-input-card">
-                                <div className="score-input-header">
-                                  <Award size={20} color="#c32026" />
-                                  <div>
-                                    <label style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>
-                                      Nota Obtida na Entrevista Profissional (Escala de 0.0 a 20.0 valores) *:
-                                    </label>
-                                    <p style={{ fontSize: '0.82rem', color: 'var(--portal-text-muted)', margin: '0.15rem 0 0 0' }}>
-                                      Regra Estatutária: <strong>Nota &lt; 10.0 valores = Reprovação e Exclusão Obrigatória</strong> • <strong>Nota ≥ 10.0 valores = Aprovado / Admitido por Vagas</strong>
+                              {/* 1. SE A 1ª FASE AINDA NÃO TERMINOU PARA TODOS OS CANDIDATOS: BLOQUEIO REGULAMENTAR */}
+                              {!isFase1Concluida && (
+                                <div className="statutory-lock-gate-banner">
+                                  <div className="lock-icon-column">
+                                    <Lock size={32} color="#c32026" />
+                                  </div>
+                                  <div className="lock-content-column">
+                                    <div className="lock-badge-tag">BLOQUEIO REGULAMENTAR OBRIGATÓRIO • SERNIC 2026</div>
+                                    <h4>Decisão Final Suspensa: Conclusão da 1ª Fase Pendente</h4>
+                                    <p>
+                                      Nos termos do Regulamento Geral de Recrutamento do SERNIC, é <strong>estritamente obrigatório concluir a 1ª Fase (Análise Documental) de todos os candidatos inscritos</strong> antes de proceder ao registo de notas de entrevista e homologação definitiva das vagas.
                                     </p>
-                                  </div>
-                                </div>
-
-                                <div className="score-input-flex">
-                                  <input
-                                    type="number"
-                                    step="0.1"
-                                    min="0"
-                                    max="20"
-                                    value={notaFinal}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      setNotaFinal(val);
-                                      const num = parseFloat(val);
-                                      if (!isNaN(num)) {
-                                        if (num < 10.0) {
-                                          setNovoEstado(isDelibFem ? 'Excluída na Entrevista' : 'Excluído na Entrevista');
-                                          setMotivoExclusao('Nota inferior a 10 valores na Entrevista Profissional');
-                                          setParecerJuri(`Classificação na Entrevista Profissional de ${val} valores. Candidatura reprovada por nota inferior a 10.0 valores. Exclusão obrigatória.`);
-                                        } else {
-                                          if (novoEstado.includes('Excluíd')) {
-                                            setNovoEstado(isDelibFem ? 'Admitida' : 'Admitido');
-                                            setParecerJuri(`Excelente aproveitamento na Entrevista Profissional com nota de ${val} valores. Proposta para provimento efetivo da vaga.`);
-                                          }
-                                        }
-                                      }
-                                    }}
-                                    className={`input-nota-grande ${isReprovadoNota ? 'reprovado' : 'aprovado'}`}
-                                  />
-                                  <div className="score-status-indicator">
-                                    {isReprovadoNota ? (
-                                      <span className="score-tag-reprovado">
-                                        <XCircle size={16} /> Nota Negativa (&lt; 10 val) • Reprovado
-                                      </span>
-                                    ) : (
-                                      <span className="score-tag-aprovado">
-                                        <CheckCircle2 size={16} /> Nota Positiva (≥ 10 val) • Aprovado
-                                      </span>
-                                    )}
-                                    <span style={{ fontSize: '0.78rem', color: 'var(--portal-text-muted)' }}>
-                                      Média Académica de Ingresso: <strong>{deliberandoCandidato.habilitacoes?.mediaFinal || '14.0'} val.</strong>
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* ALERTA ESTATUTÁRIO DINÂMICO CONFORME A NOTA */}
-                              {isReprovadoNota ? (
-                                <div className="deliberacao-statutory-alert danger">
-                                  <AlertCircle size={18} className="alert-icon" />
-                                  <div>
-                                    <strong>REPROVADO COM NOTA INFERIOR A 10 VALORES ({notaFinal} VAL.)</strong>
-                                    <p>Pelo regulamento oficial, candidatos com classificação inferior a 10 valores são obrigatoriamente excluídos.</p>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="deliberacao-statutory-alert success">
-                                  <CheckCircle2 size={18} className="alert-icon" />
-                                  <div>
-                                    <strong>CANDIDATO APROVADO COM NOTA POSITIVA ({notaFinal} VAL.)</strong>
-                                    <p>Pontuação regulamentar atingida. Selecione Admissão Efetiva (conforme as vagas) ou Suplente.</p>
+                                    <div className="lock-counter-tag">
+                                      <AlertCircle size={15} />
+                                      <span>Restam <strong>{totalPendentesFase1}</strong> candidato(s) pendente(s) de avaliação na 1ª Fase Documental.</span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      className="btn-ir-pendentes-fase1"
+                                      onClick={() => {
+                                        setFiltroDeliberacaoModo('pendentes');
+                                        const next = candidatosPendentesFase1[0];
+                                        if (next) iniciarDeliberacao(next);
+                                      }}
+                                    >
+                                      <ArrowRight size={14} />
+                                      <span>Avaliar Candidatos Pendentes da 1ª Fase ({totalPendentesFase1})</span>
+                                    </button>
                                   </div>
                                 </div>
                               )}
 
-                              {/* CARTÕES DE DECISÃO DA ENTREVISTA */}
-                              <div className="deliberacao-options-grid three-cards">
-                                {/* OPÇÃO 2A: ADMITIR (VAGA EFETIVA) - BLOQUEADO SE NOTA < 10 */}
-                                <label 
-                                  className={`deliberacao-radio-card option-admitido ${(novoEstado === 'Admitido' || novoEstado === 'Admitida') ? 'checked' : ''} ${isReprovadoNota ? 'disabled-locked' : ''}`}
-                                  onClick={() => {
-                                    if (isReprovadoNota) {
-                                      if (onNotify) onNotify('error', 'Candidatos com nota abaixo de 10 valores não podem ser admitidos!');
-                                      return;
-                                    }
-                                    setNovoEstado(isDelibFem ? 'Admitida' : 'Admitido');
-                                    setParecerJuri(`${isDelibFem ? 'Candidata' : 'Candidato'} com excelente nota de ${notaFinal} valores na Entrevista Profissional. Proposta para provimento efetivo da vaga.`);
-                                  }}
-                                >
-                                  <input
-                                    type="radio"
-                                    name="estadoDeliberacao"
-                                    value="Admitido"
-                                    checked={novoEstado === 'Admitido' || novoEstado === 'Admitida'}
-                                    disabled={isReprovadoNota}
-                                    onChange={() => {}}
-                                  />
-                                  <div className="radio-content">
-                                    <div className="radio-header">
-                                      <CheckCircle2 size={20} className="radio-icon" />
-                                      <strong>{isDelibFem ? 'ADMITIDA (VAGA EFETIVA)' : 'ADMITIDO (VAGA EFETIVA)'}</strong>
+                              {/* 2. SE A 1ª FASE ESTÁ CONCLUÍDA MAS FALTA O CÓDIGO DE ADMINISTRADOR DO GESTOR */}
+                              {isFase1Concluida && !isHomologacaoFinalDesbloqueada && (
+                                <div className="admin-unlock-gate-card">
+                                  <div className="admin-gate-header">
+                                    <KeyRound size={28} color="#c59b27" />
+                                    <div>
+                                      <span className="gate-badge">AUTENTICAÇÃO ADMINISTRATIVA DO GESTOR REQUERIDA</span>
+                                      <h4>Desbloqueio da Fase de Homologação Efetiva</h4>
+                                      <p>
+                                        Todos os candidatos concluíram a 1ª Fase com sucesso! Para iniciar formalmente a homologação efetiva dos resultados finais e provimento das vagas, introduza o <strong>Código de Administrador do Gestor</strong>.
+                                      </p>
                                     </div>
-                                    <p>
-                                      {isReprovadoNota 
-                                        ? 'Bloqueado: Requer nota mínima de 10.0 valores.' 
-                                        : 'Aprovado com nota positiva para preencher a vaga pela sequência de vagas do Edital.'}
-                                    </p>
                                   </div>
-                                </label>
+                                  <div className="admin-gate-action-box">
+                                    <div className="admin-code-input-group">
+                                      <Lock size={16} className="input-lock-icon" />
+                                      <input 
+                                        type={mostrarCodigoAdmin ? 'text' : 'password'}
+                                        value={codigoAdminInput}
+                                        onChange={(e) => {
+                                          setCodigoAdminInput(e.target.value);
+                                          setCodigoAdminErro('');
+                                        }}
+                                        placeholder="Código Administrador (ex: SERNIC-ADMIN-2026)"
+                                        className="input-codigo-admin"
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleDesbloquearHomologacaoFinal();
+                                          }
+                                        }}
+                                      />
+                                      <button
+                                        type="button"
+                                        className="btn-toggle-eye"
+                                        onClick={() => setMostrarCodigoAdmin(!mostrarCodigoAdmin)}
+                                        title={mostrarCodigoAdmin ? 'Ocultar código' : 'Mostrar código'}
+                                      >
+                                        {mostrarCodigoAdmin ? <EyeOff size={16} /> : <Eye size={16} />}
+                                      </button>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      className="btn-unlock-homologacao"
+                                      onClick={handleDesbloquearHomologacaoFinal}
+                                    >
+                                      <Unlock size={16} />
+                                      <span>Desbloquear Homologação Efetiva</span>
+                                    </button>
+                                  </div>
+                                  {codigoAdminErro && (
+                                    <div className="admin-gate-error">
+                                      <AlertCircle size={15} />
+                                      <span>{codigoAdminErro}</span>
+                                    </div>
+                                  )}
+                                  <div className="admin-gate-tip">
+                                    <ShieldCheck size={14} color="#15803d" />
+                                    <span>Chave Mestra Institucional: <code>SERNIC-ADMIN-2026</code> ou a senha do gestor (<code>sernic2026</code> / <code>admin123</code>)</span>
+                                  </div>
+                                </div>
+                              )}
 
-                                {/* OPÇÃO 2B: APROVADO SUPLENTE - BLOQUEADO SE NOTA < 10 */}
-                                <label 
-                                  className={`deliberacao-radio-card option-suplente ${(novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)') ? 'checked' : ''} ${isReprovadoNota ? 'disabled-locked' : ''}`}
-                                  onClick={() => {
-                                    if (isReprovadoNota) {
-                                      if (onNotify) onNotify('error', 'Candidatos com nota abaixo de 10 valores não podem ser aprovados como suplentes!');
-                                      return;
-                                    }
-                                    setNovoEstado(isDelibFem ? 'Aprovada (Suplente)' : 'Aprovado (Suplente)');
-                                    setParecerJuri(`${isDelibFem ? 'Candidata aprovada' : 'Candidato aprovado'} com nota de ${notaFinal} valores. Integrado na lista de reserva / suplente.`);
-                                  }}
-                                >
-                                  <input
-                                    type="radio"
-                                    name="estadoDeliberacao"
-                                    value="Aprovado (Suplente)"
-                                    checked={novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)'}
-                                    disabled={isReprovadoNota}
-                                    onChange={() => {}}
-                                  />
-                                  <div className="radio-content">
-                                    <div className="radio-header">
-                                      <Award size={20} className="radio-icon" />
-                                      <strong>APROVADO COMO SUPLENTE</strong>
+                              {/* 3. QUANDO DESBLOQUEADO E A FASE 1 CONCLUÍDA: EXIBE FORMULÁRIO DE ENTREVISTA E VAGAS */}
+                              {isFase1Concluida && isHomologacaoFinalDesbloqueada && (
+                                <>
+                                  <div className="homologacao-unlocked-banner">
+                                    <ShieldCheck size={18} color="#15803d" />
+                                    <div>
+                                      <strong>FASE DE HOMOLOGAÇÃO EFETIVA DESBLOQUEADA</strong>
+                                      <span>Chave de Administrador Validada • Autorizada a Deliberação Final e Provimento de Vagas</span>
                                     </div>
-                                    <p>
-                                      {isReprovadoNota 
-                                        ? 'Bloqueado: Requer nota mínima de 10.0 valores.' 
-                                        : 'Aprovado na entrevista. Fica na lista de reserva após preenchimento das vagas imediatas.'}
-                                    </p>
                                   </div>
-                                </label>
 
-                                {/* OPÇÃO 2C: EXCLUÍDO DA ENTREVISTA */}
-                                <label 
-                                  className={`deliberacao-radio-card option-excluido ${(novoEstado === 'Excluído na Entrevista' || novoEstado === 'Excluída na Entrevista' || novoEstado === 'Excluído' || novoEstado === 'Excluída') ? 'checked' : ''}`}
-                                  onClick={() => {
-                                    setNovoEstado(isDelibFem ? 'Excluída na Entrevista' : 'Excluído na Entrevista');
-                                    setMotivoExclusao(isReprovadoNota ? 'Nota inferior a 10 valores na Entrevista Profissional' : 'Perfil não adequado para as funções exigidas');
-                                    setParecerJuri(`Candidatura reprovada e excluída na 2ª Fase de Entrevista Profissional (${notaFinal} valores).`);
-                                  }}
-                                >
-                                  <input
-                                    type="radio"
-                                    name="estadoDeliberacao"
-                                    value="Excluído na Entrevista"
-                                    checked={novoEstado === 'Excluído na Entrevista' || novoEstado === 'Excluída na Entrevista' || novoEstado === 'Excluído' || novoEstado === 'Excluída'}
-                                    onChange={() => {}}
-                                  />
-                                  <div className="radio-content">
-                                    <div className="radio-header">
-                                      <XCircle size={20} className="radio-icon" />
-                                      <strong>EXCLUIR NA ENTREVISTA</strong>
+                                  {/* CAMPO OBRIGATÓRIO DE NOTA DA ENTREVISTA */}
+                                  <div className="deliberacao-score-input-card">
+                                    <div className="score-input-header">
+                                      <Award size={20} color="#c32026" />
+                                      <div>
+                                        <label style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>
+                                          Nota Obtida na Entrevista Profissional (Escala de 0.0 a 20.0 valores) *:
+                                        </label>
+                                        <p style={{ fontSize: '0.82rem', color: 'var(--portal-text-muted)', margin: '0.15rem 0 0 0' }}>
+                                          Regra Estatutária: <strong>Nota &lt; 10.0 valores = Reprovação e Exclusão Obrigatória</strong> • <strong>Nota ≥ 10.0 valores = Aprovado / Admitido por Vagas</strong>
+                                        </p>
+                                      </div>
                                     </div>
-                                    <p>Reprovado com nota &lt; 10 valores, falta de comparência ou inaptidão física/técnica no teste.</p>
+
+                                    <div className="score-input-flex">
+                                      <input
+                                        type="number"
+                                        step="0.1"
+                                        min="0"
+                                        max="20"
+                                        value={notaFinal}
+                                        onChange={(e) => {
+                                          const val = e.target.value;
+                                          setNotaFinal(val);
+                                          const num = parseFloat(val);
+                                          if (!isNaN(num)) {
+                                            if (num < 10.0) {
+                                              setNovoEstado(isDelibFem ? 'Excluída na Entrevista' : 'Excluído na Entrevista');
+                                              setMotivoExclusao('Nota inferior a 10 valores na Entrevista Profissional');
+                                              setParecerJuri(`Classificação na Entrevista Profissional de ${val} valores. Candidatura reprovada por nota inferior a 10.0 valores. Exclusão obrigatória.`);
+                                            } else {
+                                              if (novoEstado.includes('Excluíd')) {
+                                                setNovoEstado(isDelibFem ? 'Admitida' : 'Admitido');
+                                                setParecerJuri(`Excelente aproveitamento na Entrevista Profissional com nota de ${val} valores. Proposta para provimento efetivo da vaga.`);
+                                              }
+                                            }
+                                          }
+                                        }}
+                                        className={`input-nota-grande ${isReprovadoNota ? 'reprovado' : 'aprovado'}`}
+                                      />
+                                      <div className="score-status-indicator">
+                                        {isReprovadoNota ? (
+                                          <span className="score-tag-reprovado">
+                                            <XCircle size={16} /> Nota Negativa (&lt; 10 val) • Reprovado
+                                          </span>
+                                        ) : (
+                                          <span className="score-tag-aprovado">
+                                            <CheckCircle2 size={16} /> Nota Positiva (≥ 10 val) • Aprovado
+                                          </span>
+                                        )}
+                                        <span style={{ fontSize: '0.78rem', color: 'var(--portal-text-muted)' }}>
+                                          Média Académica de Ingresso: <strong>{deliberandoCandidato.habilitacoes?.mediaFinal || '14.0'} val.</strong>
+                                        </span>
+                                      </div>
+                                    </div>
                                   </div>
-                                </label>
-                              </div>
+
+                                  {/* ALERTA ESTATUTÁRIO DINÂMICO CONFORME A NOTA */}
+                                  {isReprovadoNota ? (
+                                    <div className="deliberacao-statutory-alert danger">
+                                      <AlertCircle size={18} className="alert-icon" />
+                                      <div>
+                                        <strong>REPROVADO COM NOTA INFERIOR A 10 VALORES ({notaFinal} VAL.)</strong>
+                                        <p>Pelo regulamento oficial, candidatos com classificação inferior a 10 valores são obrigatoriamente excluídos.</p>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="deliberacao-statutory-alert success">
+                                      <CheckCircle2 size={18} className="alert-icon" />
+                                      <div>
+                                        <strong>CANDIDATO APROVADO COM NOTA POSITIVA ({notaFinal} VAL.)</strong>
+                                        <p>Pontuação regulamentar atingida. Selecione Admissão Efetiva (conforme as vagas) ou Suplente.</p>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* CARTÕES DE DECISÃO DA ENTREVISTA */}
+                                  <div className="deliberacao-options-grid three-cards">
+                                    {/* OPÇÃO 2A: ADMITIR (VAGA EFETIVA) - BLOQUEADO SE NOTA < 10 */}
+                                    <label 
+                                      className={`deliberacao-radio-card option-admitido ${(novoEstado === 'Admitido' || novoEstado === 'Admitida') ? 'checked' : ''} ${isReprovadoNota ? 'disabled-locked' : ''}`}
+                                      onClick={() => {
+                                        if (isReprovadoNota) {
+                                          if (onNotify) onNotify('error', 'Candidatos com nota abaixo de 10 valores não podem ser admitidos!');
+                                          return;
+                                        }
+                                        setNovoEstado(isDelibFem ? 'Admitida' : 'Admitido');
+                                        setParecerJuri(`${isDelibFem ? 'Candidata' : 'Candidato'} com excelente nota de ${notaFinal} valores na Entrevista Profissional. Proposta para provimento efetivo da vaga.`);
+                                      }}
+                                    >
+                                      <input
+                                        type="radio"
+                                        name="estadoDeliberacao"
+                                        value="Admitido"
+                                        checked={novoEstado === 'Admitido' || novoEstado === 'Admitida'}
+                                        disabled={isReprovadoNota}
+                                        onChange={() => {}}
+                                      />
+                                      <div className="radio-content">
+                                        <div className="radio-header">
+                                          <CheckCircle2 size={20} className="radio-icon" />
+                                          <strong>{isDelibFem ? 'ADMITIDA (VAGA EFETIVA)' : 'ADMITIDO (VAGA EFETIVA)'}</strong>
+                                        </div>
+                                        <p>
+                                          {isReprovadoNota 
+                                            ? 'Bloqueado: Requer nota mínima de 10.0 valores.' 
+                                            : 'Aprovado com nota positiva para preencher a vaga pela sequência de vagas do Edital.'}
+                                        </p>
+                                      </div>
+                                    </label>
+
+                                    {/* OPÇÃO 2B: APROVADO SUPLENTE - BLOQUEADO SE NOTA < 10 */}
+                                    <label 
+                                      className={`deliberacao-radio-card option-suplente ${(novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)') ? 'checked' : ''} ${isReprovadoNota ? 'disabled-locked' : ''}`}
+                                      onClick={() => {
+                                        if (isReprovadoNota) {
+                                          if (onNotify) onNotify('error', 'Candidatos com nota abaixo de 10 valores não podem ser aprovados como suplentes!');
+                                          return;
+                                        }
+                                        setNovoEstado(isDelibFem ? 'Aprovada (Suplente)' : 'Aprovado (Suplente)');
+                                        setParecerJuri(`${isDelibFem ? 'Candidata aprovada' : 'Candidato aprovado'} com nota de ${notaFinal} valores. Integrado na lista de reserva / suplente.`);
+                                      }}
+                                    >
+                                      <input
+                                        type="radio"
+                                        name="estadoDeliberacao"
+                                        value="Aprovado (Suplente)"
+                                        checked={novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)'}
+                                        disabled={isReprovadoNota}
+                                        onChange={() => {}}
+                                      />
+                                      <div className="radio-content">
+                                        <div className="radio-header">
+                                          <Award size={20} className="radio-icon" />
+                                          <strong>APROVADO COMO SUPLENTE</strong>
+                                        </div>
+                                        <p>
+                                          {isReprovadoNota 
+                                            ? 'Bloqueado: Requer nota mínima de 10.0 valores.' 
+                                            : 'Aprovado na entrevista. Fica na lista de reserva após preenchimento das vagas imediatas.'}
+                                        </p>
+                                      </div>
+                                    </label>
+
+                                    {/* OPÇÃO 2C: EXCLUÍDO DA ENTREVISTA */}
+                                    <label 
+                                      className={`deliberacao-radio-card option-excluido ${(novoEstado === 'Excluído na Entrevista' || novoEstado === 'Excluída na Entrevista' || novoEstado === 'Excluído' || novoEstado === 'Excluída') ? 'checked' : ''}`}
+                                      onClick={() => {
+                                        setNovoEstado(isDelibFem ? 'Excluída na Entrevista' : 'Excluído na Entrevista');
+                                        setMotivoExclusao(isReprovadoNota ? 'Nota inferior a 10 valores na Entrevista Profissional' : 'Perfil não adequado para as funções exigidas');
+                                        setParecerJuri(`Candidatura reprovada e excluída na 2ª Fase de Entrevista Profissional (${notaFinal} valores).`);
+                                      }}
+                                    >
+                                      <input
+                                        type="radio"
+                                        name="estadoDeliberacao"
+                                        value="Excluído na Entrevista"
+                                        checked={novoEstado === 'Excluído na Entrevista' || novoEstado === 'Excluída na Entrevista' || novoEstado === 'Excluído' || novoEstado === 'Excluída'}
+                                        onChange={() => {}}
+                                      />
+                                      <div className="radio-content">
+                                        <div className="radio-header">
+                                          <XCircle size={20} className="radio-icon" />
+                                          <strong>EXCLUIR NA ENTREVISTA</strong>
+                                        </div>
+                                        <p>Reprovado com nota &lt; 10 valores, falta de comparência ou inaptidão física/técnica no teste.</p>
+                                      </div>
+                                    </label>
+                                  </div>
+                                </>
+                              )}
                             </>
                           )}
 
@@ -2963,13 +3326,54 @@ export default function GestorPortalModule({
                         <span>Decisão a homologar por: <strong>{currentUser?.name || 'Dr. Alberto Chissano (Presidente do Júri)'}</strong></span>
                       </div>
 
-                      <button
-                        type="submit"
-                        className="btn-salvar-deliberacao-red"
-                      >
-                        <FileSignature size={18} />
-                        <span>Homologar e Guardar Decisão</span>
-                      </button>
+                      {(() => {
+                        const candFase = deliberandoCandidato.faseAtual || (
+                          (deliberandoCandidato.status === 'Em Análise Documental' || deliberandoCandidato.status === 'Em análise' || deliberandoCandidato.status === 'Submetida') ? 1 :
+                          (deliberandoCandidato.status === 'Admitido na Análise Documental' || deliberandoCandidato.status === 'Admitida na Análise Documental' || deliberandoCandidato.status === 'Entrevista Profissional' || deliberandoCandidato.status === 'Convocada para provas') ? 2 : 3
+                        );
+
+                        if (candFase >= 2 && !isFase1Concluida) {
+                          return (
+                            <button
+                              type="button"
+                              className="btn-salvar-deliberacao-red disabled-locked"
+                              onClick={() => {
+                                if (onNotify) onNotify('error', `Bloqueio Regulamentar: É estritamente obrigatório concluir a 1ª Fase de todos os candidatos antes de avançar para a decisão final. Restam ${totalPendentesFase1} candidato(s) pendente(s).`);
+                              }}
+                            >
+                              <Lock size={18} />
+                              <span>Bloqueado: Conclua a 1ª Fase ({totalPendentesFase1} pendentes)</span>
+                            </button>
+                          );
+                        }
+
+                        if (candFase >= 2 && !isHomologacaoFinalDesbloqueada) {
+                          return (
+                            <button
+                              type="button"
+                              className="btn-salvar-deliberacao-red"
+                              style={{ background: 'linear-gradient(135deg, #b45309 0%, #d97706 100%)', borderColor: '#b45309' }}
+                              onClick={() => {
+                                const el = document.querySelector('.input-codigo-admin');
+                                if (el) el.focus();
+                              }}
+                            >
+                              <KeyRound size={18} />
+                              <span>Requer Código de Administrador</span>
+                            </button>
+                          );
+                        }
+
+                        return (
+                          <button
+                            type="submit"
+                            className="btn-salvar-deliberacao-red"
+                          >
+                            <FileSignature size={18} />
+                            <span>Homologar e Guardar Decisão</span>
+                          </button>
+                        );
+                      })()}
                     </div>
                   </form>
                 </div>
@@ -4410,18 +4814,75 @@ export default function GestorPortalModule({
                   </div>
                 </div>
               )}
+
+              {/* BLOCO 6: HOMOLOGAÇÃO DE ADMISSÃO & PERFIL HOMOLOGADOR */}
+              {selectedDossier.admitidoPor && (
+                <div className="dossier-section-block">
+                  <h4 className="dossier-sec-title">
+                    <ShieldCheck size={16} color="#15803d" />
+                    6. Homologação Oficial de Admissão & Perfil Autorizador
+                  </h4>
+                  <div className="homologador-badge-card" style={{ margin: 0 }}>
+                    <div className="homologador-badge-header">
+                      <div className="homologador-badge-title">
+                        <ShieldCheck size={20} color="#15803d" />
+                        <div>
+                          <strong>REGISTO OFICIAL DE HOMOLOGAÇÃO</strong>
+                          <span className="homologador-despacho">{selectedDossier.admitidoPor.despacho}</span>
+                        </div>
+                      </div>
+                      <span className="homologador-status-tag">Homologado</span>
+                    </div>
+                    <div className="homologador-badge-grid">
+                      <div className="homologador-field">
+                        <span className="field-label">Homologado por:</span>
+                        <strong className="field-value">{selectedDossier.admitidoPor.nome}</strong>
+                      </div>
+                      <div className="homologador-field">
+                        <span className="field-label">Cargo / Responsabilidade:</span>
+                        <span className="field-value">{selectedDossier.admitidoPor.cargo}</span>
+                      </div>
+                      <div className="homologador-field">
+                        <span className="field-label">Perfil Institucional:</span>
+                        <span className="field-value">{selectedDossier.admitidoPor.perfil}</span>
+                      </div>
+                      <div className="homologador-field">
+                        <span className="field-label">Data e Hora da Homologação:</span>
+                        <span className="field-value">{selectedDossier.admitidoPor.dataHomologacao}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* RODAPÉ DO DOSSIER */}
             <div className="dossier-modal-footer">
-              <button
-                type="button"
-                className="gestor-btn-outline"
-                onClick={() => window.print()}
-              >
-                <Printer size={15} />
-                <span>Imprimir Ficha Completa</span>
-              </button>
+              <div style={{ display: 'flex', gap: '0.65rem' }}>
+                <button
+                  type="button"
+                  className="gestor-btn-outline"
+                  onClick={() => window.print()}
+                >
+                  <Printer size={15} />
+                  <span>Imprimir Ficha Completa</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="gestor-btn-outline"
+                  style={{ color: '#b45309', borderColor: 'rgba(180, 83, 9, 0.4)', background: 'rgba(180, 83, 9, 0.05)' }}
+                  onClick={() => {
+                    const target = selectedDossier;
+                    setSelectedDossier(null);
+                    setCandidatoParaReporIndividual(target);
+                  }}
+                  title="Repor este candidato no estado inicial da 1ª Fase (Em Análise Documental)"
+                >
+                  <RotateCcw size={15} />
+                  <span>Repor Candidatura</span>
+                </button>
+              </div>
 
               <div style={{ display: 'flex', gap: '0.75rem' }}>
                 <button
@@ -5363,6 +5824,345 @@ export default function GestorPortalModule({
                 </div>
               </div>
             </form>
+          </DraggableSubAba>
+        </div>,
+        document.body
+      )}
+      {/* ========================================================
+          MODAL 7: AUTORIZAÇÃO DE SEGURANÇA - REPOSIÇÃO EM MASSA
+          ======================================================== */}
+      {isModalResetGeralOpen && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="gestor-modal-overlay fadeIn" 
+          style={{ zIndex: 1300 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsModalResetGeralOpen(false);
+              setSenhaResetGeral('');
+              setErroResetGeral('');
+            }
+          }}
+        >
+          <DraggableSubAba 
+            className="gestor-modal-card security-modal-card" 
+            style={{ width: 'min(520px, 95vw)', maxWidth: '520px' }}
+            moveHandleLabel="Mover Autorização de Segurança"
+            onClose={() => {
+              setIsModalResetGeralOpen(false);
+              setSenhaResetGeral('');
+              setErroResetGeral('');
+            }}
+          >
+            <div className="dossier-modal-header" style={{ borderBottom: '1px solid rgba(195, 32, 38, 0.2)', background: 'linear-gradient(135deg, rgba(195, 32, 38, 0.08) 0%, rgba(15, 32, 66, 0.05) 100%)' }}>
+              <div className="dossier-header-left">
+                <div className="modal-security-icon-circle danger">
+                  <ShieldAlert size={26} color="#c32026" />
+                </div>
+                <div>
+                  <h3 style={{ color: '#c32026', fontSize: '1.15rem' }}>Autorização de Segurança do Gestor</h3>
+                  <span className="dossier-protocolo" style={{ color: '#64748b' }}>
+                    Reposição Geral de Candidaturas • Teste Inicial SERNIC
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="dossier-close-btn"
+                onClick={() => {
+                  setIsModalResetGeralOpen(false);
+                  setSenhaResetGeral('');
+                  setErroResetGeral('');
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmarResetGeralComSenha} className="dossier-modal-body" style={{ padding: '1.4rem 1.6rem' }}>
+              <div className="security-notice-alert" style={{
+                background: 'rgba(239, 68, 68, 0.07)',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                borderRadius: '8px',
+                padding: '0.9rem 1rem',
+                marginBottom: '1.25rem',
+                display: 'flex',
+                gap: '0.8rem',
+                alignItems: 'flex-start'
+              }}>
+                <AlertTriangle size={20} color="#dc2626" style={{ flexShrink: 0, marginTop: '2px' }} />
+                <div style={{ fontSize: '0.85rem', lineHeight: '1.45', color: 'var(--portal-text-main)' }}>
+                  <strong>Atenção Regulamentar:</strong> Esta operação irá reverter todas as candidaturas para o estado inicial de <strong>"Em Análise Documental" (1ª Fase)</strong>, apagando deliberações prévias e perfis homologadores para iniciar novo ciclo de triagem.
+                </div>
+              </div>
+
+              <div className="form-group-custom" style={{ marginBottom: '1.2rem' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700, fontSize: '0.88rem' }}>
+                  <KeyRound size={16} color="#c32026" />
+                  <span>Introduza a Senha do Gestor para Confirmar:</span>
+                </label>
+                <div style={{ position: 'relative', marginTop: '0.4rem' }}>
+                  <input
+                    type={mostrarSenhaResetGeral ? 'text' : 'password'}
+                    className="definicoes-input"
+                    placeholder="Digite sua senha de acesso..."
+                    value={senhaResetGeral}
+                    onChange={(e) => {
+                      setSenhaResetGeral(e.target.value);
+                      if (erroResetGeral) setErroResetGeral('');
+                    }}
+                    autoFocus
+                    required
+                    style={{ paddingRight: '2.8rem', fontSize: '0.95rem' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setMostrarSenhaResetGeral(!mostrarSenhaResetGeral)}
+                    style={{
+                      position: 'absolute',
+                      right: '0.65rem',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#64748b'
+                    }}
+                    title={mostrarSenhaResetGeral ? 'Ocultar senha' : 'Ver senha'}
+                  >
+                    {mostrarSenhaResetGeral ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                {erroResetGeral && (
+                  <div style={{ color: '#dc2626', fontSize: '0.82rem', fontWeight: 600, marginTop: '0.45rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <XCircle size={14} />
+                    <span>{erroResetGeral}</span>
+                  </div>
+                )}
+                <div style={{ fontSize: '0.78rem', color: 'var(--portal-text-muted)', marginTop: '0.45rem' }}>
+                  Utilize a senha de login do gestor (ex: <code>admin123</code> ou <code>sernic2026</code>).
+                </div>
+              </div>
+
+              <div className="dossier-modal-footer" style={{ padding: 0, marginTop: '1.4rem' }}>
+                <button
+                  type="button"
+                  className="gestor-btn-secondary"
+                  onClick={() => {
+                    setIsModalResetGeralOpen(false);
+                    setSenhaResetGeral('');
+                    setErroResetGeral('');
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="gestor-btn-primary-red"
+                  style={{ background: '#b91c1c' }}
+                >
+                  <RotateCcw size={15} />
+                  <span>Confirmar & Repor Tudo para Teste</span>
+                </button>
+              </div>
+            </form>
+          </DraggableSubAba>
+        </div>,
+        document.body
+      )}
+
+      {/* ========================================================
+          MODAL 8: CONFIRMAÇÃO DE REPOSIÇÃO INDIVIDUAL
+          ======================================================== */}
+      {candidatoParaReporIndividual && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="gestor-modal-overlay fadeIn" 
+          style={{ zIndex: 1300 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setCandidatoParaReporIndividual(null);
+          }}
+        >
+          <DraggableSubAba 
+            className="gestor-modal-card security-modal-card" 
+            style={{ width: 'min(500px, 95vw)', maxWidth: '500px' }}
+            moveHandleLabel="Mover Confirmação"
+            onClose={() => setCandidatoParaReporIndividual(null)}
+          >
+            <div className="dossier-modal-header" style={{ borderBottom: '1px solid rgba(217, 119, 6, 0.25)', background: 'linear-gradient(135deg, rgba(217, 119, 6, 0.08) 0%, rgba(15, 32, 66, 0.04) 100%)' }}>
+              <div className="dossier-header-left">
+                <div className="modal-security-icon-circle warning">
+                  <RotateCcw size={24} color="#d97706" />
+                </div>
+                <div>
+                  <h3 style={{ color: '#b45309', fontSize: '1.15rem' }}>Repor Candidatura Individual</h3>
+                  <span className="dossier-protocolo" style={{ color: '#64748b' }}>
+                    {candidatoParaReporIndividual.codigoCandidatura}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="dossier-close-btn"
+                onClick={() => setCandidatoParaReporIndividual(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="dossier-modal-body" style={{ padding: '1.4rem 1.6rem' }}>
+              <div className="candidate-repor-preview-card">
+                <div className="candidate-repor-row">
+                  <span className="label">Candidato:</span>
+                  <span className="value"><strong>{candidatoParaReporIndividual.nomeCompleto}</strong></span>
+                </div>
+                <div className="candidate-repor-row">
+                  <span className="label">Carreira / Vaga:</span>
+                  <span className="value">{candidatoParaReporIndividual.vagaTitulo}</span>
+                </div>
+                <div className="candidate-repor-row">
+                  <span className="label">Estado Atual:</span>
+                  <span className="value tag-current-status">{candidatoParaReporIndividual.status}</span>
+                </div>
+                {candidatoParaReporIndividual.admitidoPor && (
+                  <div className="candidate-repor-row">
+                    <span className="label">Homologado por:</span>
+                    <span className="value" style={{ color: '#166534', fontWeight: 600 }}>
+                      {candidatoParaReporIndividual.admitidoPor.nome} ({candidatoParaReporIndividual.admitidoPor.perfil})
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <p style={{ fontSize: '0.86rem', color: 'var(--portal-text-secondary)', lineHeight: '1.5', marginTop: '1rem', marginBottom: '1.4rem' }}>
+                Pretende repor este candidato para o estado inicial de <strong>"Em Análise Documental" (1ª Fase)</strong>? 
+                A deliberação anterior e a homologação serão reiniciadas, permitindo que a comissão proceda a uma reavaliação completa.
+              </p>
+
+              <div className="dossier-modal-footer" style={{ padding: 0 }}>
+                <button
+                  type="button"
+                  className="gestor-btn-secondary"
+                  onClick={() => setCandidatoParaReporIndividual(null)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="gestor-btn-primary-red"
+                  style={{ background: '#d97706', borderColor: '#b45309' }}
+                  onClick={handleConfirmarReporIndividual}
+                >
+                  <RotateCcw size={15} />
+                  <span>Sim, Repor Candidato</span>
+                </button>
+              </div>
+            </div>
+          </DraggableSubAba>
+        </div>,
+        document.body
+      )}
+
+      {/* ========================================================
+          MODAL 9: CONFIRMAÇÃO DE HOMOLOGAÇÃO DA 1ª FASE
+          ======================================================== */}
+      {confirmHomologacao1aFaseModal && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="gestor-modal-overlay fadeIn" 
+          style={{ zIndex: 1300 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setConfirmHomologacao1aFaseModal(null);
+          }}
+        >
+          <DraggableSubAba 
+            className="gestor-modal-card security-modal-card" 
+            style={{ width: 'min(550px, 95vw)', maxWidth: '550px' }}
+            moveHandleLabel="Mover Confirmação de Homologação"
+            onClose={() => setConfirmHomologacao1aFaseModal(null)}
+          >
+            <div className="dossier-modal-header" style={{ borderBottom: '1px solid rgba(22, 101, 52, 0.25)', background: 'linear-gradient(135deg, rgba(22, 101, 52, 0.08) 0%, rgba(15, 32, 66, 0.05) 100%)' }}>
+              <div className="dossier-header-left">
+                <div className="modal-security-icon-circle success">
+                  <ShieldCheck size={26} color="#15803d" />
+                </div>
+                <div>
+                  <h3 style={{ color: '#166534', fontSize: '1.15rem' }}>Homologação da 1ª Fase Documental</h3>
+                  <span className="dossier-protocolo" style={{ color: '#64748b' }}>
+                    Convocação Formal para a Fase de Entrevista • SERNIC
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="dossier-close-btn"
+                onClick={() => setConfirmHomologacao1aFaseModal(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="dossier-modal-body" style={{ padding: '1.4rem 1.6rem' }}>
+              <div className="homologacao-details-box">
+                <div className="homologacao-detail-row">
+                  <span className="label">Candidato:</span>
+                  <span className="val-highlight">{confirmHomologacao1aFaseModal.candidato?.nomeCompleto}</span>
+                </div>
+                <div className="homologacao-detail-row">
+                  <span className="label">Protocolo:</span>
+                  <span>{confirmHomologacao1aFaseModal.candidato?.codigoCandidatura}</span>
+                </div>
+                <div className="homologacao-detail-row">
+                  <span className="label">Carreira Concorrida:</span>
+                  <span>{confirmHomologacao1aFaseModal.candidato?.vagaTitulo}</span>
+                </div>
+                <div className="homologacao-detail-row">
+                  <span className="label">Deliberação Homologada:</span>
+                  <span className="badge-homolog-fase1">
+                    <CheckCircle2 size={13} color="#15803d" />
+                    <strong>{confirmHomologacao1aFaseModal.updates?.status || 'Admitido para a 2ª Fase'}</strong>
+                  </span>
+                </div>
+                <div className="homologacao-detail-row">
+                  <span className="label">Perfil do Homologador:</span>
+                  <span className="val-perfil">
+                    <strong>{currentUser?.nome || 'Gestor do Concurso'}</strong> • {currentUser?.cargo || 'Director / Inspetor SERNIC'} ({currentUser?.perfil || 'ADMINISTRADOR'})
+                  </span>
+                </div>
+              </div>
+
+              <div style={{
+                background: 'rgba(21, 128, 61, 0.06)',
+                border: '1px solid rgba(21, 128, 61, 0.25)',
+                borderRadius: '8px',
+                padding: '0.9rem 1rem',
+                margin: '1.1rem 0',
+                fontSize: '0.86rem',
+                color: 'var(--portal-text-main)',
+                lineHeight: '1.45'
+              }}>
+                <p style={{ margin: 0 }}>
+                  <strong>Confirmação Regulamentar:</strong> Tem a certeza de que pretende homologar este candidato na <strong>1ª Fase</strong> e convocá-lo oficialmente para a <strong>Fase de Entrevista</strong>? 
+                  O candidato transitará para a pasta correspondente e o seu perfil ficará vinculado ao despacho oficial de homologação.
+                </p>
+              </div>
+
+              <div className="dossier-modal-footer" style={{ padding: 0 }}>
+                <button
+                  type="button"
+                  className="gestor-btn-secondary"
+                  onClick={() => setConfirmHomologacao1aFaseModal(null)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="gestor-btn-primary-red"
+                  style={{ background: '#15803d', borderColor: '#166534' }}
+                  onClick={handleConfirmarHomologacao1aFase}
+                >
+                  <CheckCircle2 size={15} />
+                  <span>Sim, Homologar para Entrevista</span>
+                </button>
+              </div>
+            </div>
           </DraggableSubAba>
         </div>,
         document.body

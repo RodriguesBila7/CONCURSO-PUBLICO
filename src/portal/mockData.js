@@ -1410,6 +1410,22 @@ export function getStoredCandidaturas() {
             updated.validacaoFacial = updated.validacaoFacial || fallback?.validacaoFacial || getDefaultValidacaoFacial(updated.status);
           }
 
+          // Garantir que candidatos admitidos contêm o perfil do homologador
+          if (
+            (updated.status?.includes('Admitid') || updated.status === 'Entrevista Profissional' || updated.status?.includes('Suplente')) &&
+            !updated.admitidoPor
+          ) {
+            hasChanges = true;
+            updated.admitidoPor = {
+              nome: 'Dr. Alberto Chissano',
+              cargo: 'Presidente do Júri de Seleção',
+              perfil: 'Gestor Autorizado DRH / SERNIC',
+              despacho: `DSP-HOM-SERNIC-2026/${updated.numeroCandidato || '00001'}`,
+              dataHomologacao: '20/10/2026 às 14:30',
+              timestamp: '2026-10-20T12:30:00Z'
+            };
+          }
+
           // Normalizar títulos e mensagens para remover Convocado(a) e aplicar gênero inteligente
           if (updated.detalhesFase?.titulo?.includes('Convocado(a)') || updated.detalhesFase?.mensagemComissao?.includes('convocado(a)')) {
             hasChanges = true;
@@ -1479,6 +1495,7 @@ export function resetStoredCandidaturasParaInicio() {
       motivoExclusao: null,
       parecer: 'Processo na fila de triagem documental da comissão de júri.'
     },
+    admitidoPor: null,
     detalhesFase: {
       titulo: '1ª Fase: Avaliação Documental em Curso',
       dataEvento: 'Conforme calendário oficial do Edital',
@@ -1492,8 +1509,73 @@ export function resetStoredCandidaturasParaInicio() {
     ]
   }));
 
+  try {
+    localStorage.removeItem('sernic_homologacao_desbloqueada');
+  } catch {}
+
   saveStoredCandidaturas(freshList);
   return freshList;
+}
+
+/**
+ * Repõe individualmente um candidato no estado inicial (1ª Fase: Em Análise Documental),
+ * limpando notas, histórico de deliberações e perfil de admissão para reavaliação do zero.
+ */
+export function resetStoredCandidaturaIndividual(codigo, operador = 'Comissão de Júri SERNIC') {
+  const list = getStoredCandidaturas();
+  const index = list.findIndex(c => c.codigoCandidatura === codigo);
+  if (index === -1) return null;
+
+  const current = list[index];
+  const operadorNome = typeof operador === 'object' ? (operador.name || 'Presidente do Júri') : operador;
+
+  const resetCandidate = {
+    ...current,
+    status: 'Em Análise Documental',
+    faseAtual: 1,
+    validacaoFacial: getDefaultValidacaoFacial('Em Análise Documental'),
+    deliberacaoJuri: {
+      decisao: 'Em Análise Documental',
+      dataDeliberacao: null,
+      operador: null,
+      notaFinal: null,
+      motivoExclusao: null,
+      parecer: 'Processo na fila de triagem documental da comissão de júri.'
+    },
+    admitidoPor: null,
+    detalhesFase: {
+      titulo: '1ª Fase: Avaliação Documental em Curso',
+      dataEvento: 'Conforme calendário oficial do Edital',
+      local: `Comissão Provincial de Júri - ${current.provincia || 'Maputo'}`,
+      observacoes: 'A aguardar validação dos requisitos e certidões pelo júri examinador.',
+      mensagemComissao: 'A sua candidatura foi registada com sucesso e encontra-se na 1ª Fase de Avaliação Documental a aguardar apreciação do Júri.'
+    },
+    historico: [
+      ...(current.historico?.slice(0, 2) || [
+        { data: (current.dataSubmissao || new Date().toISOString()).split('T')[0], etapa: 'Inscrição Submetida', descricao: 'Processo registado no módulo Inscritos no Concurso.' },
+        { data: (current.dataSubmissao || new Date().toISOString()).split('T')[0], etapa: '1ª Fase: Avaliação Documental', descricao: 'Início da conferência de conformidade documental pelo júri.' }
+      ]),
+      {
+        data: new Date().toISOString().split('T')[0],
+        etapa: 'Reposição de Candidatura',
+        descricao: `Candidatura reposta para a 1ª Fase (Em Análise Documental) por ${operadorNome}. Todas as avaliações foram reiniciadas.`
+      }
+    ]
+  };
+
+  list[index] = resetCandidate;
+  saveStoredCandidaturas(list);
+
+  addStoredAuditoria({
+    acao: 'Reposição Individual de Candidatura',
+    candidato: `${current.nomeCompleto} (${current.codigoCandidatura})`,
+    estadoAnterior: current.status,
+    novoEstado: 'Em Análise Documental (1ª Fase)',
+    motivo: 'Reposição individual solicitada pelo gestor para nova apreciação do candidato',
+    operador: operadorNome
+  });
+
+  return resetCandidate;
 }
 
 export function updateStoredCandidatura(codigo, updates, operador = 'Comissão de Júri SERNIC') {
@@ -1504,6 +1586,10 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
   const current = list[index];
   const nowStr = new Date().toISOString();
   const dateFormatted = new Date().toISOString().split('T')[0];
+
+  const operadorNome = typeof operador === 'object' ? (operador.name || 'Presidente do Júri') : operador;
+  const operadorCargo = typeof operador === 'object' ? (operador.cargo || 'Presidente do Júri de Seleção') : 'Presidente do Júri de Seleção';
+  const operadorPerfil = typeof operador === 'object' ? (operador.perfil || operador.role || 'Gestor Autorizado DRH / SERNIC') : 'Gestor Autorizado DRH / SERNIC';
 
   // Novo histórico
   const novoHistorico = [...(current.historico || [])];
@@ -1551,16 +1637,38 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
 
   const finalStatus = updates.status || current.status;
 
+  // Gestão do Perfil do Homologador Oficial (admitidoPor)
+  const isAdmissao = (
+    finalStatus.includes('Admitid') ||
+    finalStatus === 'Entrevista Profissional' ||
+    finalStatus.includes('Suplente')
+  );
+
+  let admitidoPorInfo = current.admitidoPor || null;
+  if (isAdmissao) {
+    admitidoPorInfo = updates.admitidoPor || {
+      nome: operadorNome,
+      cargo: operadorCargo,
+      perfil: operadorPerfil,
+      despacho: `DSP-HOM-SERNIC-2026/${current.numeroCandidato || '00001'}`,
+      dataHomologacao: new Date().toLocaleDateString('pt-MZ') + ' às ' + new Date().toLocaleTimeString('pt-MZ', { hour: '2-digit', minute: '2-digit' }),
+      timestamp: nowStr
+    };
+  } else if (finalStatus.includes('Excluíd') || finalStatus === 'Em Análise Documental') {
+    admitidoPorInfo = null;
+  }
+
   const updatedCandidate = {
     ...current,
     ...updates,
     status: finalStatus,
     faseAtual: novaFaseAtual,
     historico: novoHistorico,
+    admitidoPor: admitidoPorInfo,
     deliberacaoJuri: {
       decisao: finalStatus,
       dataDeliberacao: nowStr,
-      operador: operador,
+      operador: operadorNome,
       motivoExclusao: updates.motivoExclusao || null,
       notaFinal: updates.notaFinal || null,
       parecer: updates.parecer || current.deliberacaoJuri?.parecer || ''
@@ -1604,7 +1712,7 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
     estadoAnterior: current.status,
     novoEstado: finalStatus,
     motivo: updates.motivoExclusao || updates.parecer || `Decisão gravada (${finalStatus})`,
-    operador: operador
+    operador: operadorNome
   });
 
   return updatedCandidate;
