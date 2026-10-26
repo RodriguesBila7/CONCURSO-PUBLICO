@@ -176,20 +176,6 @@ export default function PortalLayout({
 
           {/* Ações e Controles à Direita (Ações Rápidas + Idioma + Modo Claro/Preto + Utilizador + Botão Sair) */}
           <div className="portal-header-actions">
-
-            {/* Ação rápida para o Gestor: Ver como Candidato */}
-            {isGestorRoute && (
-              <button
-                type="button"
-                className="portal-back-home-btn"
-                onClick={() => navigate('/portal-recrutamento')}
-                title="Abrir visão pública do portal de recrutamento"
-              >
-                <ExternalLink size={14} />
-                <span>Ver como Candidato</span>
-              </button>
-            )}
-
             {/* Ação rápida para regressar ao Painel de Gestor quando estiver a ver como candidato */}
             {isGestorUser && !isGestorRoute && (
               <button

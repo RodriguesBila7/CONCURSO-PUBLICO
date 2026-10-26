@@ -38,7 +38,6 @@ import {
   UserX,
   FileSignature,
   FilePlus2,
-  ExternalLink,
   ChevronDown,
   Palette,
   Globe,
@@ -1408,15 +1407,6 @@ export default function GestorPortalModule({
               </div>
 
               <div className="gestor-hero-quick-actions">
-                <button
-                  type="button"
-                  className="gestor-action-btn secondary"
-                  onClick={() => navigate('/portal-recrutamento')}
-                  title="Ir para a visão pública do candidato"
-                >
-                  <ExternalLink size={16} />
-                  <span>Ver como Candidato</span>
-                </button>
                 <button
                   type="button"
                   className="gestor-action-btn primary"
