@@ -227,7 +227,7 @@ export default function CandidaturaModule({
 
     if (step === 3) {
       if (!validarTelefoneMZ(formData.telefonePrincipal)) {
-        newErrors.telefonePrincipal = 'Informe um número de telefone moçambicano válido (ex: 84 123 4567 ou +258 84 123 4567).';
+        newErrors.telefonePrincipal = 'Informe um número de telefone moçambicano válido (ex: +258 00 000 0000).';
       }
       if (!formData.email.trim() || !formData.email.includes('@')) {
         newErrors.email = 'Informe um endereço de e-mail válido para receber notificações.';
@@ -791,7 +791,7 @@ export default function CandidaturaModule({
                   type="tel"
                   name="telefonePrincipal"
                   className={`form-input ${errors.telefonePrincipal ? 'error' : ''}`}
-                  placeholder="Ex: +258 84 123 4567"
+                  placeholder="EX: +258 00 000 0000"
                   value={formData.telefonePrincipal}
                   onChange={handleChange}
                 />
@@ -804,7 +804,7 @@ export default function CandidaturaModule({
                   type="tel"
                   name="telefoneAlternativo"
                   className="form-input"
-                  placeholder="Ex: +258 82 987 6543"
+                  placeholder="EX: +258 00 000 0000"
                   value={formData.telefoneAlternativo}
                   onChange={handleChange}
                 />

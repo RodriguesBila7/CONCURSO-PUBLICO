@@ -191,7 +191,7 @@ export default function LoginModule({
     if (!validarBI(regData.bi)) errors.bi = 'BI inválido (12 dígitos + 1 letra).';
     if (!validarNUIT(regData.nuit)) errors.nuit = 'NUIT inválido (9 dígitos).';
     if (!regData.email.includes('@')) errors.email = 'E-mail inválido.';
-    if (!validarTelefoneMZ(regData.telefone)) errors.telefone = 'Telefone moçambicano inválido (+258 8x).';
+    if (!validarTelefoneMZ(regData.telefone)) errors.telefone = 'Telefone moçambicano inválido (ex: +258 00 000 0000).';
     if (regData.password.length < 6) errors.password = 'A senha deve ter no mínimo 6 caracteres.';
     if (regData.password !== regData.confirmPassword) errors.confirmPassword = 'As senhas não coincidem.';
 
@@ -601,7 +601,7 @@ export default function LoginModule({
                 <div className="form-grid-2">
                   <div className="form-group">
                     <label>Telefone Principal</label>
-                    <input type="tel" className="form-input" defaultValue={currentUser.telefone || '+258 84 123 4567'} />
+                    <input type="tel" className="form-input" defaultValue={currentUser.telefone || '+258 00 000 0000'} />
                   </div>
                   <div className="form-group">
                     <label>E-mail Oficial</label>
@@ -883,7 +883,7 @@ export default function LoginModule({
                   <input
                     type="tel"
                     className={`auth-form-input ${regErrors.telefone ? 'error' : ''}`}
-                    placeholder="+258 84 123 4567"
+                    placeholder="+258 00 000 0000"
                     value={regData.telefone}
                     onChange={(e) => setRegData({ ...regData, telefone: e.target.value })}
                   />

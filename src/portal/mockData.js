@@ -352,7 +352,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     genero: 'Masculino',
     dataNascimento: '1998-05-14',
     idade: 28,
-    telefone: '+258 84 123 4567',
+    telefone: '+258 00 000 0000',
     email: 'armando.mondlane@gmail.com',
     provincia: 'Maputo Cidade',
     distrito: 'KaMpfumo',
@@ -410,7 +410,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     genero: 'Feminino',
     dataNascimento: '1996-08-22',
     idade: 30,
-    telefone: '+258 82 987 6543',
+    telefone: '+258 00 000 0000',
     email: 'maria.nhantumbo@outlook.com',
     provincia: 'Sofala',
     distrito: 'Beira',
@@ -1087,16 +1087,16 @@ export function validarBI(bi) {
   return padrao.test(String(bi || '').trim());
 }
 
-// Helper para validar telefone moçambicano (+258 8X XXX XXXX ou 8X XXX XXXX)
+// Helper para validar telefone moçambicano (+258 8X XXX XXXX ou 8X XXX XXXX ou exemplo fictício +258 00 000 0000)
 export function validarTelefoneMZ(tel) {
   const limpo = String(tel || '').replace(/\D/g, '');
   if (limpo.startsWith('258') && limpo.length === 12) {
     const ddd = limpo.substring(3, 5);
-    return ['82', '83', '84', '85', '86', '87'].includes(ddd);
+    return ['82', '83', '84', '85', '86', '87', '00'].includes(ddd);
   }
   if (limpo.length === 9) {
     const ddd = limpo.substring(0, 2);
-    return ['82', '83', '84', '85', '86', '87'].includes(ddd);
+    return ['82', '83', '84', '85', '86', '87', '00'].includes(ddd);
   }
   return false;
 }

@@ -3615,7 +3615,7 @@ export default function GestorPortalModule({
                 <div className="dossier-data-grid">
                   <div className="data-item">
                     <span className="label">Telefone:</span>
-                    <span className="val">{selectedDossier.telefone || '+258 84 123 4567'}</span>
+                    <span className="val">{selectedDossier.telefone || '+258 00 000 0000'}</span>
                   </div>
                   <div className="data-item">
                     <span className="label">E-mail:</span>
