@@ -17,7 +17,8 @@ import {
   Sun,
   Camera,
   Eye,
-  UserCheck
+  UserCheck,
+  AlertTriangle
 } from 'lucide-react';
 import { 
   INITIAL_VAGAS, 
@@ -1122,23 +1123,85 @@ export default function CandidaturaModule({
               </div>
             </div>
 
-            {/* DECLARAÇÃO DE HONRA */}
-            <div style={{ backgroundColor: '#fef7e7', border: '1px solid #f2d184', borderRadius: '10px', padding: '1.2rem', marginBottom: '1.5rem' }}>
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.8rem', cursor: 'pointer', fontSize: '0.86rem', color: '#451a03', lineHeight: 1.5 }}>
+            {/* AVISO LEGAL E CRIMINAL */}
+            <div style={{
+              backgroundColor: '#fff1f2',
+              border: '2px solid #fda4af',
+              borderRadius: '12px',
+              padding: '1.4rem 1.6rem',
+              marginBottom: '1.4rem',
+              display: 'flex',
+              gap: '1rem',
+              alignItems: 'flex-start'
+            }}>
+              <div style={{
+                backgroundColor: '#ffe4e6',
+                color: '#e11d48',
+                borderRadius: '50%',
+                padding: '0.6rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <AlertTriangle size={26} color="#e11d48" />
+              </div>
+              <div>
+                <h4 style={{
+                  margin: '0 0 0.4rem 0',
+                  color: '#9f1239',
+                  fontSize: '1rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.02em',
+                  textTransform: 'uppercase',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  Aviso Legal de Responsabilidade Criminal (República de Moçambique)
+                </h4>
+                <p style={{
+                  margin: 0,
+                  fontSize: '0.92rem',
+                  color: '#881337',
+                  lineHeight: 1.55,
+                  fontWeight: 500
+                }}>
+                  O Serviço Nacional de Investigação Criminal (SERNIC) adverte que a prestação de falsas declarações ou falsificação de dados de identificação pessoal e académica constitui crime público com processo criminal obrigatório. Todos os dados submetidos são cruzados electronicamente com as bases centrais de Identificação Civil e Registo Criminal.
+                </p>
+              </div>
+            </div>
+
+            {/* DECLARAÇÃO DE COMPROMISSO E HONRA */}
+            <div style={{
+              backgroundColor: '#fefce8',
+              border: '2px solid #facc15',
+              borderRadius: '12px',
+              padding: '1.6rem 1.8rem',
+              marginBottom: '1.8rem',
+              boxShadow: '0 2px 8px rgba(202, 138, 4, 0.1)'
+            }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', cursor: 'pointer', fontSize: '0.98rem', color: '#422006', lineHeight: 1.65 }}>
                 <input
                   type="checkbox"
                   name="declaracaoVeracidade"
                   checked={formData.declaracaoVeracidade}
                   onChange={handleChange}
-                  style={{ width: '18px', height: '18px', marginTop: '2px', accentColor: '#c59b27' }}
+                  style={{ width: '22px', height: '22px', marginTop: '3px', accentColor: '#c59b27', flexShrink: 0, cursor: 'pointer' }}
                 />
                 <span>
-                  <strong>Declaração de Compromisso e Honra:</strong> Declaro por minha honra que todas as informações prestadas neste formulário e documentos anexados correspondem rigorosamente à verdade e que possuo idoneidade cívica e moral para o exercício de funções de investigação criminal nos termos da lei. Estou ciente de que falsas declarações implicam a anulação imediata da candidatura e sanções penais.
+                  <strong style={{ fontSize: '1.05rem', color: '#713f12', display: 'block', marginBottom: '0.35rem' }}>
+                    Declaração Solene de Compromisso e Honra:
+                  </strong>
+                  Declaro por minha honra que todas as informações prestadas neste formulário e respectivos documentos anexados correspondem rigorosamente à verdade, assumindo plena idoneidade cívica e moral para o exercício de funções de investigação criminal.
+                  <br /><br />
+                  Estou plenamente ciente de que a falsificação de identidade, de documentos autênticos ou a prestação de declarações falsas perante autoridade pública constitui crime previsto e punido nos termos dos <strong>Artigos 306.º e 310.º do Código Penal Moçambicano (Lei n.º 24/2019 de 24 de Dezembro)</strong> com <strong>pena de prisão maior de 2 a 8 anos e multa correspondente</strong>, determinando a anulação imediata e irrevogável da candidatura, o encaminhamento obrigatório ao Ministério Público para procedimento penal e a inabilitação definitiva para ingresso na Função Pública e no SERNIC (nos termos da Lei n.º 4/2022 - EGFAE).
                 </span>
               </label>
               {errors.declaracaoVeracidade && (
-                <div style={{ marginTop: '0.5rem', color: '#c32026', fontSize: '0.8rem', fontWeight: 700 }}>
-                  {errors.declaracaoVeracidade}
+                <div style={{ marginTop: '0.8rem', padding: '0.6rem 0.8rem', backgroundColor: '#fee2e2', border: '1px solid #f87171', borderRadius: '6px', color: '#b91c1c', fontSize: '0.88rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <AlertTriangle size={16} />
+                  <span>{errors.declaracaoVeracidade}</span>
                 </div>
               )}
             </div>
