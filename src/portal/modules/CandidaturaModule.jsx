@@ -720,13 +720,6 @@ export default function CandidaturaModule({
                   </option>
                 ))}
               </select>
-
-              {vagaEscolhida && (
-                <div style={{ marginTop: '0.8rem', backgroundColor: '#f8fafc', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.84rem' }}>
-                  <p><strong>Regime de Carreira:</strong> {vagaEscolhida.regime}</p>
-                  <p><strong>Remuneração:</strong> {vagaEscolhida.remuneracao}</p>
-                </div>
-              )}
             </div>
 
             <div className="form-grid-2">
