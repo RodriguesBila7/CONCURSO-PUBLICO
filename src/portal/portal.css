@@ -7771,5 +7771,458 @@ textarea::placeholder,
   border-color: rgba(96, 165, 250, 0.3);
 }
 
+/* ========================================================
+   MÓDULO DE AVALIAÇÃO DOS CANDIDATOS COM MODO FILTRO E NOTAS
+   ======================================================== */
+.deliberacao-module-header {
+  margin-bottom: 1.25rem;
+}
+
+.deliberacao-module-header .header-title-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+
+.deliberacao-module-header h3 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--portal-text-main);
+  margin: 0;
+}
+
+.deliberacao-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  background: rgba(195, 32, 38, 0.1);
+  color: #c32026;
+  border: 1px solid rgba(195, 32, 38, 0.25);
+  border-radius: 9999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.portal-theme-preto .deliberacao-header-badge {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.deliberacao-module-header p {
+  color: var(--portal-text-muted);
+  font-size: 0.88rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* MODO FILTRO TOOLBAR */
+.deliberacao-filter-toolbar {
+  background: var(--portal-card-bg);
+  border: 1px solid var(--portal-border);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--portal-shadow);
+}
+
+.deliberacao-filter-toolbar .filter-toolbar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.65rem;
+}
+
+.deliberacao-filter-toolbar .filter-toolbar-title {
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--portal-text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.deliberacao-filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.deliberacao-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: 9999px;
+  border: 1px solid var(--portal-border);
+  background: var(--portal-card-inner);
+  color: var(--portal-text-main);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.deliberacao-filter-pill:hover {
+  background: var(--portal-btn-tab-bg);
+  border-color: #c59b27;
+}
+
+.deliberacao-filter-pill .pill-counter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 0.4rem;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--portal-text-main);
+}
+
+.portal-theme-preto .deliberacao-filter-pill .pill-counter {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.deliberacao-filter-pill.active {
+  background: #c32026;
+  color: #ffffff;
+  border-color: #c32026;
+  box-shadow: 0 2px 8px rgba(195, 32, 38, 0.3);
+}
+
+.deliberacao-filter-pill.active .pill-counter {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+.deliberacao-filter-pill.admitidos.active {
+  background: #15803d;
+  border-color: #15803d;
+  box-shadow: 0 2px 8px rgba(21, 128, 61, 0.3);
+}
+
+.deliberacao-filter-pill.excluidos.active {
+  background: #b91c1c;
+  border-color: #b91c1c;
+  box-shadow: 0 2px 8px rgba(185, 28, 28, 0.3);
+}
+
+.deliberacao-filter-pill.convocados.active {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  box-shadow: 0 2px 8px rgba(29, 78, 216, 0.3);
+}
+
+.deliberacao-filter-pill.pendentes.active {
+  background: #475569;
+  border-color: #475569;
+  box-shadow: 0 2px 8px rgba(71, 85, 105, 0.3);
+}
+
+.deliberacao-filter-pill.suplentes.active {
+  background: #b45309;
+  border-color: #b45309;
+  box-shadow: 0 2px 8px rgba(180, 83, 9, 0.3);
+}
+
+/* SIDEBAR SEARCH & FILTERS */
+.deliberacao-sidebar-search {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--portal-border);
+  background: var(--portal-card-inner);
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.deliberacao-search-box {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--portal-input-bg);
+  border: 1px solid var(--portal-input-border);
+  border-radius: 8px;
+  padding: 0.45rem 0.75rem;
+  transition: border-color 0.2s ease;
+}
+
+.deliberacao-search-box:focus-within {
+  border-color: #c32026;
+}
+
+.deliberacao-search-box input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.82rem;
+  color: var(--portal-input-text);
+  width: 100%;
+}
+
+.deliberacao-sidebar-filters-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+
+.deliberacao-sidebar-filters-row select {
+  font-size: 0.75rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--portal-input-border);
+  background: var(--portal-input-bg);
+  color: var(--portal-input-text);
+  outline: none;
+}
+
+.deliberacao-sidebar-filters-row select:focus {
+  border-color: #c32026;
+}
+
+/* CANDIDATE SIDEBAR CARD SCORES */
+.deliberacao-item-scores-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.deliberacao-card-score {
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+}
+
+.deliberacao-card-score.positive {
+  background: rgba(34, 197, 94, 0.14);
+  color: #15803d;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.portal-theme-preto .deliberacao-card-score.positive {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.45);
+}
+
+.deliberacao-card-score.negative {
+  background: rgba(239, 68, 68, 0.14);
+  color: #b91c1c;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.portal-theme-preto .deliberacao-card-score.negative {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+.deliberacao-card-score.pending {
+  background: rgba(148, 163, 184, 0.15);
+  color: #64748b;
+  border: 1px dashed rgba(148, 163, 184, 0.4);
+}
+
+.portal-theme-preto .deliberacao-card-score.pending {
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+.deliberacao-card-media {
+  font-size: 0.72rem;
+  color: var(--portal-text-muted);
+  background: var(--portal-btn-tab-bg);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+/* CANDIDATE EVALUATION KPI SUMMARY GRID */
+.deliberacao-kpi-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px dashed var(--portal-border);
+  width: 100%;
+}
+
+.deliberacao-kpi-box {
+  background: var(--portal-card-inner);
+  border: 1px solid var(--portal-border);
+  border-radius: 8px;
+  padding: 0.65rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.deliberacao-kpi-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--portal-text-muted);
+}
+
+.deliberacao-kpi-val {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: var(--portal-text-main);
+}
+
+/* SCORE INPUT BOX & VALIDATIONS */
+.deliberacao-score-input-card {
+  background: var(--portal-card-inner);
+  border: 2px solid var(--portal-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--portal-shadow);
+}
+
+.score-input-flex {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-top: 0.65rem;
+}
+
+.input-nota-grande {
+  font-size: 1.45rem;
+  font-weight: 900;
+  padding: 0.5rem 0.85rem;
+  width: 130px;
+  text-align: center;
+  border-radius: 10px;
+  border: 2px solid var(--portal-input-border);
+  background: var(--portal-input-bg);
+  color: var(--portal-input-text);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.input-nota-grande:focus {
+  border-color: #c32026;
+  box-shadow: 0 0 0 3px rgba(195, 32, 38, 0.15);
+}
+
+.deliberacao-statutory-alert {
+  padding: 0.85rem 1.1rem;
+  border-radius: 10px;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  margin-top: 0.85rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.deliberacao-statutory-alert.danger {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #b91c1c;
+}
+
+.portal-theme-preto .deliberacao-statutory-alert.danger {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.deliberacao-statutory-alert.success {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: #15803d;
+}
+
+.portal-theme-preto .deliberacao-statutory-alert.success {
+  background: rgba(34, 197, 94, 0.18);
+  color: #86efac;
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+/* LOCKED RADIO CARD FOR ELIMINATED CANDIDATES */
+.deliberacao-radio-card.disabled-locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+  filter: grayscale(0.7);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.portal-theme-preto .deliberacao-radio-card.disabled-locked {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* TABLE "INSCRITOS NO CONCURSO" SCORES */
+.table-notas-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.table-nota-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  width: fit-content;
+}
+
+.table-nota-badge.positive {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.portal-theme-preto .table-nota-badge.positive {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.table-nota-badge.negative {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.portal-theme-preto .table-nota-badge.negative {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.table-nota-badge.pending {
+  background: rgba(148, 163, 184, 0.15);
+  color: #64748b;
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+}
+
+.table-media-sub {
+  font-size: 0.73rem;
+  color: var(--portal-text-muted);
+}
+
+
 
 

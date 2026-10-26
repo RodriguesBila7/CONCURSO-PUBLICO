@@ -364,7 +364,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     vagaTitulo: 'Investigador Criminal de 2ª Classe',
     carreira: 'Investigação Criminal',
     dataSubmissao: '2026-10-04T09:30:00Z',
-    status: 'Entrevista Profissional', // Fase 2
+    status: 'Admitido na Análise Documental', // Fase 1: Admitido na Análise Documental
     faseAtual: 2,
     habilitacoes: {
       grau: 'Licenciatura',
@@ -477,7 +477,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     vagaTitulo: 'Perito Forense Balístico e Dactiloscópico',
     carreira: 'Polícia Científica',
     dataSubmissao: '2026-10-08T11:00:00Z',
-    status: 'Excluído', // Excluído na Fase 1
+    status: 'Excluído na Análise Documental', // Excluído na Fase 1 (Documentos Incompletos)
     faseAtual: 1,
     habilitacoes: {
       grau: 'Licenciatura',
@@ -697,36 +697,38 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     vagaTitulo: 'Especialista em Cibersegurança e Crimes Cibernéticos',
     carreira: 'Inteligência Digital e Cibercrime',
     dataSubmissao: '2026-10-09T15:40:00Z',
-    status: 'Excluído', // Excluído na Fase 1
-    faseAtual: 1,
+    status: 'Excluído na Entrevista', // Fase 2: Reprovado na Entrevista (< 10 val)
+    faseAtual: 2,
     habilitacoes: {
       grau: 'Licenciatura',
       curso: 'Engenharia de Redes e Telecomunicações',
       instituicao: 'Instituto Superior Politécnico de Tete (ISPT)',
-      anoConclusao: 2012,
+      anoConclusao: 2020,
       mediaFinal: '14.5'
     },
     documentos: [
       { id: 'doc-bi', tipo: 'Bilhete de Identidade Autenticado', status: 'Validado', tamanho: '1.2 MB', data: '2026-10-09' }
     ],
     detalhesFase: {
-      titulo: 'Candidatura Excluída na 1ª Fase (Limite de Idade)',
-      dataEvento: 'Publicado a 17 de Outubro de 2026',
+      titulo: '2ª Fase: Excluído na Entrevista Profissional (Nota < 10.0)',
+      dataEvento: 'Entrevista realizada a 22 de Outubro de 2026',
       local: 'Comissão Central do Concurso - Tete',
-      observacoes: 'Prazo legal de recurso: 5 dias úteis a contar da publicação oficial.',
-      motivoExclusao: 'Art. 35 do EGFAE - Idade superior a 40 anos à data limite de submissão do concurso.',
-      mensagemComissao: 'A sua candidatura foi excluída na 1ª Fase por não cumprir o requisito de idade máxima legal estabelecido no Edital e no EGFAE.'
+      observacoes: 'Nota obtida: 8.5 valores. Por determinação do Edital, notas inferiores a 10 valores implicam exclusão por reprovação.',
+      motivoExclusao: 'Nota na Entrevista Profissional inferior a 10.0 valores (8.5 valores - Reprovado)',
+      mensagemComissao: 'Candidato reprovado na Entrevista Profissional por não ter alcançado a nota mínima eliminatória de 10.0 valores (obteve 8.5 valores).'
     },
     deliberacaoJuri: {
-      decisao: 'Excluído',
-      dataDeliberacao: '2026-10-17T11:00:00Z',
+      decisao: 'Excluído na Entrevista',
+      dataDeliberacao: '2026-10-22T14:30:00Z',
       operador: 'Dra. Elsa Manjate (Vogal do Júri)',
-      motivoExclusao: 'Art. 35 do EGFAE - Idade superior a 40 anos',
-      parecer: 'Excluído nos termos legais do Estatuto Geral dos Funcionários e Agentes do Estado.'
+      notaFinal: '8.5',
+      motivoExclusao: 'Nota na Entrevista Profissional inferior a 10.0 valores (8.5 valores - Reprovado)',
+      parecer: 'Candidato demonstrou insuficiência técnica e regulamentar na Entrevista perante o Júri. Nota de 8.5 valores. Excluído nos termos legais.'
     },
     historico: [
       { data: '2026-10-09', etapa: 'Inscrição Submetida', descricao: 'Processo registado no módulo Inscritos no Concurso.' },
-      { data: '2026-10-17', etapa: '1ª Fase: Exclusão Documental', descricao: 'Exclusão por não observância da idade máxima legal.' }
+      { data: '2026-10-15', etapa: '1ª Fase: Admitido na Análise Documental', descricao: 'Documentos validados e convocado para entrevista.' },
+      { data: '2026-10-22', etapa: '2ª Fase: Excluído na Entrevista', descricao: 'Reprovado com nota final de 8.5 valores (inferior a 10.0).' }
     ]
   },
   {
@@ -1392,18 +1394,26 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
 
   const isFem = detectCandidateGender(current) === 'Feminino';
 
-  if (updates.status === 'Entrevista Profissional' || updates.status === 'Convocada para provas') {
-    novaEtapa = isFem ? '2ª Fase: Convocada para Entrevista' : '2ª Fase: Convocado para Entrevista';
-    descEtapa = updates.parecer || (updates.eventoLocal ? `Entrevista agendada em ${updates.eventoLocal}.` : (isFem ? 'Documentos aprovados. Convocada para a Entrevista Profissional.' : 'Documentos aprovados. Convocado para a Entrevista Profissional.'));
+  if (updates.status === 'Entrevista Profissional' || updates.status === 'Convocada para provas' || updates.status === 'Admitido na Análise Documental' || updates.status === 'Admitida na Análise Documental') {
+    novaEtapa = isFem ? '1ª Fase: Admitida na Análise Documental (Convocada)' : '1ª Fase: Admitido na Análise Documental (Convocado)';
+    descEtapa = updates.parecer || (updates.eventoLocal ? `Admitido na análise. Entrevista agendada em ${updates.eventoLocal} para ${updates.eventoData || 'data a definir'}.` : (isFem ? 'Documentos aprovados. Convocada para a Entrevista Profissional.' : 'Documentos aprovados. Convocado para a Entrevista Profissional.'));
     novaFaseAtual = 2;
   } else if (updates.status === 'Admitido' || updates.status === 'Admitida' || updates.status === 'Aprovada') {
-    novaEtapa = isFem ? '3ª Fase: Candidata Admitida' : '3ª Fase: Candidato Admitido';
-    descEtapa = `Aprovado na Entrevista com nota de ${updates.notaFinal || '18.0'} valores. Selecionado para a vaga.`;
+    novaEtapa = isFem ? '3ª Fase: Candidata Admitida (Vaga Efetiva)' : '3ª Fase: Candidato Admitido (Vaga Efetiva)';
+    descEtapa = `Aprovado na Entrevista com nota de ${updates.notaFinal || '18.0'} valores. Selecionado para provimento efetivo da vaga.`;
     novaFaseAtual = 3;
-  } else if (updates.status === 'Aprovado (Suplente)') {
-    novaEtapa = isFem ? '3ª Fase: Aprovada como Suplente' : '3ª Fase: Aprovado como Suplente';
-    descEtapa = `Aprovado na Entrevista com nota de ${updates.notaFinal || '16.0'} valores. Fica na lista de reserva.`;
+  } else if (updates.status === 'Aprovado (Suplente)' || updates.status === 'Aprovada (Suplente)') {
+    novaEtapa = isFem ? '3ª Fase: Aprovada como Suplente (Reserva)' : '3ª Fase: Aprovado como Suplente (Reserva)';
+    descEtapa = `Aprovado na Entrevista com nota de ${updates.notaFinal || '14.0'} valores. Integrado na lista de reserva / suplente.`;
     novaFaseAtual = 3;
+  } else if (updates.status === 'Excluído na Análise Documental' || updates.status === 'Excluída na Análise Documental') {
+    novaEtapa = isFem ? '1ª Fase: Excluída na Análise Documental' : '1ª Fase: Excluído na Análise Documental';
+    descEtapa = updates.motivoExclusao || updates.parecer || 'Exclusão por falta de documentos ou inconformidade regulamentar.';
+    novaFaseAtual = 1;
+  } else if (updates.status === 'Excluído na Entrevista' || updates.status === 'Excluída na Entrevista') {
+    novaEtapa = isFem ? '2ª Fase: Excluída na Entrevista Profissional' : '2ª Fase: Excluído na Entrevista Profissional';
+    descEtapa = updates.motivoExclusao || `Reprovado com nota de ${updates.notaFinal || '8.0'} valores (inferior ao mínimo exigido de 10.0 valores).`;
+    novaFaseAtual = 2;
   } else if (updates.status === 'Excluído' || updates.status === 'Excluída') {
     novaEtapa = isFem ? 'Candidata Excluída' : 'Candidatura Excluída';
     descEtapa = updates.motivoExclusao || updates.parecer || 'Não cumpre os requisitos do concurso.';
@@ -1438,12 +1448,16 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
     },
     detalhesFase: {
       ...current.detalhesFase,
-      titulo: finalStatus === 'Entrevista Profissional'
-        ? (isFem ? 'Convocada para 2ª Fase: Entrevista Profissional' : 'Convocado para 2ª Fase: Entrevista Profissional')
+      titulo: (finalStatus === 'Admitido na Análise Documental' || finalStatus === 'Admitida na Análise Documental' || finalStatus === 'Entrevista Profissional')
+        ? (isFem ? '1ª Fase: Admitida na Análise Documental (Convocada p/ Entrevista)' : '1ª Fase: Admitido na Análise Documental (Convocado p/ Entrevista)')
         : finalStatus === 'Admitido' || finalStatus === 'Admitida'
         ? (isFem ? '3ª Fase: Candidata Admitida na Vaga' : '3ª Fase: Candidato Admitido na Vaga')
-        : finalStatus === 'Aprovado (Suplente)'
+        : finalStatus === 'Aprovado (Suplente)' || finalStatus === 'Aprovada (Suplente)'
         ? (isFem ? '3ª Fase: Aprovada como Suplente (Lista de Reserva)' : '3ª Fase: Aprovado como Suplente (Lista de Reserva)')
+        : finalStatus === 'Excluído na Análise Documental' || finalStatus === 'Excluída na Análise Documental'
+        ? (isFem ? '1ª Fase: Excluída na Análise Documental' : '1ª Fase: Excluído na Análise Documental')
+        : finalStatus === 'Excluído na Entrevista' || finalStatus === 'Excluída na Entrevista'
+        ? (isFem ? '2ª Fase: Excluída na Entrevista Profissional (< 10 val)' : '2ª Fase: Excluído na Entrevista Profissional (< 10 val)')
         : finalStatus === 'Excluído' || finalStatus === 'Excluída'
         ? (isFem ? 'Candidata Não Aprovada no Concurso' : 'Candidato Não Aprovado no Concurso')
         : '1ª Fase: Análise de Documentos em Curso',
@@ -1452,10 +1466,10 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
       observacoes: updates.observacoes || current.detalhesFase?.observacoes || '',
       motivoExclusao: updates.motivoExclusao || current.detalhesFase?.motivoExclusao || null,
       mensagemComissao: updates.parecer || (
-        finalStatus === 'Entrevista Profissional'
+        (finalStatus === 'Entrevista Profissional' || finalStatus === 'Admitido na Análise Documental' || finalStatus === 'Admitida na Análise Documental')
           ? (isFem 
-              ? 'Parabéns! A sua candidatura foi aprovada na 1ª Fase de Avaliação Documental. Foi formalmente convocada para a 2ª Fase: Entrevista Profissional perante a Comissão de Júri.' 
-              : 'Parabéns! A sua candidatura foi aprovada na 1ª Fase de Avaliação Documental. Foi formalmente convocado para a 2ª Fase: Entrevista Profissional perante a Comissão de Júri.')
+              ? 'Parabéns! A sua candidatura foi ADMITIDA na 1ª Fase de Avaliação Documental. Foi formalmente convocada para a 2ª Fase: Entrevista Profissional perante a Comissão de Júri no local e data indicados.' 
+              : 'Parabéns! A sua candidatura foi ADMITIDA na 1ª Fase de Avaliação Documental. Foi formalmente convocado para a 2ª Fase: Entrevista Profissional perante a Comissão de Júri no local e data indicados.')
           : current.detalhesFase?.mensagemComissao || ''
       )
     }

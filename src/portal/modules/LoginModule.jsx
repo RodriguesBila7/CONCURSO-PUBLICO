@@ -532,14 +532,26 @@ export default function LoginModule({
                             let badgeColor = '#475569';
                             let badgeLabel = '1ª Fase: Em Análise Documental';
 
-                            if (c.status === 'Entrevista Profissional' || c.status === 'Convocada para provas' || c.status === 'Convocado' || c.status === 'Convocada') {
+                            if (c.status === 'Admitido na Análise Documental' || c.status === 'Admitida na Análise Documental') {
+                              badgeBg = '#dcfce7';
+                              badgeColor = '#15803d';
+                              badgeLabel = isFem ? '1ª Fase: Admitida na Análise' : '1ª Fase: Admitido na Análise';
+                            } else if (c.status === 'Excluído na Análise Documental' || c.status === 'Excluída na Análise Documental') {
+                              badgeBg = '#fee2e2';
+                              badgeColor = '#b91c1c';
+                              badgeLabel = isFem ? '1ª Fase: Excluída (Documental)' : '1ª Fase: Excluído (Documental)';
+                            } else if (c.status === 'Entrevista Profissional' || c.status === 'Convocada para provas' || c.status === 'Convocado' || c.status === 'Convocada') {
                               badgeBg = '#dbeafe';
                               badgeColor = '#1d4ed8';
-                              badgeLabel = isFem ? '2ª Fase: Convocada' : '2ª Fase: Convocado';
+                              badgeLabel = isFem ? '2ª Fase: Convocada (Entrevista)' : '2ª Fase: Convocado (Entrevista)';
+                            } else if (c.status === 'Excluído na Entrevista' || c.status === 'Excluída na Entrevista') {
+                              badgeBg = '#fee2e2';
+                              badgeColor = '#b91c1c';
+                              badgeLabel = isFem ? '2ª Fase: Excluída (< 10 val)' : '2ª Fase: Excluído (< 10 val)';
                             } else if (c.status === 'Admitido' || c.status === 'Admitida') {
                               badgeBg = '#dcfce7';
                               badgeColor = '#15803d';
-                              badgeLabel = isFem ? '3ª Fase: Admitida' : '3ª Fase: Admitido';
+                              badgeLabel = isFem ? '3ª Fase: Admitida (Vaga Efetiva)' : '3ª Fase: Admitido (Vaga Efetiva)';
                             } else if (c.status === 'Aprovado (Suplente)' || c.status === 'Aprovada (Suplente)') {
                               badgeBg = '#fef3c7';
                               badgeColor = '#b45309';
@@ -560,7 +572,10 @@ export default function LoginModule({
                                   fontSize: '0.8rem',
                                   fontWeight: 800,
                                   letterSpacing: '0.02em',
-                                  border: `1px solid ${badgeColor}33`
+                                  border: `1px solid ${badgeColor}33`,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.35rem'
                                 }}
                               >
                                 {badgeLabel}

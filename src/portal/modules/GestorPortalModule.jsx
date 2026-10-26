@@ -268,17 +268,23 @@ export default function GestorPortalModule({
   const [novoReqEspGestor, setNovoReqEspGestor] = useState('');
 
   // ========================================================
-  // ESTADOS DO MÓDULO "DELIBERAÇÃO DO JÚRI"
+  // ESTADOS DO MÓDULO "DELIBERAÇÃO DO JÚRI" (AVALIAÇÃO DOS CANDIDATOS)
   // ========================================================
   const [deliberandoCandidato, setDeliberandoCandidato] = useState(null);
-  const [novoEstado, setNovoEstado] = useState('Entrevista Profissional');
-  const [motivoExclusao, setMotivoExclusao] = useState('Art. 35 do EGFAE - Idade superior a 35 anos à data limite');
+  const [novoEstado, setNovoEstado] = useState('Admitido na Análise Documental');
+  const [motivoExclusao, setMotivoExclusao] = useState('Falta de Certificado de Habilitações autenticado');
   const [outroMotivo, setOutroMotivo] = useState('');
   const [parecerJuri, setParecerJuri] = useState('');
-  const [notaFinal, setNotaFinal] = useState('18.0');
+  const [notaFinal, setNotaFinal] = useState('16.0');
   const [eventoData, setEventoData] = useState('15 de Novembro de 2026 às 08h30');
   const [eventoLocal, setEventoLocal] = useState('Direcção Geral do SERNIC - Sala de Conferências n.º 1, Maputo');
   const [tipoProva, setTipoProva] = useState('Entrevista Profissional e de Competências');
+
+  // MODO FILTRO E PESQUISA NA AVALIAÇÃO DOS CANDIDATOS
+  const [filtroDeliberacaoModo, setFiltroDeliberacaoModo] = useState('todos'); // 'todos' | 'admitidos' | 'excluidos' | 'convocados' | 'pendentes' | 'suplentes'
+  const [buscaDeliberacao, setBuscaDeliberacao] = useState('');
+  const [filtroDeliberacaoVaga, setFiltroDeliberacaoVaga] = useState('todas');
+  const [filtroDeliberacaoProvincia, setFiltroDeliberacaoProvincia] = useState('todas');
 
   // ========================================================
   // DELIBERAÇÃO DIRETA DENTRO DA SUB-ABA DO DOSSIER (SEM SAIR DO MODAL)
@@ -292,17 +298,24 @@ export default function GestorPortalModule({
     let nota = null;
 
     const isFem = detectCandidateGender(candidato) === 'Feminino';
-    if (status === 'Entrevista Profissional') {
-      parecerPadrao = `Candidatura aprovada na 1ª Fase (Avaliação Documental). ${isFem ? 'Convocada' : 'Convocado'} oficialmente para a 2ª Fase (Entrevista Profissional).`;
-      evData = '15 de Novembro de 2026 às 08h30';
-      evLocal = 'Direcção Geral do SERNIC - Sala de Conferências n.º 1, Maputo';
+    if (status === 'Admitido na Análise Documental' || status === 'Admitida na Análise Documental' || status === 'Entrevista Profissional') {
+      parecerPadrao = `Candidatura admitida na 1ª Fase (Análise Documental). ${isFem ? 'Convocada' : 'Convocado'} formalmente para a Entrevista Profissional no local e data indicados.`;
+      evData = candidato.detalhesFase?.dataEvento || '15 de Novembro de 2026 às 08h30';
+      evLocal = candidato.detalhesFase?.local || `Gabinete Provincial de Entrevistas do SERNIC - ${candidato.provincia || 'Maputo'}`;
       evTitulo = 'Entrevista Profissional e de Competências';
+    } else if (status === 'Excluído na Análise Documental' || status === 'Excluída na Análise Documental') {
+      motivoFinal = 'Inconformidade na avaliação documental ou documentação incompleta.';
+      parecerPadrao = `Candidatura ${isFem ? 'excluída' : 'excluído'} na 1ª Fase de Análise Documental: ${motivoFinal}.`;
+    } else if (status === 'Excluído na Entrevista' || status === 'Excluída na Entrevista') {
+      motivoFinal = 'Classificação na Entrevista Profissional inferior a 10 valores (Reprovado).';
+      parecerPadrao = `Candidatura ${isFem ? 'excluída' : 'excluído'} do concurso: ${motivoFinal}.`;
+      nota = candidato.deliberacaoJuri?.notaFinal || '8.5';
     } else if (status === 'Admitido' || status === 'Admitida') {
-      parecerPadrao = `${isFem ? 'Candidata aprovada' : 'Candidato aprovado'} com mérito na Entrevista Profissional para provimento efetivo de vaga.`;
-      nota = '18.5';
+      parecerPadrao = `${isFem ? 'Candidata admitida' : 'Candidato admitido'} com mérito na Entrevista Profissional para provimento efetivo de vaga.`;
+      nota = candidato.deliberacaoJuri?.notaFinal || '18.5';
     } else if (status === 'Aprovado (Suplente)' || status === 'Aprovada (Suplente)') {
       parecerPadrao = `${isFem ? 'Candidata aprovada' : 'Candidato aprovado'} na Entrevista Profissional e ${isFem ? 'colocada' : 'colocado'} na lista de suplentes (reserva de recrutamento).`;
-      nota = '15.5';
+      nota = candidato.deliberacaoJuri?.notaFinal || '15.5';
     } else if (status === 'Excluído' || status === 'Excluída') {
       const isFase1 = candidato.faseAtual === 1 || candidato.status === 'Em Análise Documental' || candidato.status === 'Em análise' || candidato.status === 'Submetida';
       motivoFinal = isFase1 
@@ -447,18 +460,31 @@ export default function GestorPortalModule({
   const [selectedPautaPrint, setSelectedPautaPrint] = useState(null);
 
   // ========================================================
-  // CÁLCULOS ESTATÍSTICOS DO DASHBOARD
+  // CÁLCULOS ESTATÍSTICOS DO DASHBOARD E MÓDULOS
   // ========================================================
   const stats = useMemo(() => {
     const total = candidatos.length;
     const analise = candidatos.filter(c => c.status === 'Em Análise Documental' || c.status === 'Em análise' || c.status === 'Submetida').length;
-    const entrevista = candidatos.filter(c => c.status === 'Entrevista Profissional' || c.status === 'Convocada para provas').length;
-    const admitidos = candidatos.filter(c => c.status === 'Admitido' || c.status === 'Admitida').length;
-    const suplentes = candidatos.filter(c => c.status === 'Aprovado (Suplente)').length;
-    const excluidos = candidatos.filter(c => c.status === 'Excluído' || c.status === 'Excluída').length;
+    const entrevista = candidatos.filter(c => c.status === 'Entrevista Profissional' || c.status === 'Convocada para provas' || c.status === 'Convocado para provas' || c.status === 'Admitido na Análise Documental' || c.status === 'Admitida na Análise Documental').length;
+    
+    // Admitidos na 1ª fase (Documental) e na 3ª fase (Efetivo na Vaga)
+    const admitidosFase1 = candidatos.filter(c => c.status === 'Admitido na Análise Documental' || c.status === 'Admitida na Análise Documental').length;
+    const admitidosEfetivos = candidatos.filter(c => c.status === 'Admitido' || c.status === 'Admitida').length;
+    const admitidosTotal = admitidosFase1 + admitidosEfetivos;
+    
+    // Suplentes (Lista de reserva de recrutamento)
+    const suplentesTotal = candidatos.filter(c => c.status === 'Aprovado (Suplente)' || c.status === 'Aprovada (Suplente)').length;
+    
+    // Excluídos na 1ª Fase e na Entrevista (< 10 valores)
+    const excluidosFase1 = candidatos.filter(c => c.status === 'Excluído na Análise Documental' || c.status === 'Excluída na Análise Documental').length;
+    const excluidosEntrevista = candidatos.filter(c => c.status === 'Excluído na Entrevista' || c.status === 'Excluída na Entrevista' || (c.deliberacaoJuri?.notaFinal && parseFloat(c.deliberacaoJuri.notaFinal) < 10)).length;
+    const excluidosTotal = candidatos.filter(c => (c.status && c.status.includes('Excluíd'))).length;
 
-    const taxaAdmissao = total > 0 ? Math.round(((admitidos + suplentes) / total) * 100) : 0;
-    const taxaExclusao = total > 0 ? Math.round((excluidos / total) * 100) : 0;
+    const convocadosTotal = entrevista;
+    const pendentesTotal = analise;
+
+    const taxaAdmissao = total > 0 ? Math.round(((admitidosEfetivos + suplentesTotal) / total) * 100) : 0;
+    const taxaExclusao = total > 0 ? Math.round((excluidosTotal / total) * 100) : 0;
 
     // Distribuição por vaga
     const porVaga = {};
@@ -484,9 +510,17 @@ export default function GestorPortalModule({
       total,
       analise,
       entrevista,
-      admitidos,
-      suplentes,
-      excluidos,
+      admitidos: admitidosEfetivos,
+      admitidosFase1,
+      admitidosTotal,
+      suplentes: suplentesTotal,
+      suplentesTotal,
+      excluidos: excluidosTotal,
+      excluidosFase1,
+      excluidosEntrevista,
+      excluidosTotal,
+      convocadosTotal,
+      pendentesTotal,
       taxaAdmissao,
       taxaExclusao,
       porVaga,
@@ -500,9 +534,9 @@ export default function GestorPortalModule({
     const items = [
       { label: '3ª Fase: Admitidos (Efetivo)', value: stats.admitidos, color: '#16a34a' },
       { label: '3ª Fase: Aprovados (Suplentes)', value: stats.suplentes, color: '#f59e0b' },
-      { label: '2ª Fase: Entrevista Profissional', value: stats.entrevista, color: '#2563eb' },
+      { label: '2ª Fase: Convocados p/ Entrevista', value: stats.entrevista, color: '#2563eb' },
       { label: '1ª Fase: Em Análise Documental', value: stats.analise, color: '#64748b' },
-      { label: 'Excluídos do Concurso', value: stats.excluidos, color: '#c32026' },
+      { label: 'Excluídos do Concurso', value: stats.excluidosTotal, color: '#c32026' },
     ];
     const r = 84;
     const circumference = 2 * Math.PI * r;
@@ -605,14 +639,20 @@ export default function GestorPortalModule({
       if (filtroStatus !== 'todos') {
         if (filtroStatus === 'Em Análise Documental') {
           if (c.status !== 'Em Análise Documental' && c.status !== 'Em análise' && c.status !== 'Submetida') return false;
+        } else if (filtroStatus === 'Admitido na Análise Documental') {
+          if (c.status !== 'Admitido na Análise Documental' && c.status !== 'Admitida na Análise Documental') return false;
+        } else if (filtroStatus === 'Excluído na Análise Documental') {
+          if (c.status !== 'Excluído na Análise Documental' && c.status !== 'Excluída na Análise Documental') return false;
         } else if (filtroStatus === 'Entrevista Profissional') {
-          if (c.status !== 'Entrevista Profissional' && c.status !== 'Convocada para provas') return false;
+          if (c.status !== 'Entrevista Profissional' && c.status !== 'Convocada para provas' && c.status !== 'Convocado para provas' && c.status !== 'Admitido na Análise Documental' && c.status !== 'Admitida na Análise Documental') return false;
+        } else if (filtroStatus === 'Excluído na Entrevista') {
+          if (c.status !== 'Excluído na Entrevista' && c.status !== 'Excluída na Entrevista' && !(c.deliberacaoJuri?.notaFinal && parseFloat(c.deliberacaoJuri.notaFinal) < 10)) return false;
         } else if (filtroStatus === 'Admitido') {
           if (c.status !== 'Admitido' && c.status !== 'Admitida') return false;
         } else if (filtroStatus === 'Aprovado (Suplente)') {
-          if (c.status !== 'Aprovado (Suplente)') return false;
+          if (c.status !== 'Aprovado (Suplente)' && c.status !== 'Aprovada (Suplente)') return false;
         } else if (filtroStatus === 'Excluído') {
-          if (c.status !== 'Excluído' && c.status !== 'Excluída') return false;
+          if (!c.status?.includes('Excluíd')) return false;
         } else if (c.status !== filtroStatus) {
           return false;
         }
@@ -626,20 +666,83 @@ export default function GestorPortalModule({
   }, [candidatos, buscaInscrito, filtroVaga, filtroProvincia, filtroStatus, filtroGenero]);
 
   // ========================================================
+  // FILTRAGEM DO MÓDULO "AVALIAÇÃO DOS CANDIDATOS" (MODO FILTRO)
+  // ========================================================
+  const filteredDeliberacaoCandidatos = useMemo(() => {
+    return candidatos.filter(c => {
+      // Modo Filtro por Abas
+      if (filtroDeliberacaoModo === 'admitidos') {
+        const isAdmitido = c.status === 'Admitido na Análise Documental' || 
+          c.status === 'Admitida na Análise Documental' || 
+          c.status === 'Admitido' || 
+          c.status === 'Admitida';
+        if (!isAdmitido) return false;
+      } else if (filtroDeliberacaoModo === 'excluidos') {
+        const isExcluido = (c.status && c.status.includes('Excluíd')) ||
+          (c.deliberacaoJuri?.notaFinal && parseFloat(c.deliberacaoJuri.notaFinal) < 10);
+        if (!isExcluido) return false;
+      } else if (filtroDeliberacaoModo === 'convocados') {
+        const isConvocado = c.status === 'Admitido na Análise Documental' || 
+          c.status === 'Admitida na Análise Documental' || 
+          c.status === 'Entrevista Profissional' || 
+          c.status === 'Convocada para provas' || 
+          c.status === 'Convocado para provas' ||
+          c.status === 'Convocado' ||
+          c.status === 'Convocada';
+        if (!isConvocado) return false;
+      } else if (filtroDeliberacaoModo === 'pendentes') {
+        const isPendente = c.status === 'Em Análise Documental' || c.status === 'Em análise' || c.status === 'Submetida';
+        if (!isPendente) return false;
+      } else if (filtroDeliberacaoModo === 'suplentes') {
+        const isSuplente = c.status === 'Aprovado (Suplente)' || c.status === 'Aprovada (Suplente)';
+        if (!isSuplente) return false;
+      }
+
+      // Pesquisa por nome, bi, nuit, protocolo
+      const search = buscaDeliberacao.trim().toLowerCase();
+      if (search) {
+        const codMatch = (c.codigoCandidatura || '').toLowerCase().includes(search);
+        const nomeMatch = (c.nomeCompleto || '').toLowerCase().includes(search);
+        const biMatch = (c.biNumero || '').toLowerCase().includes(search);
+        const nuitMatch = (c.nuit || '').toLowerCase().includes(search);
+        if (!codMatch && !nomeMatch && !biMatch && !nuitMatch) return false;
+      }
+
+      // Filtro Vaga / Carreira
+      if (filtroDeliberacaoVaga !== 'todas' && c.vagaTitulo !== filtroDeliberacaoVaga) return false;
+
+      // Filtro Província
+      if (filtroDeliberacaoProvincia !== 'todas' && c.provincia !== filtroDeliberacaoProvincia) return false;
+
+      return true;
+    });
+  }, [candidatos, filtroDeliberacaoModo, buscaDeliberacao, filtroDeliberacaoVaga, filtroDeliberacaoProvincia]);
+
+  // ========================================================
   // ABRIR DELIBERAÇÃO PARA UM CANDIDATO ESPECÍFICO
   // ========================================================
   const iniciarDeliberacao = (candidato) => {
     setDeliberandoCandidato(candidato);
     const isFase1 = candidato.faseAtual === 1 || candidato.status === 'Em Análise Documental' || candidato.status === 'Em análise' || candidato.status === 'Submetida';
-    const isFase2 = candidato.faseAtual === 2 || candidato.status === 'Entrevista Profissional' || candidato.status === 'Convocada para provas';
+    const isFase2 = candidato.faseAtual === 2 || candidato.status === 'Admitido na Análise Documental' || candidato.status === 'Admitida na Análise Documental' || candidato.status === 'Entrevista Profissional' || candidato.status === 'Convocada para provas';
 
     const isFem = detectCandidateGender(candidato) === 'Feminino';
     if (isFase1) {
-      setNovoEstado('Entrevista Profissional');
-      setParecerJuri(`Candidatura conforme na validação documental. ${isFem ? 'Convocada' : 'Convocado'} para a 2ª Fase (Entrevista Profissional).`);
+      setNovoEstado(isFem ? 'Admitida na Análise Documental' : 'Admitido na Análise Documental');
+      setParecerJuri(`Candidatura com documentação em conformidade. ${isFem ? 'Admitida' : 'Admitido'} na Análise Documental (1ª Fase) e convocada para a Entrevista Profissional.`);
+      setEventoLocal(candidato.detalhesFase?.local || `Gabinete Provincial de Entrevistas do SERNIC - ${candidato.provincia || 'Maputo'}`);
+      setEventoData(candidato.detalhesFase?.dataEvento || '15 de Novembro de 2026 às 08h30');
     } else if (isFase2) {
-      setNovoEstado(isFem ? 'Admitida' : 'Admitido');
-      setParecerJuri(`${isFem ? 'Candidata demonstrou' : 'Candidato demonstrou'} excelente domínio técnico na Entrevista Profissional. ${isFem ? 'Proposta' : 'Proposto'} para provimento de vaga.`);
+      const currentNota = candidato.deliberacaoJuri?.notaFinal ? parseFloat(candidato.deliberacaoJuri.notaFinal) : 16.0;
+      if (currentNota < 10.0) {
+        setNovoEstado(isFem ? 'Excluída na Entrevista' : 'Excluído na Entrevista');
+        setParecerJuri(`Classificação de ${currentNota} valores na Entrevista Profissional (< 10 valores). Candidato reprovado e obrigatoriamente excluído.`);
+        setMotivoExclusao('Nota inferior a 10 valores na Entrevista Profissional');
+      } else {
+        setNovoEstado(isFem ? 'Admitida' : 'Admitido');
+        setParecerJuri(`${isFem ? 'Candidata demonstrou' : 'Candidato demonstrou'} excelente domínio técnico na Entrevista Profissional com nota de ${currentNota} valores. Proposta para provimento efetivo da vaga.`);
+      }
+      setNotaFinal(String(currentNota));
     } else {
       setNovoEstado(candidato.status);
       setParecerJuri(candidato.deliberacaoJuri?.parecer || '');
@@ -650,6 +753,12 @@ export default function GestorPortalModule({
     }
     if (candidato.deliberacaoJuri?.notaFinal) {
       setNotaFinal(candidato.deliberacaoJuri.notaFinal);
+    }
+    if (candidato.detalhesFase?.local) {
+      setEventoLocal(candidato.detalhesFase.local);
+    }
+    if (candidato.detalhesFase?.dataEvento) {
+      setEventoData(candidato.detalhesFase.dataEvento);
     }
     setGestorTab('deliberacao');
     setSelectedDossier(null);
@@ -662,30 +771,55 @@ export default function GestorPortalModule({
     if (e) e.preventDefault();
     if (!deliberandoCandidato) return;
 
-    const motivoFinal = (novoEstado === 'Excluído' || novoEstado === 'Excluída')
-      ? (motivoExclusao === 'Outro fundamento legal com descrição detalhada' ? outroMotivo : motivoExclusao)
+    const isFem = deliberandoCandidato ? (detectCandidateGender(deliberandoCandidato) === 'Feminino') : false;
+    const isExclusao = novoEstado.includes('Excluíd') || novoEstado === 'Excluído' || novoEstado === 'Excluída';
+
+    const motivoFinal = isExclusao
+      ? (motivoExclusao === 'Outro fundamento legal com descrição detalhada' || motivoExclusao === 'Outro motivo detalhado' ? outroMotivo : motivoExclusao)
       : null;
 
-    if ((novoEstado === 'Excluído' || novoEstado === 'Excluída') && !motivoFinal) {
-      if (onNotify) onNotify('error', 'É obrigatório indicar o fundamento legal para a exclusão do candidato.');
+    if (isExclusao && !motivoFinal) {
+      if (onNotify) onNotify('error', 'É obrigatório indicar o fundamento ou motivo para a exclusão do candidato.');
       return;
     }
 
-    const isFem = deliberandoCandidato ? (detectCandidateGender(deliberandoCandidato) === 'Feminino') : false;
+    // Regra Eliminatória da Entrevista: Se a nota for < 10 valores, é estritamente proibido admitir ou aprovar como suplente!
+    const notaNum = parseFloat(notaFinal);
+    if (!isNaN(notaNum) && (novoEstado === 'Admitido' || novoEstado === 'Admitida' || novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)')) {
+      if (notaNum < 10.0) {
+        if (onNotify) onNotify('error', 'Regra Eliminatória SERNIC: Candidatos com nota inferior a 10 valores reprovam na entrevista e devem ser excluídos.');
+        return;
+      }
+    }
+
+    // Validação da 1ª Fase (Admitido na Análise Documental): Local e data da entrevista são obrigatórios
+    if (novoEstado === 'Admitido na Análise Documental' || novoEstado === 'Admitida na Análise Documental' || novoEstado === 'Entrevista Profissional') {
+      if (!eventoLocal.trim() || !eventoData.trim()) {
+        if (onNotify) onNotify('error', 'É obrigatório comunicar o Local e a Data/Hora da Entrevista Profissional para os admitidos na 1ª Fase.');
+        return;
+      }
+    }
+
     const updates = {
       status: novoEstado,
-      parecer: parecerJuri || (novoEstado === 'Entrevista Profissional' 
-        ? `Candidatura aprovada na análise documental. ${isFem ? 'Convocada' : 'Convocado'} para entrevista.`
-        : (novoEstado === 'Admitido' || novoEstado === 'Admitida')
-        ? `${isFem ? 'Aprovada' : 'Aprovado'} na entrevista para provimento de vaga.`
-        : (novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)')
-        ? `${isFem ? 'Aprovada' : 'Aprovado'} na entrevista para a lista de reserva (suplente).`
-        : 'Decisão gravada com sucesso.'),
+      parecer: parecerJuri || (
+        (novoEstado === 'Admitido na Análise Documental' || novoEstado === 'Admitida na Análise Documental' || novoEstado === 'Entrevista Profissional')
+          ? `Candidatura aprovada e admitida na Análise Documental. ${isFem ? 'Convocada' : 'Convocado'} para a 2ª Fase (Entrevista Profissional).`
+          : (novoEstado === 'Admitido' || novoEstado === 'Admitida')
+          ? `${isFem ? 'Aprovada' : 'Aprovado'} na entrevista com nota ${notaFinal} valores para provimento de vaga.`
+          : (novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)')
+          ? `${isFem ? 'Aprovada' : 'Aprovado'} na entrevista com nota ${notaFinal} valores para a lista de reserva (suplente).`
+          : (novoEstado === 'Excluído na Análise Documental' || novoEstado === 'Excluída na Análise Documental')
+          ? `Exclusão na Análise Documental: ${motivoFinal}.`
+          : (novoEstado === 'Excluído na Entrevista' || novoEstado === 'Excluída na Entrevista')
+          ? `Reprovado na Entrevista com classificação de ${notaFinal} valores: ${motivoFinal}.`
+          : 'Decisão gravada com sucesso.'
+      ),
       motivoExclusao: motivoFinal,
-      notaFinal: (novoEstado === 'Admitido' || novoEstado === 'Aprovado (Suplente)') ? notaFinal : null,
-      eventoData: novoEstado === 'Entrevista Profissional' ? eventoData : null,
-      eventoLocal: novoEstado === 'Entrevista Profissional' ? eventoLocal : null,
-      eventoTitulo: novoEstado === 'Entrevista Profissional' ? 'Entrevista Profissional' : null
+      notaFinal: (novoEstado === 'Admitido' || novoEstado === 'Admitida' || novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)' || novoEstado === 'Excluído na Entrevista' || novoEstado === 'Excluída na Entrevista') ? notaFinal : null,
+      eventoData: (novoEstado === 'Admitido na Análise Documental' || novoEstado === 'Admitida na Análise Documental' || novoEstado === 'Entrevista Profissional') ? eventoData : null,
+      eventoLocal: (novoEstado === 'Admitido na Análise Documental' || novoEstado === 'Admitida na Análise Documental' || novoEstado === 'Entrevista Profissional') ? eventoLocal : null,
+      eventoTitulo: (novoEstado === 'Admitido na Análise Documental' || novoEstado === 'Admitida na Análise Documental' || novoEstado === 'Entrevista Profissional') ? tipoProva : null
     };
 
     const operadorNome = currentUser?.name || 'Dr. Alberto Chissano (Presidente do Júri)';
@@ -1157,13 +1291,40 @@ export default function GestorPortalModule({
   const getBadgeStyle = (status, candidate = null) => {
     const isFem = candidate ? (detectCandidateGender(candidate) === 'Feminino') : false;
     switch (status) {
+      case 'Admitido na Análise Documental':
+      case 'Admitida na Análise Documental':
+        return { 
+          bg: '#ecfdf5', 
+          color: '#047857', 
+          border: '#a7f3d0', 
+          label: isFem ? '1ª Fase: Admitida na Análise' : '1ª Fase: Admitido na Análise', 
+          icon: <CheckCircle2 size={14} /> 
+        };
+      case 'Excluído na Análise Documental':
+      case 'Excluída na Análise Documental':
+        return { 
+          bg: '#fee2e2', 
+          color: '#dc2626', 
+          border: '#fca5a5', 
+          label: isFem ? '1ª Fase: Excluída (Documentos)' : '1ª Fase: Excluído (Documentos)', 
+          icon: <XCircle size={14} /> 
+        };
+      case 'Excluído na Entrevista':
+      case 'Excluída na Entrevista':
+        return { 
+          bg: '#fef2f2', 
+          color: '#991b1b', 
+          border: '#fecaca', 
+          label: isFem ? '2ª Fase: Excluída (< 10 val)' : '2ª Fase: Excluído (< 10 val)', 
+          icon: <XCircle size={14} /> 
+        };
       case 'Admitido':
       case 'Admitida':
         return { 
           bg: '#dcfce7', 
           color: '#15803d', 
-          border: '#bbf7d0', 
-          label: isFem ? '3ª Fase: Admitida' : '3ª Fase: Admitido', 
+          border: '#86efac', 
+          label: isFem ? '3ª Fase: Admitida (Efetiva)' : '3ª Fase: Admitido (Efetivo)', 
           icon: <CheckCircle2 size={14} /> 
         };
       case 'Aprovado (Suplente)':
@@ -1687,10 +1848,13 @@ export default function GestorPortalModule({
                 <select value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
                   <option value="todos">Todos os Estados</option>
                   <option value="Em Análise Documental">1ª Fase: Em Análise Documental</option>
-                  <option value="Entrevista Profissional">2ª Fase: Entrevista Profissional</option>
-                  <option value="Admitido">3ª Fase: Admitido (Efetivo)</option>
-                  <option value="Aprovado (Suplente)">3ª Fase: Aprovado (Suplente)</option>
-                  <option value="Excluído">Excluído do Concurso</option>
+                  <option value="Admitido na Análise Documental">1ª Fase: Admitido(a) na Análise Documental</option>
+                  <option value="Excluído na Análise Documental">1ª Fase: Excluído(a) na Análise Documental</option>
+                  <option value="Entrevista Profissional">2ª Fase: Convocado(a) p/ Entrevista</option>
+                  <option value="Excluído na Entrevista">2ª Fase: Excluído(a) na Entrevista (&lt; 10 val)</option>
+                  <option value="Admitido">3ª Fase: Admitido(a) (Vaga Efetiva)</option>
+                  <option value="Aprovado (Suplente)">3ª Fase: Aprovado(a) (Suplente / Reserva)</option>
+                  <option value="Excluído">Excluídos do Concurso (Todos)</option>
                 </select>
               </div>
 
@@ -1755,13 +1919,17 @@ export default function GestorPortalModule({
                   <th>Carreira Pretendida</th>
                   <th>Província</th>
                   <th>Data de Inscrição</th>
-                  <th>Estado da Candidatura</th>
+                  <th>Estado Oficial</th>
+                  <th>Classificação / Notas</th>
                   <th style={{ textAlign: 'center' }}>Ações de Gestão</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredCandidatos.map(c => {
                   const b = getBadgeStyle(c.status, c);
+                  const hasInterviewNota = c.deliberacaoJuri?.notaFinal !== undefined && c.deliberacaoJuri?.notaFinal !== null && c.deliberacaoJuri?.notaFinal !== '';
+                  const notaNum = hasInterviewNota ? parseFloat(c.deliberacaoJuri.notaFinal) : null;
+
                   return (
                     <tr key={c.codigoCandidatura}>
                       <td>
@@ -1815,9 +1983,26 @@ export default function GestorPortalModule({
                           {b.icon}
                           <span>{b.label}</span>
                         </span>
-                        {c.deliberacaoJuri?.notaFinal && (
-                          <div className="nota-pill">Nota: {c.deliberacaoJuri.notaFinal} val.</div>
+                        {c.detalhesFase?.local && (c.status === 'Admitido na Análise Documental' || c.status === 'Entrevista Profissional') && (
+                          <div style={{ fontSize: '0.72rem', color: '#1d4ed8', marginTop: '0.25rem', fontWeight: 700 }}>
+                            📍 Entrevista: {c.detalhesFase.dataEvento || '15/11/2026'}
+                          </div>
                         )}
+                      </td>
+                      <td>
+                        <div className="table-notas-cell">
+                          {hasInterviewNota ? (
+                            <div className={`table-nota-badge ${notaNum >= 10 ? 'positive' : 'negative'}`}>
+                              <Award size={13} />
+                              <span>Entrevista: <strong>{c.deliberacaoJuri.notaFinal} val.</strong></span>
+                            </div>
+                          ) : (
+                            <span className="table-nota-pendente">Entrevista por realizar</span>
+                          )}
+                          <div className="table-media-sub">
+                            <span>Média Curso: <strong>{c.habilitacoes?.mediaFinal || '14.0'} val.</strong></span>
+                          </div>
+                        </div>
                       </td>
                       <td>
                         <div className="gestor-row-actions">
@@ -1828,16 +2013,16 @@ export default function GestorPortalModule({
                             title="Ver Dossier Completo do Candidato"
                           >
                             <Eye size={15} />
-                            <span>Ver Dossier</span>
+                            <span>Dossier</span>
                           </button>
                           <button
                             type="button"
                             className="btn-action-deliberar"
                             onClick={() => iniciarDeliberacao(c)}
-                            title="Avaliar candidato e definir resultado"
+                            title="Avaliar candidato no módulo Avaliação dos Candidatos"
                           >
                             <FileSignature size={15} />
-                            <span>Avaliar</span>
+                            <span>Avaliar Candidato</span>
                           </button>
                         </div>
                       </td>
@@ -1865,25 +2050,148 @@ export default function GestorPortalModule({
       )}
 
       {/* ========================================================
-          ABA 3: DELIBERAÇÃO DO JÚRI ("DECIDIR SE FICA ADMITIDO, PROVADO OU EXCLUIDO")
+          ABA 3: DELIBERAÇÃO DO JÚRI ("AVALIAÇÃO DOS CANDIDATOS")
           ======================================================== */}
       {gestorTab === 'deliberacao' && (
         <div className="gestor-tab-content fadeIn">
+          {/* CABEÇALHO DO MÓDULO DE AVALIAÇÃO DOS CANDIDATOS */}
+          <div className="deliberacao-module-header">
+            <div className="deliberacao-module-header-info">
+              <div className="deliberacao-header-badge">
+                <ShieldCheck size={16} />
+                <span>COMISSÃO CENTRAL DE JÚRI E AVALIAÇÃO • SERNIC 2026</span>
+              </div>
+              <h2>Módulo de Avaliação e Deliberação dos Candidatos</h2>
+              <p>
+                Homologação de candidaturas, análise documental (1ª Fase com convocatória para data e local de entrevista), e avaliação profissional (2ª Fase com exclusão obrigatória para notas inferiores a 10 valores e admissão sequencial de vagas).
+              </p>
+            </div>
+          </div>
+
+          {/* MODO FILTRO: SEPARAÇÃO CLARA ENTRE ADMITIDOS, EXCLUÍDOS, CONVOCADOS E PENDENTES */}
+          <div className="deliberacao-filter-toolbar">
+            <div className="deliberacao-filter-tabs">
+              <button
+                type="button"
+                className={`deliberacao-filter-pill ${filtroDeliberacaoModo === 'todos' ? 'active' : ''}`}
+                onClick={() => setFiltroDeliberacaoModo('todos')}
+              >
+                <span>📋 Todos os Inscritos</span>
+                <span className="pill-counter">{candidatos.length}</span>
+              </button>
+
+              <button
+                type="button"
+                className={`deliberacao-filter-pill admitidos ${filtroDeliberacaoModo === 'admitidos' ? 'active' : ''}`}
+                onClick={() => setFiltroDeliberacaoModo('admitidos')}
+              >
+                <span className="dot dot-admitido" />
+                <span>🟢 Admitidos</span>
+                <span className="pill-counter">{stats.admitidosTotal}</span>
+              </button>
+
+              <button
+                type="button"
+                className={`deliberacao-filter-pill excluidos ${filtroDeliberacaoModo === 'excluidos' ? 'active' : ''}`}
+                onClick={() => setFiltroDeliberacaoModo('excluidos')}
+              >
+                <span className="dot dot-excluido" />
+                <span>🔴 Excluídos</span>
+                <span className="pill-counter">{stats.excluidosTotal}</span>
+              </button>
+
+              <button
+                type="button"
+                className={`deliberacao-filter-pill convocados ${filtroDeliberacaoModo === 'convocados' ? 'active' : ''}`}
+                onClick={() => setFiltroDeliberacaoModo('convocados')}
+              >
+                <span className="dot dot-convocado" />
+                <span>🔵 Convocados p/ Entrevista</span>
+                <span className="pill-counter">{stats.convocadosTotal}</span>
+              </button>
+
+              <button
+                type="button"
+                className={`deliberacao-filter-pill pendentes ${filtroDeliberacaoModo === 'pendentes' ? 'active' : ''}`}
+                onClick={() => setFiltroDeliberacaoModo('pendentes')}
+              >
+                <span className="dot dot-pendente" />
+                <span>🟡 Pendentes (Em Análise)</span>
+                <span className="pill-counter">{stats.pendentesTotal}</span>
+              </button>
+
+              <button
+                type="button"
+                className={`deliberacao-filter-pill suplentes ${filtroDeliberacaoModo === 'suplentes' ? 'active' : ''}`}
+                onClick={() => setFiltroDeliberacaoModo('suplentes')}
+              >
+                <span className="dot dot-suplente" />
+                <span>🟠 Suplentes (Reserva)</span>
+                <span className="pill-counter">{stats.suplentesTotal}</span>
+              </button>
+            </div>
+          </div>
+
           <div className="deliberacao-container-grid">
-            {/* LADO ESQUERDO: SELEÇÃO DE CANDIDATO */}
+            {/* LADO ESQUERDO: SELEÇÃO DE CANDIDATO COM MODO FILTRO E NOTAS VISÍVEIS */}
             <div className="deliberacao-sidebar-card">
               <div className="deliberacao-sidebar-header">
-                <h3>
-                  <Users size={17} color="#c32026" />
-                  Lista de Candidatos para Avaliação
-                </h3>
-                <span className="sidebar-count">{candidatos.length} no total</span>
+                <div>
+                  <h3>
+                    <Users size={17} color="#c32026" />
+                    <span>Candidatos para Avaliação</span>
+                  </h3>
+                  <span className="sidebar-count">
+                    A exibir <strong>{filteredDeliberacaoCandidatos.length}</strong> de {candidatos.length}
+                  </span>
+                </div>
               </div>
 
+              {/* BUSCA RÁPIDA E FILTROS NA SIDEBAR */}
+              <div className="deliberacao-sidebar-search">
+                <div className="deliberacao-search-box">
+                  <Search size={14} className="search-icon" />
+                  <input
+                    type="text"
+                    placeholder="Filtrar por nome, BI, NUIT..."
+                    value={buscaDeliberacao}
+                    onChange={(e) => setBuscaDeliberacao(e.target.value)}
+                  />
+                  {buscaDeliberacao && (
+                    <button type="button" onClick={() => setBuscaDeliberacao('')}>✕</button>
+                  )}
+                </div>
+
+                <div className="deliberacao-sidebar-filters-row">
+                  <select
+                    value={filtroDeliberacaoVaga}
+                    onChange={(e) => setFiltroDeliberacaoVaga(e.target.value)}
+                  >
+                    <option value="todas">Todas as Carreiras</option>
+                    {INITIAL_VAGAS.map(v => (
+                      <option key={v.id} value={v.titulo}>{v.titulo}</option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={filtroDeliberacaoProvincia}
+                    onChange={(e) => setFiltroDeliberacaoProvincia(e.target.value)}
+                  >
+                    <option value="todas">Todas Províncias</option>
+                    {PROVINCIAS_MOCAMBIQUE.map(p => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* LISTAGEM DE CANDIDATOS COM NOTAS EM DESTAQUE */}
               <div className="deliberacao-candidatos-list">
-                {candidatos.map(c => {
+                {filteredDeliberacaoCandidatos.map(c => {
                   const b = getBadgeStyle(c.status, c);
                   const isSelected = deliberandoCandidato?.codigoCandidatura === c.codigoCandidatura;
+                  const hasInterviewNota = c.deliberacaoJuri?.notaFinal !== undefined && c.deliberacaoJuri?.notaFinal !== null && c.deliberacaoJuri?.notaFinal !== '';
+                  const notaNum = hasInterviewNota ? parseFloat(c.deliberacaoJuri.notaFinal) : null;
 
                   return (
                     <div
@@ -1892,23 +2200,41 @@ export default function GestorPortalModule({
                       onClick={() => {
                         setDeliberandoCandidato(c);
                         const isF1 = c.faseAtual === 1 || c.status === 'Em Análise Documental' || c.status === 'Em análise' || c.status === 'Submetida';
-                        const isF2 = c.faseAtual === 2 || c.status === 'Entrevista Profissional' || c.status === 'Convocada para provas';
+                        const isF2 = c.faseAtual === 2 || c.status === 'Admitido na Análise Documental' || c.status === 'Admitida na Análise Documental' || c.status === 'Entrevista Profissional' || c.status === 'Convocada para provas';
                         const isFem = detectCandidateGender(c) === 'Feminino';
+
                         if (isF1) {
-                          setNovoEstado('Entrevista Profissional');
-                          setParecerJuri(`Documentos conferidos e aprovados. ${isFem ? 'Convocada' : 'Convocado'} para a 2ª Fase (Entrevista).`);
+                          setNovoEstado(isFem ? 'Admitida na Análise Documental' : 'Admitido na Análise Documental');
+                          setParecerJuri(`Documentos em conformidade. ${isFem ? 'Admitida' : 'Admitido'} na Análise Documental (1ª Fase) e ${isFem ? 'convocada' : 'convocado'} para a Entrevista Profissional.`);
+                          setEventoLocal(c.detalhesFase?.local || `Gabinete Provincial de Entrevistas do SERNIC - ${c.provincia || 'Maputo'}`);
+                          setEventoData(c.detalhesFase?.dataEvento || '15 de Novembro de 2026 às 08h30');
                         } else if (isF2) {
-                          setNovoEstado(isFem ? 'Admitida' : 'Admitido');
-                          setParecerJuri(`Excelente desempenho na Entrevista Profissional. ${isFem ? 'Aprovada' : 'Aprovado'} para a vaga.`);
+                          const currentNota = c.deliberacaoJuri?.notaFinal ? parseFloat(c.deliberacaoJuri.notaFinal) : 16.0;
+                          if (currentNota < 10.0) {
+                            setNovoEstado(isFem ? 'Excluída na Entrevista' : 'Excluído na Entrevista');
+                            setParecerJuri(`Classificação de ${currentNota} valores na Entrevista Profissional (< 10 valores). Candidato reprovado e obrigatoriamente excluído.`);
+                            setMotivoExclusao('Nota inferior a 10 valores na Entrevista Profissional');
+                          } else {
+                            setNovoEstado(isFem ? 'Admitida' : 'Admitido');
+                            setParecerJuri(`Excelente domínio técnico na Entrevista Profissional com nota de ${currentNota} valores. Proposta para provimento efetivo da vaga.`);
+                          }
+                          setNotaFinal(String(currentNota));
                         } else {
                           setNovoEstado(c.status);
                           setParecerJuri(c.deliberacaoJuri?.parecer || '');
                         }
+
                         if (c.deliberacaoJuri?.motivoExclusao) {
                           setMotivoExclusao(c.deliberacaoJuri.motivoExclusao);
                         }
                         if (c.deliberacaoJuri?.notaFinal) {
                           setNotaFinal(c.deliberacaoJuri.notaFinal);
+                        }
+                        if (c.detalhesFase?.local) {
+                          setEventoLocal(c.detalhesFase.local);
+                        }
+                        if (c.detalhesFase?.dataEvento) {
+                          setEventoData(c.detalhesFase.dataEvento);
                         }
                       }}
                     >
@@ -1932,20 +2258,62 @@ export default function GestorPortalModule({
                           title={b.label}
                         />
                       </div>
+
                       <div className="item-sub">
-                        <span>{c.vagaTitulo}</span>
+                        <span>{c.vagaTitulo} • {c.provincia || 'Maputo'}</span>
                       </div>
+
+                      {/* NOTAS EM DESTAQUE NO CARTÃO */}
+                      <div className="deliberacao-item-scores-wrap">
+                        {hasInterviewNota ? (
+                          <div className={`deliberacao-card-score ${notaNum >= 10 ? 'positive' : 'negative'}`}>
+                            <Award size={11} />
+                            <span>Nota Entrevista: <strong>{c.deliberacaoJuri.notaFinal} val.</strong> {notaNum >= 10 ? '✓' : '✗ (<10)'}</span>
+                          </div>
+                        ) : (
+                          <div className="deliberacao-card-score pending">
+                            <span>Entrevista: Pendente</span>
+                          </div>
+                        )}
+
+                        <div className="deliberacao-card-media">
+                          <span>Média Acad.: <strong>{c.habilitacoes?.mediaFinal || '14.0'} val.</strong></span>
+                        </div>
+                      </div>
+
                       <div className="item-meta">
                         <span className="item-protocolo">{c.codigoCandidatura}</span>
-                        <span className="item-status-text" style={{ color: b.color }}>{b.label}</span>
+                        <span className="item-status-text" style={{ color: b.color, fontWeight: 700 }}>{b.label}</span>
                       </div>
                     </div>
                   );
                 })}
+
+                {filteredDeliberacaoCandidatos.length === 0 && (
+                  <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: 'var(--portal-text-muted)' }}>
+                    <AlertCircle size={28} color="#94a3b8" style={{ margin: '0 auto 0.5rem' }} />
+                    <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem' }}>
+                      Nenhum candidato encontrado no filtro "{filtroDeliberacaoModo}".
+                    </p>
+                    <button
+                      type="button"
+                      className="btn-reset-filters"
+                      style={{ marginTop: '0.6rem' }}
+                      onClick={() => {
+                        setFiltroDeliberacaoModo('todos');
+                        setBuscaDeliberacao('');
+                        setFiltroDeliberacaoVaga('todas');
+                        setFiltroDeliberacaoProvincia('todas');
+                      }}
+                    >
+                      Ver Todos os Inscritos
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* LADO DIREITO: ESTAÇÃO FORMAL DE DELIBERAÇÃO */}
+            {/* LADO DIREITO: ESTAÇÃO FORMAL DE DELIBERAÇÃO COM REGRAS E NOTAS */}
             <div className="deliberacao-main-panel">
               {deliberandoCandidato ? (
                 <div className="deliberacao-form-card">
@@ -1985,7 +2353,7 @@ export default function GestorPortalModule({
                           Província: <strong>{deliberandoCandidato.provincia || 'Maputo'}</strong>
                         </p>
                         <p className="candidate-vaga-text">
-                          Candidatura a: <strong>{deliberandoCandidato.vagaTitulo}</strong>
+                          Candidatura a: <strong>{deliberandoCandidato.vagaTitulo}</strong> ({deliberandoCandidato.carreira})
                         </p>
                       </div>
                     </div>
@@ -1996,8 +2364,45 @@ export default function GestorPortalModule({
                       onClick={() => setSelectedDossier(deliberandoCandidato)}
                     >
                       <Eye size={15} />
-                      <span>Abrir Dossier</span>
+                      <span>Abrir Dossier Completo</span>
                     </button>
+                  </div>
+
+                  {/* PAINEL DE NOTAS E APROVEITAMENTO ACADÉMICO */}
+                  <div className="deliberacao-kpi-summary-grid">
+                    <div className="deliberacao-kpi-box">
+                      <span className="kpi-title">Média Académica de Ingresso</span>
+                      <strong className="kpi-score green">
+                        {deliberandoCandidato.habilitacoes?.mediaFinal || '14.0'} <span className="kpi-unit">/ 20.0 val.</span>
+                      </strong>
+                      <span className="kpi-desc">{deliberandoCandidato.habilitacoes?.curso || 'Habilitações Homologadas'}</span>
+                    </div>
+
+                    <div className={`deliberacao-kpi-box ${deliberandoCandidato.deliberacaoJuri?.notaFinal ? (parseFloat(deliberandoCandidato.deliberacaoJuri.notaFinal) >= 10 ? 'positive-border' : 'negative-border') : ''}`}>
+                      <span className="kpi-title">Nota da Entrevista Profissional</span>
+                      {deliberandoCandidato.deliberacaoJuri?.notaFinal ? (
+                        <strong className={`kpi-score ${parseFloat(deliberandoCandidato.deliberacaoJuri.notaFinal) >= 10 ? 'green' : 'red'}`}>
+                          {deliberandoCandidato.deliberacaoJuri.notaFinal} <span className="kpi-unit">/ 20.0 val.</span>
+                        </strong>
+                      ) : (
+                        <strong className="kpi-score gray">Pendente</strong>
+                      )}
+                      <span className="kpi-desc">
+                        {deliberandoCandidato.deliberacaoJuri?.notaFinal 
+                          ? (parseFloat(deliberandoCandidato.deliberacaoJuri.notaFinal) >= 10 ? 'Aprovado (≥ 10 valores)' : 'Reprovado / Excluído (< 10 valores)')
+                          : 'Aguardando lançamento oficial'}
+                      </span>
+                    </div>
+
+                    <div className="deliberacao-kpi-box">
+                      <span className="kpi-title">Local & Data da Entrevista</span>
+                      <strong className="kpi-location">
+                        {deliberandoCandidato.detalhesFase?.local ? '📍 Agendada' : '⏳ A Definir'}
+                      </strong>
+                      <span className="kpi-desc">
+                        {deliberandoCandidato.detalhesFase?.dataEvento || 'Conforme Convocatória Oficial'}
+                      </span>
+                    </div>
                   </div>
 
                   {/* FORMULÁRIO DE DELIBERAÇÃO FORMAL */}
@@ -2005,8 +2410,12 @@ export default function GestorPortalModule({
                     {(() => {
                       const candFase = deliberandoCandidato.faseAtual || (
                         (deliberandoCandidato.status === 'Em Análise Documental' || deliberandoCandidato.status === 'Em análise' || deliberandoCandidato.status === 'Submetida') ? 1 :
-                        (deliberandoCandidato.status === 'Entrevista Profissional' || deliberandoCandidato.status === 'Convocada para provas') ? 2 : 3
+                        (deliberandoCandidato.status === 'Admitido na Análise Documental' || deliberandoCandidato.status === 'Admitida na Análise Documental' || deliberandoCandidato.status === 'Entrevista Profissional' || deliberandoCandidato.status === 'Convocada para provas') ? 2 : 3
                       );
+
+                      const isDelibFem = detectCandidateGender(deliberandoCandidato) === 'Feminino';
+                      const notaAtualNum = parseFloat(notaFinal);
+                      const isReprovadoNota = !isNaN(notaAtualNum) && notaAtualNum < 10.0;
 
                       return (
                         <>
@@ -2015,173 +2424,107 @@ export default function GestorPortalModule({
                             <div className="banner-title">
                               <ShieldCheck size={18} />
                               <span>
-                                {candFase === 1 && '1ª Fase: Análise de Documentos'}
-                                {candFase === 2 && '2ª Fase: Entrevista Profissional'}
-                                {candFase === 3 && `3ª Fase: Resultado Final (${deliberandoCandidato.status})`}
+                                {candFase === 1 && '1ª Fase: Análise Documental (Regra: Admitido na Análise ou Exclusão Sumária)'}
+                                {candFase === 2 && '2ª Fase: Entrevista Profissional (Regra: Nota < 10 Exclui; ≥ 10 Aprova / Admite por Vagas)'}
+                                {candFase === 3 && `3ª Fase: Resultado Final Homologado (${deliberandoCandidato.status})`}
                               </span>
                             </div>
                             <p className="banner-desc">
-                              {candFase === 1 && 'Nesta 1ª fase, pode aprovar o candidato para a Entrevista ou excluir caso não cumpra os requisitos obrigatórios.'}
-                              {candFase === 2 && 'Após a realização da entrevista, defina o resultado: Admitido, Aprovado como Suplente ou Excluído.'}
-                              {candFase === 3 && 'O candidato já tem o resultado gravado. Se necessário, pode alterar a decisão abaixo.'}
+                              {candFase === 1 && 'Na 1ª Fase, se a documentação estiver completa o candidato deve ser Admitido na Análise Documental com comunicação imediata de local e data da entrevista. Documentos incompletos ou inconformes devem ser excluídos de primeira.'}
+                              {candFase === 2 && 'Na 2ª Fase, candidatos com nota abaixo de 10.0 valores reprovam e são obrigatoriamente excluídos. Candidatos com 10.0 valores para cima são aprovados e admitidos seguindo a sequência das vagas do edital.'}
+                              {candFase === 3 && 'O candidato já tem o resultado gravado. Pode atualizar as notas ou a decisão final a qualquer momento.'}
                             </p>
                           </div>
 
                           <div className="deliberacao-choice-title">
                             <FileSignature size={18} color="#c32026" />
                             <span>
-                              {candFase === 1 && 'Escolha a decisão da 1ª Fase:'}
-                              {candFase === 2 && 'Escolha o resultado da Entrevista:'}
-                              {candFase === 3 && 'Alterar o resultado final do candidato:'}
+                              {candFase === 1 && 'Decisão da 1ª Fase (Análise Documental):'}
+                              {candFase >= 2 && 'Registo da Nota e Decisão da Entrevista Profissional:'}
                             </span>
                           </div>
 
-                          {/* OPÇÕES DA 1ª FASE: EXATAMENTE 2 OPÇÕES */}
-                          {candFase === 1 && (() => {
-                            const isDelibFem = deliberandoCandidato ? (detectCandidateGender(deliberandoCandidato) === 'Feminino') : false;
-                            return (
-                              <div className="deliberacao-options-grid">
-                                {/* OPÇÃO 1A: APROVAR P/ ENTREVISTA */}
-                                <label 
-                                  className={`deliberacao-radio-card option-convocado ${novoEstado === 'Entrevista Profissional' ? 'checked' : ''}`}
-                                  onClick={() => {
-                                    setNovoEstado('Entrevista Profissional');
-                                    if (!parecerJuri) setParecerJuri(`Documentos aprovados. ${isDelibFem ? 'Convocada' : 'Convocado'} para a 2ª Fase (Entrevista).`);
-                                  }}
-                                >
-                                  <input
-                                    type="radio"
-                                    name="estadoDeliberacao"
-                                    value="Entrevista Profissional"
-                                    checked={novoEstado === 'Entrevista Profissional'}
-                                    onChange={() => {}}
-                                  />
-                                  <div className="radio-content">
-                                    <div className="radio-header">
-                                      <Calendar size={20} className="radio-icon" />
-                                      <strong>APROVAR PARA A 2ª FASE (ENTREVISTA)</strong>
-                                    </div>
-                                    <p>Documentos em conformidade. {isDelibFem ? 'Convidar a candidata' : 'Convidar o candidato'} para a Entrevista Profissional.</p>
+                          {/* OPÇÕES DA 1ª FASE: EXATAMENTE 2 OPÇÕES REQUERIDAS */}
+                          {candFase === 1 && (
+                            <div className="deliberacao-options-grid">
+                              {/* OPÇÃO 1A: ADMITIDO NA ANÁLISE DOCUMENTAL */}
+                              <label 
+                                className={`deliberacao-radio-card option-admitido ${(novoEstado === 'Admitido na Análise Documental' || novoEstado === 'Admitida na Análise Documental' || novoEstado === 'Entrevista Profissional') ? 'checked' : ''}`}
+                                onClick={() => {
+                                  setNovoEstado(isDelibFem ? 'Admitida na Análise Documental' : 'Admitido na Análise Documental');
+                                  if (!parecerJuri || parecerJuri.includes('exclu')) {
+                                    setParecerJuri(`Documentos em conformidade e completos. ${isDelibFem ? 'Admitida' : 'Admitido'} na Análise Documental (1ª Fase) e convocada para a Entrevista Profissional.`);
+                                  }
+                                }}
+                              >
+                                <input
+                                  type="radio"
+                                  name="estadoDeliberacao"
+                                  value="Admitido na Análise Documental"
+                                  checked={novoEstado === 'Admitido na Análise Documental' || novoEstado === 'Admitida na Análise Documental' || novoEstado === 'Entrevista Profissional'}
+                                  onChange={() => {}}
+                                />
+                                <div className="radio-content">
+                                  <div className="radio-header">
+                                    <CheckCircle2 size={20} className="radio-icon" />
+                                    <strong>{isDelibFem ? 'ADMITIR NA ANÁLISE DOCUMENTAL' : 'ADMITIR NA ANÁLISE DOCUMENTAL'}</strong>
                                   </div>
-                                </label>
+                                  <p>Documentos completos e conformes. O candidato é admitido na 1ª Fase e avança para a Entrevista Profissional.</p>
+                                </div>
+                              </label>
 
-                                {/* OPÇÃO 1B: EXCLUIR NA FASE 1 */}
-                                <label 
-                                  className={`deliberacao-radio-card option-excluido ${novoEstado === 'Excluído' || novoEstado === 'Excluída' ? 'checked' : ''}`}
-                                  onClick={() => {
-                                    setNovoEstado(isDelibFem ? 'Excluída' : 'Excluído');
-                                    if (!parecerJuri) setParecerJuri('Candidatura excluída por falta ou inconformidade de documentos obrigatórios.');
-                                  }}
-                                >
-                                  <input
-                                    type="radio"
-                                    name="estadoDeliberacao"
-                                    value="Excluído"
-                                    checked={novoEstado === 'Excluído' || novoEstado === 'Excluída'}
-                                    onChange={() => {}}
-                                  />
-                                  <div className="radio-content">
-                                    <div className="radio-header">
-                                      <XCircle size={20} className="radio-icon" />
-                                      <strong>EXCLUIR POR FALTA DE DOCUMENTOS</strong>
-                                    </div>
-                                    <p>Falta de certidão, idade fora do limite ou registo criminal inválido. Indique o motivo.</p>
+                              {/* OPÇÃO 1B: EXCLUIR NA ANÁLISE DOCUMENTAL */}
+                              <label 
+                                className={`deliberacao-radio-card option-excluido ${(novoEstado === 'Excluído na Análise Documental' || novoEstado === 'Excluída na Análise Documental' || novoEstado === 'Excluído' || novoEstado === 'Excluída') ? 'checked' : ''}`}
+                                onClick={() => {
+                                  setNovoEstado(isDelibFem ? 'Excluída na Análise Documental' : 'Excluído na Análise Documental');
+                                  if (!parecerJuri || parecerJuri.includes('Admitid')) {
+                                    setParecerJuri('Candidatura excluída logo de primeira na 1ª Fase por documentação incompleta ou inconformidade regulamentar.');
+                                  }
+                                }}
+                              >
+                                <input
+                                  type="radio"
+                                  name="estadoDeliberacao"
+                                  value="Excluído na Análise Documental"
+                                  checked={novoEstado === 'Excluído na Análise Documental' || novoEstado === 'Excluída na Análise Documental' || novoEstado === 'Excluído' || novoEstado === 'Excluída'}
+                                  onChange={() => {}}
+                                />
+                                <div className="radio-content">
+                                  <div className="radio-header">
+                                    <XCircle size={20} className="radio-icon" />
+                                    <strong>EXCLUIR NA ANÁLISE DOCUMENTAL</strong>
                                   </div>
-                                </label>
-                              </div>
-                            );
-                          })()}
+                                  <p>Documentos incompletos ou inconformidades com os requisitos do Edital. Exclusão sumária na 1ª Fase.</p>
+                                </div>
+                              </label>
+                            </div>
+                          )}
 
-                          {/* OPÇÕES DA 2ª E 3ª FASE: EXATAMENTE 3 RESULTADOS FINAIS */}
-                          {candFase >= 2 && (() => {
-                            const isDelibFem = deliberandoCandidato ? (detectCandidateGender(deliberandoCandidato) === 'Feminino') : false;
-                            return (
-                              <div className="deliberacao-options-grid">
-                                {/* OPÇÃO 2A: ADMITIDO */}
-                                <label 
-                                  className={`deliberacao-radio-card option-admitido ${novoEstado === 'Admitido' || novoEstado === 'Admitida' ? 'checked' : ''}`}
-                                  onClick={() => {
-                                    setNovoEstado(isDelibFem ? 'Admitida' : 'Admitido');
-                                    if (!parecerJuri) setParecerJuri(isDelibFem ? 'Candidata teve excelente aproveitamento na Entrevista Profissional. Proposta para a vaga.' : 'Candidato teve excelente aproveitamento na Entrevista Profissional. Proposto para a vaga.');
-                                  }}
-                                >
-                                  <input
-                                    type="radio"
-                                    name="estadoDeliberacao"
-                                    value="Admitido"
-                                    checked={novoEstado === 'Admitido' || novoEstado === 'Admitida'}
-                                    onChange={() => {}}
-                                  />
-                                  <div className="radio-content">
-                                    <div className="radio-header">
-                                      <CheckCircle2 size={20} className="radio-icon" />
-                                      <strong>{isDelibFem ? 'ADMITIR CANDIDATA (VAGA EFETIVA)' : 'ADMITIR CANDIDATO (VAGA EFETIVA)'}</strong>
-                                    </div>
-                                    <p>{isDelibFem ? 'Aprovada' : 'Aprovado'} com nota alta na entrevista para preencher a vaga disponível.</p>
-                                  </div>
-                                </label>
-
-                                {/* OPÇÃO 2B: APROVADO SUPLENTE */}
-                                <label 
-                                  className={`deliberacao-radio-card option-suplente ${novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)' ? 'checked' : ''}`}
-                                  onClick={() => {
-                                    setNovoEstado(isDelibFem ? 'Aprovada (Suplente)' : 'Aprovado (Suplente)');
-                                    if (!parecerJuri) setParecerJuri(isDelibFem ? 'Candidata aprovada com nota positiva na Entrevista. Integrada na lista de suplentes.' : 'Candidato aprovado com nota positiva na Entrevista. Integrado na lista de suplentes.');
-                                  }}
-                                >
-                                  <input
-                                    type="radio"
-                                    name="estadoDeliberacao"
-                                    value="Aprovado (Suplente)"
-                                    checked={novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)'}
-                                    onChange={() => {}}
-                                  />
-                                  <div className="radio-content">
-                                    <div className="radio-header">
-                                      <Award size={20} className="radio-icon" />
-                                      <strong>APROVAR COMO SUPLENTE (LISTA DE RESERVA)</strong>
-                                    </div>
-                                    <p>{isDelibFem ? 'Aprovada' : 'Aprovado'} na entrevista. Fica em lista de espera para futuras vagas.</p>
-                                  </div>
-                                </label>
-
-                                {/* OPÇÃO 2C: EXCLUÍDO */}
-                                <label 
-                                  className={`deliberacao-radio-card option-excluido ${novoEstado === 'Excluído' || novoEstado === 'Excluída' ? 'checked' : ''}`}
-                                  onClick={() => {
-                                    setNovoEstado(isDelibFem ? 'Excluída' : 'Excluído');
-                                    if (!parecerJuri) setParecerJuri('Nota insuficiente na Entrevista Profissional (inferior a 10 valores).');
-                                  }}
-                                >
-                                  <input
-                                    type="radio"
-                                    name="estadoDeliberacao"
-                                    value="Excluído"
-                                    checked={novoEstado === 'Excluído' || novoEstado === 'Excluída'}
-                                    onChange={() => {}}
-                                  />
-                                  <div className="radio-content">
-                                    <div className="radio-header">
-                                      <XCircle size={20} className="radio-icon" />
-                                      <strong>EXCLUIR (NÃO PASSOU NA ENTREVISTA)</strong>
-                                    </div>
-                                    <p>Nota inferior a 10 valores ou não compareceu na data marcada para a entrevista.</p>
-                                  </div>
-                                </label>
-                              </div>
-                            );
-                          })()}
-
-                          {/* CAMPOS ESPECÍFICOS: CONVOCAÇÃO PARA ENTREVISTA PROFISSIONAL */}
-                          {novoEstado === 'Entrevista Profissional' && (
+                          {/* CAMPOS ESPECÍFICOS DA 1ª FASE: COMUNICAÇÃO DE LOCAL E DATA DA ENTREVISTA */}
+                          {(novoEstado === 'Admitido na Análise Documental' || novoEstado === 'Admitida na Análise Documental' || novoEstado === 'Entrevista Profissional') && (
                             <div className="deliberacao-extra-box info-box">
-                              <div className="extra-box-title">
-                                <Calendar size={17} />
-                                <span>Marcar Entrevista (2ª Fase)</span>
+                              <div className="extra-box-title" style={{ color: '#1d4ed8' }}>
+                                <Calendar size={18} />
+                                <span>Comunicação Oficial da 2ª Fase: Local e Data da Entrevista Profissional</span>
                               </div>
+                              <p style={{ fontSize: '0.84rem', color: '#1e40af', margin: '0 0 1rem 0' }}>
+                                Aos candidatos admitidos na 1ª Fase deve-se comunicar obrigatoriamente o local e a data da entrevista. Estes dados serão visíveis na convocatória do candidato.
+                              </p>
                               <div className="extra-box-grid">
                                 <div className="form-field">
-                                  <label>Nome da Prova / Entrevista:</label>
+                                  <label>Data e Hora da Entrevista Profissional *:</label>
+                                  <input
+                                    type="text"
+                                    value={eventoData}
+                                    onChange={(e) => setEventoData(e.target.value)}
+                                    placeholder="Ex: 15 de Novembro de 2026 às 08h30"
+                                    required
+                                  />
+                                </div>
+
+                                <div className="form-field">
+                                  <label>Designação da Prova / Entrevista:</label>
                                   <input
                                     type="text"
                                     value={tipoProva}
@@ -2190,85 +2533,220 @@ export default function GestorPortalModule({
                                   />
                                 </div>
 
-                                <div className="form-field">
-                                  <label>Data e Hora da Entrevista:</label>
-                                  <input
-                                    type="text"
-                                    value={eventoData}
-                                    onChange={(e) => setEventoData(e.target.value)}
-                                    placeholder="Ex: 15 de Novembro de 2026 às 08h30"
-                                  />
-                                </div>
-
                                 <div className="form-field full-width">
-                                  <label>Local da Entrevista:</label>
+                                  <label>Local Oficial da Entrevista Profissional *:</label>
                                   <input
                                     type="text"
                                     value={eventoLocal}
                                     onChange={(e) => setEventoLocal(e.target.value)}
-                                    placeholder="Ex: Direcção Geral do SERNIC - Sala de Conferências n.º 1, Maputo"
+                                    placeholder="Ex: Gabinete Provincial de Entrevistas do SERNIC - Maputo, Sala n.º 2"
+                                    required
                                   />
                                 </div>
                               </div>
                             </div>
                           )}
 
-                          {/* CAMPOS ESPECÍFICOS: ADMITIDO OU SUPLENTE (COM NOTA DA ENTREVISTA) */}
-                          {(novoEstado === 'Admitido' || novoEstado === 'Admitida' || novoEstado === 'Aprovado (Suplente)') && (
-                            <div className={`deliberacao-extra-box ${novoEstado === 'Aprovado (Suplente)' ? 'warning-box' : 'success-box'}`}>
-                              <div className="extra-box-title">
-                                <Award size={17} />
-                                <span>
-                                  {novoEstado === 'Aprovado (Suplente)' 
-                                    ? 'Nota da Entrevista e Delegação (Lista de Reserva)'
-                                    : 'Nota da Entrevista e Delegação Proposta'}
-                                </span>
-                              </div>
-                              <div className="extra-box-grid">
-                                <div className="form-field">
-                                  <label>Nota da Entrevista (de 0 a 20 valores):</label>
+                          {/* OPÇÕES DA 2ª E 3ª FASE: ENTRADA DE NOTA E REGRA ESTRITA (< 10 EXCLUI, >= 10 APROVA/ADMITE) */}
+                          {candFase >= 2 && (
+                            <>
+                              {/* CAMPO OBRIGATÓRIO DE NOTA DA ENTREVISTA */}
+                              <div className="deliberacao-score-input-card">
+                                <div className="score-input-header">
+                                  <Award size={20} color="#c32026" />
+                                  <div>
+                                    <label style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>
+                                      Nota Obtida na Entrevista Profissional (Escala de 0.0 a 20.0 valores) *:
+                                    </label>
+                                    <p style={{ fontSize: '0.82rem', color: 'var(--portal-text-muted)', margin: '0.15rem 0 0 0' }}>
+                                      Regra Estatutária: <strong>Nota &lt; 10.0 valores = Reprovação e Exclusão Obrigatória</strong> • <strong>Nota ≥ 10.0 valores = Aprovado / Admitido por Vagas</strong>
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="score-input-flex">
                                   <input
                                     type="number"
                                     step="0.1"
-                                    min="10"
+                                    min="0"
                                     max="20"
                                     value={notaFinal}
-                                    onChange={(e) => setNotaFinal(e.target.value)}
-                                    style={{ fontWeight: 800, fontSize: '1.2rem', color: novoEstado === 'Aprovado (Suplente)' ? '#b45309' : '#15803d' }}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setNotaFinal(val);
+                                      const num = parseFloat(val);
+                                      if (!isNaN(num)) {
+                                        if (num < 10.0) {
+                                          setNovoEstado(isDelibFem ? 'Excluída na Entrevista' : 'Excluído na Entrevista');
+                                          setMotivoExclusao('Nota inferior a 10 valores na Entrevista Profissional');
+                                          setParecerJuri(`Classificação na Entrevista Profissional de ${val} valores. Candidatura reprovada por nota inferior a 10.0 valores. Exclusão obrigatória.`);
+                                        } else {
+                                          if (novoEstado.includes('Excluíd')) {
+                                            setNovoEstado(isDelibFem ? 'Admitida' : 'Admitido');
+                                            setParecerJuri(`Excelente aproveitamento na Entrevista Profissional com nota de ${val} valores. Proposta para provimento efetivo da vaga.`);
+                                          }
+                                        }
+                                      }
+                                    }}
+                                    className={`input-nota-grande ${isReprovadoNota ? 'reprovado' : 'aprovado'}`}
                                   />
-                                </div>
-                                <div className="form-field">
-                                  <label>Delegação Provincial:</label>
-                                  <input
-                                    type="text"
-                                    defaultValue={`Delegação Provincial de ${deliberandoCandidato.provincia || 'Maputo'}`}
-                                  />
+                                  <div className="score-status-indicator">
+                                    {isReprovadoNota ? (
+                                      <span className="score-tag-reprovado">
+                                        <XCircle size={16} /> Nota Negativa (&lt; 10 val) • Reprovado
+                                      </span>
+                                    ) : (
+                                      <span className="score-tag-aprovado">
+                                        <CheckCircle2 size={16} /> Nota Positiva (≥ 10 val) • Aprovado
+                                      </span>
+                                    )}
+                                    <span style={{ fontSize: '0.78rem', color: 'var(--portal-text-muted)' }}>
+                                      Média Académica de Ingresso: <strong>{deliberandoCandidato.habilitacoes?.mediaFinal || '14.0'} val.</strong>
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
+
+                              {/* ALERTA ESTATUTÁRIO DINÂMICO CONFORME A NOTA */}
+                              {isReprovadoNota ? (
+                                <div className="deliberacao-statutory-alert danger">
+                                  <AlertCircle size={22} className="alert-icon" />
+                                  <div>
+                                    <strong>REGRA ELIMINATÓRIA: REPROVADO COM NOTA INFERIOR A 10 VALORES</strong>
+                                    <p>
+                                      O candidato obteve classificação de <strong>{notaFinal} valores</strong>. Pelo regulamento oficial do concurso, candidatos com nota abaixo de 10 valores não podem ser aprovados nem admitidos e devem ser excluídos.
+                                    </p>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="deliberacao-statutory-alert success">
+                                  <CheckCircle2 size={22} className="alert-icon" />
+                                  <div>
+                                    <strong>CANDIDATO APROVADO COM NOTA POSITIVA ({notaFinal} VALORES)</strong>
+                                    <p>
+                                      O candidato atingiu a pontuação mínima regulamentar. Pode vir <strong>Admitido (Vaga Efetiva)</strong> se estiver dentro da quota das vagas abertas ou <strong>Aprovado como Suplente</strong> para a lista de reserva seguindo a ordem de mérito.
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* CARTÕES DE DECISÃO DA ENTREVISTA */}
+                              <div className="deliberacao-options-grid three-cards">
+                                {/* OPÇÃO 2A: ADMITIR (VAGA EFETIVA) - BLOQUEADO SE NOTA < 10 */}
+                                <label 
+                                  className={`deliberacao-radio-card option-admitido ${(novoEstado === 'Admitido' || novoEstado === 'Admitida') ? 'checked' : ''} ${isReprovadoNota ? 'disabled-locked' : ''}`}
+                                  onClick={() => {
+                                    if (isReprovadoNota) {
+                                      if (onNotify) onNotify('error', 'Candidatos com nota abaixo de 10 valores não podem ser admitidos!');
+                                      return;
+                                    }
+                                    setNovoEstado(isDelibFem ? 'Admitida' : 'Admitido');
+                                    setParecerJuri(`${isDelibFem ? 'Candidata' : 'Candidato'} com excelente nota de ${notaFinal} valores na Entrevista Profissional. Proposta para provimento efetivo da vaga.`);
+                                  }}
+                                >
+                                  <input
+                                    type="radio"
+                                    name="estadoDeliberacao"
+                                    value="Admitido"
+                                    checked={novoEstado === 'Admitido' || novoEstado === 'Admitida'}
+                                    disabled={isReprovadoNota}
+                                    onChange={() => {}}
+                                  />
+                                  <div className="radio-content">
+                                    <div className="radio-header">
+                                      <CheckCircle2 size={20} className="radio-icon" />
+                                      <strong>{isDelibFem ? 'ADMITIDA (VAGA EFETIVA)' : 'ADMITIDO (VAGA EFETIVA)'}</strong>
+                                    </div>
+                                    <p>
+                                      {isReprovadoNota 
+                                        ? 'Bloqueado: Requer nota mínima de 10.0 valores.' 
+                                        : 'Aprovado com nota positiva para preencher a vaga pela sequência de vagas do Edital.'}
+                                    </p>
+                                  </div>
+                                </label>
+
+                                {/* OPÇÃO 2B: APROVADO SUPLENTE - BLOQUEADO SE NOTA < 10 */}
+                                <label 
+                                  className={`deliberacao-radio-card option-suplente ${(novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)') ? 'checked' : ''} ${isReprovadoNota ? 'disabled-locked' : ''}`}
+                                  onClick={() => {
+                                    if (isReprovadoNota) {
+                                      if (onNotify) onNotify('error', 'Candidatos com nota abaixo de 10 valores não podem ser aprovados como suplentes!');
+                                      return;
+                                    }
+                                    setNovoEstado(isDelibFem ? 'Aprovada (Suplente)' : 'Aprovado (Suplente)');
+                                    setParecerJuri(`${isDelibFem ? 'Candidata aprovada' : 'Candidato aprovado'} com nota de ${notaFinal} valores. Integrado na lista de reserva / suplente.`);
+                                  }}
+                                >
+                                  <input
+                                    type="radio"
+                                    name="estadoDeliberacao"
+                                    value="Aprovado (Suplente)"
+                                    checked={novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)'}
+                                    disabled={isReprovadoNota}
+                                    onChange={() => {}}
+                                  />
+                                  <div className="radio-content">
+                                    <div className="radio-header">
+                                      <Award size={20} className="radio-icon" />
+                                      <strong>APROVADO COMO SUPLENTE</strong>
+                                    </div>
+                                    <p>
+                                      {isReprovadoNota 
+                                        ? 'Bloqueado: Requer nota mínima de 10.0 valores.' 
+                                        : 'Aprovado na entrevista. Fica na lista de reserva após preenchimento das vagas imediatas.'}
+                                    </p>
+                                  </div>
+                                </label>
+
+                                {/* OPÇÃO 2C: EXCLUÍDO DA ENTREVISTA */}
+                                <label 
+                                  className={`deliberacao-radio-card option-excluido ${(novoEstado === 'Excluído na Entrevista' || novoEstado === 'Excluída na Entrevista' || novoEstado === 'Excluído' || novoEstado === 'Excluída') ? 'checked' : ''}`}
+                                  onClick={() => {
+                                    setNovoEstado(isDelibFem ? 'Excluída na Entrevista' : 'Excluído na Entrevista');
+                                    setMotivoExclusao(isReprovadoNota ? 'Nota inferior a 10 valores na Entrevista Profissional' : 'Perfil não adequado para as funções exigidas');
+                                    setParecerJuri(`Candidatura reprovada e excluída na 2ª Fase de Entrevista Profissional (${notaFinal} valores).`);
+                                  }}
+                                >
+                                  <input
+                                    type="radio"
+                                    name="estadoDeliberacao"
+                                    value="Excluído na Entrevista"
+                                    checked={novoEstado === 'Excluído na Entrevista' || novoEstado === 'Excluída na Entrevista' || novoEstado === 'Excluído' || novoEstado === 'Excluída'}
+                                    onChange={() => {}}
+                                  />
+                                  <div className="radio-content">
+                                    <div className="radio-header">
+                                      <XCircle size={20} className="radio-icon" />
+                                      <strong>EXCLUIR NA ENTREVISTA</strong>
+                                    </div>
+                                    <p>Reprovado com nota &lt; 10 valores, falta de comparência ou inaptidão física/técnica no teste.</p>
+                                  </div>
+                                </label>
+                              </div>
+                            </>
                           )}
 
-                          {/* CAMPOS ESPECÍFICOS: EXCLUSÃO */}
-                          {(novoEstado === 'Excluído' || novoEstado === 'Excluída') && (
+                          {/* CAMPOS ESPECÍFICOS: MOTIVO DA EXCLUSÃO */}
+                          {(novoEstado.includes('Excluíd') || novoEstado === 'Excluído' || novoEstado === 'Excluída') && (
                             <div className="deliberacao-extra-box danger-box">
-                              <div className="extra-box-title">
-                                <XCircle size={17} />
-                                <span>Motivo da Exclusão</span>
+                              <div className="extra-box-title" style={{ color: '#c32026' }}>
+                                <XCircle size={18} />
+                                <span>Fundamento e Motivo Legal da Exclusão do Candidato</span>
                               </div>
                               <div className="extra-box-grid">
                                 <div className="form-field full-width">
-                                  <label>Escolha o motivo da exclusão:</label>
+                                  <label>Motivo Oficial da Exclusão *:</label>
                                   <select 
                                     value={motivoExclusao} 
                                     onChange={(e) => setMotivoExclusao(e.target.value)}
                                     className="select-danger"
                                   >
-                                    <optgroup label="1ª Fase - Análise de Documentos">
-                                      <option value="Idade superior a 35 anos à data limite do edital">
-                                        Idade superior a 35 anos à data limite do edital
-                                      </option>
+                                    <optgroup label="1ª Fase - Análise de Documentos (Inconformidades)">
                                       <option value="Falta de Certificado de Habilitações autenticado">
                                         Falta de Certificado de Habilitações autenticado
+                                      </option>
+                                      <option value="Idade superior a 35 anos à data limite do edital">
+                                        Idade superior a 35 anos à data limite do edital (Art. 35 do EGFAE)
                                       </option>
                                       <option value="Registo Criminal com antecedentes desfavoráveis ou em falta">
                                         Registo Criminal com antecedentes desfavoráveis ou em falta
@@ -2283,20 +2761,20 @@ export default function GestorPortalModule({
                                         Falta de Atestado Médico ou inaptidão física comprovada
                                       </option>
                                     </optgroup>
-                                    <optgroup label="2ª Fase - Entrevista">
+                                    <optgroup label="2ª Fase - Entrevista Profissional (Nota Eliminatória)">
                                       <option value="Nota inferior a 10 valores na Entrevista Profissional">
-                                        Nota inferior a 10 valores na Entrevista Profissional
+                                        Nota inferior a 10 valores na Entrevista Profissional (Reprovação Eliminatória)
                                       </option>
                                       <option value="Não compareceu na Entrevista Profissional">
-                                        Não compareceu na Entrevista Profissional
+                                        Não compareceu na Entrevista Profissional (Falta injustificada)
                                       </option>
-                                      <option value="Perfil não adequado para as funções exigidas">
-                                        Perfil não adequado para as funções exigidas
+                                      <option value="Perfil técnico não adequado para as funções exigidas">
+                                        Perfil técnico não adequado para as funções exigidas
                                       </option>
                                     </optgroup>
-                                    <optgroup label="Outro">
+                                    <optgroup label="Outro Motivo">
                                       <option value="Outro motivo detalhado">
-                                        Outro motivo detalhado
+                                        Outro motivo detalhado...
                                       </option>
                                     </optgroup>
                                   </select>
@@ -2304,10 +2782,10 @@ export default function GestorPortalModule({
 
                                 {motivoExclusao === 'Outro motivo detalhado' && (
                                   <div className="form-field full-width">
-                                    <label>Descreva o motivo da exclusão:</label>
+                                    <label>Descreva detalhadamente o fundamento da exclusão:</label>
                                     <input
                                       type="text"
-                                      placeholder="Indique claramente o motivo pelo qual o candidato não foi aprovado..."
+                                      placeholder="Indique claramente os motivos factuais e legais..."
                                       value={outroMotivo}
                                       onChange={(e) => setOutroMotivo(e.target.value)}
                                       required
@@ -2321,26 +2799,26 @@ export default function GestorPortalModule({
                       );
                     })()}
 
-                    {/* OBSERVAÇÕES E PARECER */}
+                    {/* OBSERVAÇÕES E PARECER DO JÚRI */}
                     <div className="form-field full-width" style={{ marginTop: '1.25rem' }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}>
                         <FileCheck size={16} color="#c32026" />
-                        Observações / Parecer sobre o Candidato:
+                        Observações / Parecer Formal da Comissão de Júri:
                       </label>
                       <textarea
                         rows={3}
                         value={parecerJuri}
                         onChange={(e) => setParecerJuri(e.target.value)}
-                        placeholder="Escreva aqui anotações ou observações sobre este candidato..."
+                        placeholder="Anotações do júri sobre o candidato, pontos fortes, deficiências ou deliberações..."
                         className="gestor-textarea"
                       />
                     </div>
 
-                    {/* BOTÃO DE CONFIRMAÇÃO */}
+                    {/* BOTÃO DE CONFIRMAÇÃO OFICIAL */}
                     <div className="deliberacao-submit-row">
                       <div className="deliberacao-auditor-info">
                         <ShieldCheck size={16} color="#15803d" />
-                        <span>Decisão registada por: <strong>{currentUser?.name || 'Dr. Alberto Chissano'}</strong></span>
+                        <span>Decisão a homologar por: <strong>{currentUser?.name || 'Dr. Alberto Chissano (Presidente do Júri)'}</strong></span>
                       </div>
 
                       <button
@@ -2348,7 +2826,7 @@ export default function GestorPortalModule({
                         className="btn-salvar-deliberacao-red"
                       >
                         <FileSignature size={18} />
-                        <span>Guardar Decisão do Candidato</span>
+                        <span>Homologar e Guardar Decisão</span>
                       </button>
                     </div>
                   </form>
@@ -2356,8 +2834,8 @@ export default function GestorPortalModule({
               ) : (
                 <div className="deliberacao-empty-state">
                   <FileSignature size={48} color="#94a3b8" />
-                  <h3>Nenhum Candidato Selecionado</h3>
-                  <p>Clique num candidato da lista à esquerda para analisar os documentos ou registar a nota da entrevista.</p>
+                  <h3>Selecione um Candidato para Avaliação</h3>
+                  <p>Utilize a lista ou os filtros à esquerda para abrir a estação de análise documental ou registar a nota da entrevista profissional.</p>
                 </div>
               )}
             </div>
@@ -3420,18 +3898,18 @@ export default function GestorPortalModule({
                         <button
                           type="button"
                           className="sub-aba-btn-action"
-                          style={{ color: '#2563eb', borderColor: '#93c5fd', backgroundColor: '#eff6ff' }}
-                          onClick={() => handleInlineDeliberacao(selectedDossier, 'Entrevista Profissional')}
-                          title="Aprovar na análise documental e convocar para Entrevista Profissional"
+                          style={{ color: '#047857', borderColor: '#a7f3d0', backgroundColor: '#ecfdf5' }}
+                          onClick={() => handleInlineDeliberacao(selectedDossier, 'Admitido na Análise Documental')}
+                          title="Aprovar e Admitir na Análise Documental com agendamento da Entrevista"
                         >
                           <Check size={13} />
-                          <span>Aprovar p/ 2ª Fase (Entrevista)</span>
+                          <span>Admitir na Análise Documental</span>
                         </button>
                         <button
                           type="button"
                           className="sub-aba-btn-action danger"
-                          onClick={() => handleInlineDeliberacao(selectedDossier, 'Excluído')}
-                          title="Excluir na fase de análise documental"
+                          onClick={() => handleInlineDeliberacao(selectedDossier, 'Excluído na Análise Documental')}
+                          title="Excluir de primeira por inconformidades ou falta de documentos"
                         >
                           <UserX size={13} />
                           <span>Excluir na Análise Documental</span>
@@ -3441,6 +3919,28 @@ export default function GestorPortalModule({
                   }
 
                   if (fase === 2) {
+                    const notaNum = selectedDossier.deliberacaoJuri?.notaFinal ? parseFloat(selectedDossier.deliberacaoJuri.notaFinal) : null;
+                    const isReprovado = notaNum !== null && notaNum < 10.0;
+
+                    if (isReprovado) {
+                      return (
+                        <>
+                          <span style={{ fontSize: '0.78rem', color: '#991b1b', fontWeight: 800, padding: '0.2rem 0.5rem', background: '#fee2e2', borderRadius: '6px' }}>
+                            Nota: {selectedDossier.deliberacaoJuri.notaFinal} val. (&lt;10 val) • Reprovado
+                          </span>
+                          <button
+                            type="button"
+                            className="sub-aba-btn-action danger"
+                            onClick={() => handleInlineDeliberacao(selectedDossier, 'Excluído na Entrevista')}
+                            title="Excluir por nota inferior a 10 valores na entrevista"
+                          >
+                            <UserX size={13} />
+                            <span>Excluir por Nota &lt; 10</span>
+                          </button>
+                        </>
+                      );
+                    }
+
                     return (
                       <>
                         <button
@@ -3448,7 +3948,7 @@ export default function GestorPortalModule({
                           className="sub-aba-btn-action"
                           style={{ color: '#15803d', borderColor: '#86efac', backgroundColor: '#f0fdf4' }}
                           onClick={() => handleInlineDeliberacao(selectedDossier, 'Admitido')}
-                          title="Aprovar para vaga efetiva"
+                          title="Aprovar para vaga efetiva pela sequência de vagas do edital"
                         >
                           <Check size={13} />
                           <span>Admitir (Vaga Efetiva)</span>
@@ -3466,8 +3966,8 @@ export default function GestorPortalModule({
                         <button
                           type="button"
                           className="sub-aba-btn-action danger"
-                          onClick={() => handleInlineDeliberacao(selectedDossier, 'Excluído')}
-                          title="Excluir por não aproveitamento na entrevista"
+                          onClick={() => handleInlineDeliberacao(selectedDossier, 'Excluído na Entrevista')}
+                          title="Excluir na fase de entrevista"
                         >
                           <UserX size={13} />
                           <span>Excluir (Entrevista)</span>
