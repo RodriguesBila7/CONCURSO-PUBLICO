@@ -1770,7 +1770,7 @@
 
 .stepper-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #c32026, #ef4444);
+  background: linear-gradient(90deg, #16a34a, #22c55e);
   transition: width 0.3s ease;
 }
 
@@ -1799,16 +1799,17 @@
 }
 
 .stepper-step.active .step-circle {
-  border-color: #c32026;
+  border-color: #16a34a;
   background-color: var(--portal-card-bg);
-  color: #c32026;
-  box-shadow: 0 0 0 4px rgba(195, 32, 38, 0.2);
+  color: #15803d;
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.2);
 }
 
 .stepper-step.completed .step-circle {
-  border-color: #c32026;
-  background-color: #c32026;
+  border-color: #16a34a;
+  background-color: #16a34a;
   color: #ffffff;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.25);
 }
 
 .step-label {
@@ -1818,11 +1819,17 @@
   margin-top: 0.5rem;
   text-align: center;
   max-width: 90px;
+  transition: color 0.2s ease;
 }
 
 .stepper-step.active .step-label {
-  color: #c32026;
+  color: #15803d;
   font-weight: 800;
+}
+
+.stepper-step.completed .step-label {
+  color: #15803d;
+  font-weight: 700;
 }
 
 /* Formulário e Campos */
