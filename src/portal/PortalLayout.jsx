@@ -578,7 +578,7 @@ export default function PortalLayout({
             </p>
             <p>
               <Phone size={14} style={{ display: 'inline', marginRight: '5px' }} />
-              Linha Geral: +258 21 320 000 / +258 84 900 0000
+              Linha Geral: +258 21 000 000 / +258 000 000 000
             </p>
             <p>
               <Mail size={14} style={{ display: 'inline', marginRight: '5px' }} />

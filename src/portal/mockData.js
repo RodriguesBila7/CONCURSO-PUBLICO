@@ -465,7 +465,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     genero: 'Masculino',
     dataNascimento: '1995-12-03',
     idade: 31,
-    telefone: '+258 84 555 4321',
+    telefone: '+258 000 000 000',
     email: 'eusebio.sitoe@gmail.com',
     provincia: 'Gaza',
     distrito: 'Xai-Xai',
@@ -520,7 +520,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     genero: 'Masculino',
     dataNascimento: '1997-03-19',
     idade: 29,
-    telefone: '+258 87 234 5678',
+    telefone: '+258 000 000 000',
     email: 'zito.macuacua@med.uem.mz',
     provincia: 'Inhambane',
     distrito: 'Maxixe',
@@ -573,7 +573,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     genero: 'Feminino',
     dataNascimento: '1999-11-05',
     idade: 27,
-    telefone: '+258 84 333 9988',
+    telefone: '+258 000 000 000',
     email: 'fatima.remane@yahoo.com',
     provincia: 'Nampula',
     distrito: 'Nampula Cidade',
@@ -629,7 +629,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     genero: 'Feminino',
     dataNascimento: '2000-01-18',
     idade: 26,
-    telefone: '+258 86 112 3344',
+    telefone: '+258 000 000 000',
     email: 'cecilia.langa@hotmail.com',
     provincia: 'Maputo Província',
     distrito: 'Matola',
@@ -685,7 +685,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     genero: 'Masculino',
     dataNascimento: '1984-04-12',
     idade: 42,
-    telefone: '+258 85 444 7766',
+    telefone: '+258 000 000 000',
     email: 'tomas.chivambo@gmail.com',
     provincia: 'Tete',
     distrito: 'Tete Cidade',
@@ -739,7 +739,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     genero: 'Feminino',
     dataNascimento: '1997-09-30',
     idade: 29,
-    telefone: '+258 84 990 1122',
+    telefone: '+258 000 000 000',
     email: 'graca.buque@gmail.com',
     provincia: 'Zambézia',
     distrito: 'Quelimane',
@@ -791,7 +791,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     genero: 'Masculino',
     dataNascimento: '1998-07-11',
     idade: 28,
-    telefone: '+258 87 665 4321',
+    telefone: '+258 000 000 000',
     email: 'salvador.mucavele@gmail.com',
     provincia: 'Cabo Delgado',
     distrito: 'Pemba',
@@ -845,7 +845,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     genero: 'Feminino',
     dataNascimento: '1999-02-14',
     idade: 27,
-    telefone: '+258 82 443 2199',
+    telefone: '+258 000 000 000',
     email: 'angela.cossa@gmail.com',
     provincia: 'Maputo Cidade',
     distrito: 'KaMavota',
@@ -901,7 +901,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     genero: 'Masculino',
     dataNascimento: '1994-06-18',
     idade: 32,
-    telefone: '+258 84 332 1100',
+    telefone: '+258 000 000 000',
     email: 'bernardo.chongo@gmail.com',
     provincia: 'Direcção Geral',
     distrito: 'Sede Central (Maputo)',
@@ -957,7 +957,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     genero: 'Feminino',
     dataNascimento: '1997-11-20',
     idade: 29,
-    telefone: '+258 82 771 2299',
+    telefone: '+258 000 000 000',
     email: 'graca.machava@outlook.com',
     provincia: 'Manica',
     distrito: 'Chimoio',
@@ -1010,7 +1010,7 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
     genero: 'Masculino',
     dataNascimento: '1996-03-12',
     idade: 30,
-    telefone: '+258 84 990 8877',
+    telefone: '+258 000 000 000',
     email: 'anibal.muando@gmail.com',
     provincia: 'Niassa',
     distrito: 'Lichinga',
@@ -1668,7 +1668,7 @@ export const INITIAL_LOCAIS_EXAME = [
     capacidade: 650,
     tiposProva: ['Prova Escrita de Conhecimentos', 'Testes Psicotécnicos'],
     dataPrevista: '15 de Novembro de 2026 às 08h00',
-    responsavel: 'Inspetor Chefe Manhique (+258 84 321 0001)'
+    responsavel: 'Inspetor Chefe Manhique (+258 000 000 000)'
   },
   {
     id: 'LOC-02',
@@ -1679,7 +1679,7 @@ export const INITIAL_LOCAIS_EXAME = [
     capacidade: 500,
     tiposProva: ['Provas de Aptidão Física e Robustez'],
     dataPrevista: '22 de Novembro de 2026 às 06h30',
-    responsavel: 'Superintendente Tembe (+258 82 456 0002)'
+    responsavel: 'Superintendente Tembe (+258 000 000 000)'
   },
   {
     id: 'LOC-03',
@@ -1690,7 +1690,7 @@ export const INITIAL_LOCAIS_EXAME = [
     capacidade: 120,
     tiposProva: ['Prova Prática Laboratorial de Perícia', 'Cibersegurança'],
     dataPrevista: '18 de Novembro de 2026 às 09h00',
-    responsavel: 'Perito Principal Dr. Langa (+258 84 789 0003)'
+    responsavel: 'Perito Principal Dr. Langa (+258 000 000 000)'
   },
   {
     id: 'LOC-04',
@@ -1701,7 +1701,7 @@ export const INITIAL_LOCAIS_EXAME = [
     capacidade: 300,
     tiposProva: ['Prova Escrita de Conhecimentos', 'Inspecção Médica'],
     dataPrevista: '15 de Novembro de 2026 às 08h00',
-    responsavel: 'Inspetor Regional Nhantumbo (+258 84 999 0004)'
+    responsavel: 'Inspetor Regional Nhantumbo (+258 000 000 000)'
   },
   {
     id: 'LOC-05',
@@ -1712,7 +1712,7 @@ export const INITIAL_LOCAIS_EXAME = [
     capacidade: 350,
     tiposProva: ['Prova Escrita de Conhecimentos', 'Testes Psicotécnicos'],
     dataPrevista: '15 de Novembro de 2026 às 08h00',
-    responsavel: 'Inspetor Regional Remane (+258 86 111 0005)'
+    responsavel: 'Inspetor Regional Remane (+258 000 000 000)'
   },
   {
     id: 'LOC-06',
@@ -1723,7 +1723,7 @@ export const INITIAL_LOCAIS_EXAME = [
     capacidade: 80,
     tiposProva: ['Inspecção Médica e Prova Toxicológica'],
     dataPrevista: '25 de Novembro de 2026 às 09h00',
-    responsavel: 'Dr. Mucavele (+258 87 222 0006)'
+    responsavel: 'Dr. Mucavele (+258 000 000 000)'
   }
 ];
 

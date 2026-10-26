@@ -4259,7 +4259,7 @@ export default function GestorPortalModule({
                 <input
                   type="text"
                   className="definicoes-input"
-                  placeholder="Ex: Inspetor Chefe Manhique (+258 84 321 0001)"
+                  placeholder="Ex: Inspetor Chefe Manhique (+258 000 000 000)"
                   value={localForm.responsavel}
                   onChange={(e) => setLocalForm({ ...localForm, responsavel: e.target.value })}
                 />
