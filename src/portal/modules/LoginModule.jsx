@@ -27,6 +27,7 @@ import {
   validarNUIT, 
   validarTelefoneMZ, 
   PROVINCIAS_MOCAMBIQUE,
+  PROVINCIAS_GEOGRAFICAS,
   INITIAL_CANDIDATURAS_CONSULTA,
   getStoredCandidaturas,
   detectCandidateGender 
@@ -609,7 +610,7 @@ export default function LoginModule({
                   <div className="form-group" style={{ gridColumn: 'span 2' }}>
                     <label>Província de Residência</label>
                     <select className="form-select" defaultValue={currentUser.provincia || 'Maputo Cidade'}>
-                      {PROVINCIAS_MOCAMBIQUE.map(p => (
+                      {PROVINCIAS_GEOGRAFICAS.map(p => (
                         <option key={p} value={p}>{p}</option>
                       ))}
                     </select>

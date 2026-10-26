@@ -22,6 +22,7 @@ import {
 import { 
   INITIAL_VAGAS, 
   PROVINCIAS_MOCAMBIQUE, 
+  PROVINCIAS_GEOGRAFICAS,
   validarNUIT, 
   validarBI, 
   validarTelefoneMZ,
@@ -687,9 +688,9 @@ export default function CandidaturaModule({
               </div>
 
               <div className="form-group">
-                <label>Província de Naturalidade <span className="required">*</span></label>
+                <label>Província de Nascimento (Naturalidade) <span className="required">*</span></label>
                 <select name="provinciaNaturalidade" className="form-select" value={formData.provinciaNaturalidade} onChange={handleChange}>
-                  {PROVINCIAS_MOCAMBIQUE.map(p => (
+                  {PROVINCIAS_GEOGRAFICAS.map(p => (
                     <option key={p} value={p}>{p}</option>
                   ))}
                 </select>
@@ -832,7 +833,7 @@ export default function CandidaturaModule({
               <div className="form-group">
                 <label>Província de Residência <span className="required">*</span></label>
                 <select name="provinciaResidencia" className="form-select" value={formData.provinciaResidencia} onChange={handleChange}>
-                  {PROVINCIAS_MOCAMBIQUE.map(p => (
+                  {PROVINCIAS_GEOGRAFICAS.map(p => (
                     <option key={p} value={p}>{p}</option>
                   ))}
                 </select>

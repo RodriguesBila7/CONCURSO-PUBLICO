@@ -1054,9 +1054,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
   }
 ];
 
-// Províncias e Direcções de Moçambique: 12 unidades (Direcção Geral + 11 Províncias)
-export const PROVINCIAS_MOCAMBIQUE = [
-  'Direcção Geral',
+// 11 Províncias Oficiais de Moçambique (Nascimento, Naturalidade e Residência Geográfica)
+export const PROVINCIAS_GEOGRAFICAS = [
   'Maputo Cidade',
   'Maputo Província',
   'Gaza',
@@ -1068,6 +1067,12 @@ export const PROVINCIAS_MOCAMBIQUE = [
   'Nampula',
   'Cabo Delgado',
   'Niassa'
+];
+
+// Províncias e Unidades de Lotação do SERNIC: 12 unidades (Direcção Geral + 11 Províncias)
+export const PROVINCIAS_MOCAMBIQUE = [
+  'Direcção Geral',
+  ...PROVINCIAS_GEOGRAFICAS
 ];
 
 // Helper para validar NUIT Moçambicano (9 dígitos numéricos)
