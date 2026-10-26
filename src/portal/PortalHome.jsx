@@ -9,13 +9,69 @@ import {
   Calendar, 
   ShieldAlert, 
   FileDown, 
-  Award
+  Award,
+  ShieldCheck,
+  Layers
 } from 'lucide-react';
 import sernicLogo from '../assets/sernic-logo.png';
 
-export default function PortalHome({ navigate, vagasCount = 4, publishedListsCount = 4 }) {
+export default function PortalHome({ navigate, vagasCount = 4, publishedListsCount = 4, currentUser }) {
+  const isGestor = currentUser?.role === 'admin' || currentUser?.role === 'gestor';
+
   return (
     <div className="portal-home-container">
+      {/* AVISO INSTITUCIONAL EXCLUSIVO PARA O GESTOR QUANDO ESTIVER NA VISÃO PÚBLICA */}
+      {isGestor && (
+        <div style={{
+          marginBottom: '1.2rem',
+          padding: '0.85rem 1.25rem',
+          backgroundColor: '#fff1f2',
+          border: '1.5px solid #fda4af',
+          borderRadius: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '1rem',
+          boxShadow: '0 4px 12px rgba(195, 32, 38, 0.08)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#c32026', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <ShieldCheck size={20} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, color: '#9f1239', fontSize: '0.92rem' }}>
+                Sessão do Júri / Gestor Activa: {currentUser.name}
+              </div>
+              <div style={{ color: '#be123c', fontSize: '0.8rem' }}>
+                Está na perspectiva pública dos candidatos. Pode regressar ao Painel de Gestão e Triagem a qualquer momento.
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/portal-gestor')}
+            style={{
+              backgroundColor: '#c32026',
+              color: '#ffffff',
+              border: 'none',
+              padding: '0.55rem 1.1rem',
+              borderRadius: '8px',
+              fontWeight: 700,
+              fontSize: '0.84rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              cursor: 'pointer',
+              boxShadow: '0 2px 6px rgba(195, 32, 38, 0.25)',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            <Layers size={16} />
+            <span>Ir para o Painel Geral do Júri</span>
+          </button>
+        </div>
+      )}
+
       {/* 1. HERO BANNER PRINCIPAL COM FEIXE LUMINOSO CIRCULANDO (CORES DO SERNIC) */}
       <div className="portal-hero-wrapper">
         {/* Feixe animado que circula continuamente ao redor da aba com as cores oficiais do SERNIC */}

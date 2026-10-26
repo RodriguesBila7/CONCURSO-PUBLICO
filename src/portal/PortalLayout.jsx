@@ -74,22 +74,32 @@ export default function PortalLayout({
     setPortalTheme(prev => prev === 'claro' ? 'preto' : 'claro');
   };
 
+  const cleanPath = (currentPath || '').split('?')[0].split('#')[0];
+  const isGestorUser = currentUser?.role === 'admin' || currentUser?.role === 'gestor';
+  const isGestorRoute = cleanPath === '/portal-gestor' || 
+                        cleanPath === '/portal-recrutamento/gestor' || 
+                        cleanPath === '/gestor' || 
+                        cleanPath.includes('gestor') ||
+                        (isGestorUser && !['/portal-recrutamento/recrutamento', '/portal-recrutamento/candidatura', '/portal-recrutamento/consulta'].includes(cleanPath));
+
   const isNavActive = (path) => {
-    if (path === '/portal-recrutamento' && (currentPath === '/portal-recrutamento' || currentPath === '/portal-recrutamento/')) {
+    if (path === '/portal-recrutamento' && (cleanPath === '/portal-recrutamento' || cleanPath === '/portal-recrutamento/')) {
       return true;
     }
-    if (path === '/portal-gestor' && (currentPath === '/portal-gestor' || currentPath === '/portal-recrutamento/gestor' || currentPath === '/gestor')) {
+    if (path === '/portal-gestor' && (cleanPath === '/portal-gestor' || cleanPath === '/portal-recrutamento/gestor' || cleanPath === '/gestor')) {
       return true;
     }
-    return currentPath === path;
+    return cleanPath === path;
   };
 
-  const isGestorRoute = currentPath.includes('gestor') || currentPath === '/gestor';
-
   const handleSelectGestorTab = (tab) => {
+    if (cleanPath !== '/portal-gestor' && cleanPath !== '/portal-recrutamento/gestor' && cleanPath !== '/gestor') {
+      navigate('/portal-gestor');
+    }
     if (onGestorTabChange) {
       onGestorTabChange(tab);
-    } else if (typeof window !== 'undefined') {
+    }
+    if (typeof window !== 'undefined') {
       window.location.hash = tab;
     }
   };
@@ -177,6 +187,22 @@ export default function PortalLayout({
               >
                 <ExternalLink size={14} />
                 <span>Ver como Candidato</span>
+              </button>
+            )}
+
+            {/* Ação rápida para regressar ao Painel de Gestor quando estiver a ver como candidato */}
+            {isGestorUser && !isGestorRoute && (
+              <button
+                type="button"
+                className="portal-back-home-btn"
+                style={{ backgroundColor: '#c32026', color: '#ffffff', borderColor: '#991b1b', fontWeight: 700 }}
+                onClick={() => {
+                  handleSelectGestorTab('dashboard');
+                }}
+                title="Regressar ao Painel de Gestão e Júri do Concurso"
+              >
+                <ShieldCheck size={14} />
+                <span>Voltar ao Painel de Gestor</span>
               </button>
             )}
 
@@ -356,6 +382,22 @@ export default function PortalLayout({
                 <User size={18} className="sidebar-btn-icon" />
                 <span className="sidebar-btn-text">{currentUser ? 'Área Pessoal' : 'Login'}</span>
               </button>
+
+              {isGestorUser && (
+                <div style={{ marginTop: '0.8rem', paddingTop: '0.6rem', borderTop: '1px solid var(--portal-border)' }}>
+                  <div className="portal-sidebar-group-title" style={{ color: '#c32026', marginBottom: '0.4rem' }}>ÁREA RESTRITA</div>
+                  <button
+                    type="button"
+                    className="portal-sidebar-btn"
+                    style={{ backgroundColor: 'rgba(195, 32, 38, 0.08)', color: '#c32026', fontWeight: 700 }}
+                    onClick={() => handleSelectGestorTab('dashboard')}
+                    title="Aceder ao Painel Administrativo de Gestão e Júri"
+                  >
+                    <ShieldCheck size={18} className="sidebar-btn-icon" style={{ color: '#c32026' }} />
+                    <span className="sidebar-btn-text">Painel de Gestor</span>
+                  </button>
+                </div>
+              )}
             </nav>
           )}
 
@@ -457,6 +499,7 @@ export default function PortalLayout({
                     type="button"
                     className={`portal-sidebar-sub-btn ${definicoesSubTab === 'cursos' ? 'active' : ''}`}
                     onClick={() => {
+                      handleSelectGestorTab('definicoes');
                       if (onDefinicoesSubTabChange) onDefinicoesSubTabChange('cursos');
                     }}
                     aria-label="Cursos Homologados"
@@ -470,6 +513,7 @@ export default function PortalLayout({
                     type="button"
                     className={`portal-sidebar-sub-btn ${definicoesSubTab === 'locais' ? 'active' : ''}`}
                     onClick={() => {
+                      handleSelectGestorTab('definicoes');
                       if (onDefinicoesSubTabChange) onDefinicoesSubTabChange('locais');
                     }}
                     aria-label="Centros & Locais de Testes"
@@ -483,6 +527,7 @@ export default function PortalLayout({
                     type="button"
                     className={`portal-sidebar-sub-btn ${definicoesSubTab === 'temas' ? 'active' : ''}`}
                     onClick={() => {
+                      handleSelectGestorTab('definicoes');
                       if (onDefinicoesSubTabChange) onDefinicoesSubTabChange('temas');
                     }}
                     aria-label="Aparência & Cores dos Temas"
@@ -495,6 +540,7 @@ export default function PortalLayout({
                     type="button"
                     className={`portal-sidebar-sub-btn ${definicoesSubTab === 'idioma' ? 'active' : ''}`}
                     onClick={() => {
+                      handleSelectGestorTab('definicoes');
                       if (onDefinicoesSubTabChange) onDefinicoesSubTabChange('idioma');
                     }}
                     aria-label="Idioma & Regionalização"
@@ -507,6 +553,7 @@ export default function PortalLayout({
                     type="button"
                     className={`portal-sidebar-sub-btn ${definicoesSubTab === 'geral' ? 'active' : ''}`}
                     onClick={() => {
+                      handleSelectGestorTab('definicoes');
                       if (onDefinicoesSubTabChange) onDefinicoesSubTabChange('geral');
                     }}
                     aria-label="Parâmetros Gerais do Concurso"

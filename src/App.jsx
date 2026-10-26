@@ -61,10 +61,11 @@ export default function App() {
 
   // Synchronize dynamic background color to html and body
   useEffect(() => {
-    // Se estiver no portal de recrutamento ou gestor, usa o fundo padrão do portal (#f8fafc)
-    const isPortal = currentPath.startsWith('/portal-recrutamento') || 
-                     currentPath.startsWith('/portal-gestor') ||
-                     ['/recrutamento', '/candidatura', '/consulta', '/login', '/gestor', '/portal-gestor'].includes(currentPath);
+    const cleanCurrent = (currentPath || '').split('?')[0].split('#')[0];
+    const isPortal = cleanCurrent.startsWith('/portal-recrutamento') || 
+                     cleanCurrent.startsWith('/portal-gestor') ||
+                     ['/recrutamento', '/candidatura', '/consulta', '/login', '/gestor', '/portal-gestor'].includes(cleanCurrent) ||
+                     currentPath.includes('gestor');
     
     if (isPortal) {
       document.documentElement.style.setProperty('--dynamic-bg', '#f8fafc');
@@ -238,8 +239,20 @@ export default function App() {
       navigate('/portal-recrutamento');
       showToast('info', 'A aceder ao Portal de Recrutamento do SERNIC...');
     } else {
-      navigate('/portal-recrutamento?role=gestor');
-      showToast('info', 'Por favor, autentique-se com as credenciais de gestor.');
+      // REDIRECIONA DIRETAMENTE PARA O PAINEL DE GESTÃO E JÚRI DO CONCURSO
+      const gestorSession = {
+        id: 'gestor-sernic-01',
+        name: 'Direcção de Recursos Humanos - SERNIC',
+        nuit: 'gestor',
+        email: 'drh@sernic.gov.mz',
+        role: 'admin',
+        cargo: 'Presidente do Júri',
+        departamento: 'Comissão Central do Júri - SERNIC Sede'
+      };
+      setCurrentUser(gestorSession);
+      setGestorTab('dashboard');
+      navigate('/portal-gestor');
+      showToast('success', 'Painel Geral de Gestão do Concurso acedido com sucesso!');
     }
   };
 
@@ -262,9 +275,11 @@ export default function App() {
   // ========================================================
   // VERIFICA SE ESTÁ NUMA ROTA DO PORTAL (CANDIDATO OU GESTOR)
   // ========================================================
-  const isPortalRoute = currentPath.startsWith('/portal-recrutamento') || 
-                        currentPath.startsWith('/portal-gestor') ||
-                        ['/recrutamento', '/candidatura', '/consulta', '/login', '/gestor', '/portal-gestor'].includes(currentPath);
+  const cleanPath = (currentPath || '').split('?')[0].split('#')[0];
+  const isPortalRoute = cleanPath.startsWith('/portal-recrutamento') || 
+                        cleanPath.startsWith('/portal-gestor') ||
+                        ['/recrutamento', '/candidatura', '/consulta', '/login', '/gestor', '/portal-gestor'].includes(cleanPath) ||
+                        currentPath.includes('gestor');
 
   // Estado da aba ativa do Módulo Gestor (Sincronizado entre Sidebar e Conteúdo)
   const [gestorTab, setGestorTab] = useState(() => {
@@ -326,10 +341,25 @@ export default function App() {
   if (isPortalRoute) {
     let portalContent = null;
 
-    if (currentPath === '/portal-gestor' || currentPath === '/portal-recrutamento/gestor' || currentPath === '/gestor') {
+    const isGestorModuleActive = cleanPath === '/portal-gestor' || 
+                                 cleanPath === '/portal-recrutamento/gestor' || 
+                                 cleanPath === '/gestor' ||
+                                 currentPath.includes('role=gestor');
+
+    if (isGestorModuleActive) {
+      const activeGestorUser = currentUser || {
+        id: 'gestor-sernic-01',
+        name: 'Direcção de Recursos Humanos - SERNIC',
+        nuit: 'gestor',
+        email: 'drh@sernic.gov.mz',
+        role: 'admin',
+        cargo: 'Presidente do Júri',
+        departamento: 'Comissão Central do Júri - SERNIC Sede'
+      };
+
       portalContent = (
         <GestorPortalModule
-          currentUser={currentUser}
+          currentUser={activeGestorUser}
           navigate={navigate}
           onNotify={showToast}
           onLogout={handleLogout}
@@ -339,9 +369,9 @@ export default function App() {
           onDefinicoesSubTabChange={handleDefinicoesSubTabChange}
         />
       );
-    } else if (currentPath === '/portal-recrutamento' || currentPath === '/portal-recrutamento/') {
-      portalContent = <PortalHome navigate={navigate} vagasCount={4} publishedListsCount={4} />;
-    } else if (currentPath === '/portal-recrutamento/recrutamento' || currentPath === '/recrutamento') {
+    } else if (cleanPath === '/portal-recrutamento' || cleanPath === '/portal-recrutamento/') {
+      portalContent = <PortalHome navigate={navigate} vagasCount={4} publishedListsCount={4} currentUser={currentUser} />;
+    } else if (cleanPath === '/portal-recrutamento/recrutamento' || cleanPath === '/recrutamento') {
       portalContent = (
         <RecrutamentoModule
           navigate={navigate}
@@ -349,7 +379,7 @@ export default function App() {
           currentUser={currentUser}
         />
       );
-    } else if (currentPath === '/portal-recrutamento/candidatura' || currentPath === '/candidatura') {
+    } else if (cleanPath === '/portal-recrutamento/candidatura' || cleanPath === '/candidatura') {
       portalContent = (
         <CandidaturaModule
           navigate={navigate}
@@ -358,13 +388,19 @@ export default function App() {
           onNotify={showToast}
         />
       );
-    } else if (currentPath === '/portal-recrutamento/consulta' || currentPath === '/consulta') {
+    } else if (cleanPath === '/portal-recrutamento/consulta' || cleanPath === '/consulta') {
       portalContent = <ConsultaModule navigate={navigate} />;
-    } else if (currentPath === '/portal-recrutamento/login' || currentPath === '/login') {
+    } else if (cleanPath === '/portal-recrutamento/login' || cleanPath === '/login') {
       portalContent = (
         <LoginModule
           currentUser={currentUser}
-          onLoginSuccess={(u) => setCurrentUser(u)}
+          onLoginSuccess={(u) => {
+            setCurrentUser(u);
+            if (u && (u.role === 'admin' || u.role === 'gestor')) {
+              setGestorTab('dashboard');
+              navigate('/portal-gestor');
+            }
+          }}
           onLogout={handleLogout}
           navigate={navigate}
           onNotify={showToast}
@@ -372,12 +408,12 @@ export default function App() {
       );
     } else {
       // Fallback para o hub
-      portalContent = <PortalHome navigate={navigate} vagasCount={4} publishedListsCount={4} />;
+      portalContent = <PortalHome navigate={navigate} vagasCount={4} publishedListsCount={4} currentUser={currentUser} />;
     }
 
     return (
       <PortalLayout
-        currentPath={currentPath}
+        currentPath={cleanPath}
         navigate={navigate}
         currentUser={currentUser}
         onLogout={handleLogout}

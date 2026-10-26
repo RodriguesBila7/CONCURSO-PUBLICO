@@ -1268,69 +1268,117 @@ export default function GestorPortalModule({
           </div>
           {/* CARDS DE KPIS */}
           <div className="gestor-kpi-grid">
-            <div className="gestor-kpi-card">
+            <div 
+              className="gestor-kpi-card"
+              onClick={() => {
+                setFiltroStatus('todos');
+                setGestorTab('inscritos');
+              }}
+              style={{ cursor: 'pointer' }}
+              title="Clique para abrir e gerir a lista completa de inscritos"
+            >
               <div className="gestor-kpi-header">
                 <span className="gestor-kpi-label">Inscritos no Concurso</span>
                 <span className="gestor-kpi-icon-wrap primary"><Users size={20} /></span>
               </div>
               <div className="gestor-kpi-value">{stats.total}</div>
               <div className="gestor-kpi-footer">
-                <span className="gestor-kpi-sub">Total global de candidaturas</span>
+                <span className="gestor-kpi-sub">Total global • Ver Lista Completa ➔</span>
               </div>
             </div>
 
-            <div className="gestor-kpi-card">
+            <div 
+              className="gestor-kpi-card"
+              onClick={() => {
+                setFiltroStatus('Em Análise Documental');
+                setGestorTab('inscritos');
+              }}
+              style={{ cursor: 'pointer' }}
+              title="Clique para filtrar inscritos em análise documental"
+            >
               <div className="gestor-kpi-header">
                 <span className="gestor-kpi-label">1ª Fase: Em Análise</span>
                 <span className="gestor-kpi-icon-wrap warning"><Clock size={20} /></span>
               </div>
               <div className="gestor-kpi-value text-warning">{stats.analise}</div>
               <div className="gestor-kpi-footer">
-                <span className="gestor-kpi-sub">Validação documental e requisitos</span>
+                <span className="gestor-kpi-sub">Validação documental • Ver Candidatos ➔</span>
               </div>
             </div>
 
-            <div className="gestor-kpi-card">
+            <div 
+              className="gestor-kpi-card"
+              onClick={() => {
+                setFiltroStatus('Entrevista Profissional');
+                setGestorTab('inscritos');
+              }}
+              style={{ cursor: 'pointer' }}
+              title="Clique para filtrar convocados para entrevista"
+            >
               <div className="gestor-kpi-header">
                 <span className="gestor-kpi-label">2ª Fase: Entrevista</span>
                 <span className="gestor-kpi-icon-wrap info"><Calendar size={20} /></span>
               </div>
               <div className="gestor-kpi-value text-info">{stats.entrevista}</div>
               <div className="gestor-kpi-footer">
-                <span className="gestor-kpi-sub">Aprovados na fase 1 / convocados</span>
+                <span className="gestor-kpi-sub">Aprovados fase 1 • Ver Convocados ➔</span>
               </div>
             </div>
 
-            <div className="gestor-kpi-card">
+            <div 
+              className="gestor-kpi-card"
+              onClick={() => {
+                setFiltroStatus('Admitido');
+                setGestorTab('inscritos');
+              }}
+              style={{ cursor: 'pointer' }}
+              title="Clique para filtrar candidatos admitidos"
+            >
               <div className="gestor-kpi-header">
                 <span className="gestor-kpi-label">3ª Fase: Admitidos</span>
                 <span className="gestor-kpi-icon-wrap success"><CheckCircle2 size={20} /></span>
               </div>
               <div className="gestor-kpi-value text-success">{stats.admitidos}</div>
               <div className="gestor-kpi-footer">
-                <span className="gestor-kpi-sub">Provimento efetivo de vagas</span>
+                <span className="gestor-kpi-sub">Provimento efetivo • Ver Admitidos ➔</span>
               </div>
             </div>
 
-            <div className="gestor-kpi-card">
+            <div 
+              className="gestor-kpi-card"
+              onClick={() => {
+                setFiltroStatus('Aprovado (Suplente)');
+                setGestorTab('inscritos');
+              }}
+              style={{ cursor: 'pointer' }}
+              title="Clique para filtrar candidatos suplentes"
+            >
               <div className="gestor-kpi-header">
                 <span className="gestor-kpi-label">3ª Fase: Suplentes</span>
                 <span className="gestor-kpi-icon-wrap warning"><Award size={20} /></span>
               </div>
               <div className="gestor-kpi-value text-warning">{stats.suplentes}</div>
               <div className="gestor-kpi-footer">
-                <span className="gestor-kpi-sub">Aprovados em lista de reserva</span>
+                <span className="gestor-kpi-sub">Reserva • Ver Suplentes ➔</span>
               </div>
             </div>
 
-            <div className="gestor-kpi-card">
+            <div 
+              className="gestor-kpi-card"
+              onClick={() => {
+                setFiltroStatus('Excluído');
+                setGestorTab('inscritos');
+              }}
+              style={{ cursor: 'pointer' }}
+              title="Clique para filtrar candidaturas excluídas"
+            >
               <div className="gestor-kpi-header">
                 <span className="gestor-kpi-label">Candidaturas Excluídas</span>
                 <span className="gestor-kpi-icon-wrap danger"><XCircle size={20} /></span>
               </div>
               <div className="gestor-kpi-value text-danger">{stats.excluidos}</div>
               <div className="gestor-kpi-footer">
-                <span className="gestor-kpi-sub">Com fundamentação legal exarada</span>
+                <span className="gestor-kpi-sub">Com fundamentação • Ver Excluídos ➔</span>
               </div>
             </div>
           </div>
