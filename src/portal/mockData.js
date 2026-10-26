@@ -2239,3 +2239,231 @@ export function deleteStoredPaleta(id) {
   return filtered;
 }
 
+// ========================================================
+// GESTÃO OFICIAL DE CARREIRAS DO SERNIC (CRUD & REGIMES)
+// ========================================================
+
+export const INITIAL_CARREIRAS = [
+  {
+    id: 'CAR-01',
+    codigo: 'SERNIC-CAR-01',
+    nome: 'Investigação Criminal e Instrução Processual',
+    regime: 'Carreira de Regime Especial - SERNIC',
+    ramo: 'Investigação Criminal e Instrução Processual Penal',
+    grauMinimo: 'Licenciatura',
+    enquadramentoTSU: 'Faixa TSU-14 a TSU-18 (+40% Risco e Disponibilidade)',
+    vagas: 120,
+    status: 'Activa',
+    descricao: 'Execução de investigações penais complexas, inquirições, vigilâncias, cumprimento de mandados judiciais, detenções em flagrante delito e instrução de processos-crime.',
+    cursosAceites: 'Direito, Ciências Policiais, Criminologia, Psicologia Forense',
+    idadeMinima: 21,
+    idadeMaxima: 35,
+    requisitoFisico: 'Aptidão física e psíquica comprovada por junta médica; Altura mín. 1.65m (H) / 1.60m (M)',
+    escalaTrabalho: 'Regime de Permanência e Turnos Operacionais 24/7'
+  },
+  {
+    id: 'CAR-02',
+    codigo: 'SERNIC-CAR-02',
+    nome: 'Polícia Científica e Criminalística Forense',
+    regime: 'Carreira Técnica Especial Forense',
+    ramo: 'Laboratório Central de Criminalística',
+    grauMinimo: 'Licenciatura',
+    enquadramentoTSU: 'Faixa TSU-13 a TSU-17 (+35% Bónus de Peritagem)',
+    vagas: 35,
+    status: 'Activa',
+    descricao: 'Levantamento de vestígios materiais em locais de crime, balística forense, identificação dactiloscópica, análises químicas, genéticas e elaboração de relatórios periciais oficiais.',
+    cursosAceites: 'Física, Química, Engenharia Mecânica, Biologia Forense, Bioquímica',
+    idadeMinima: 21,
+    idadeMaxima: 38,
+    requisitoFisico: 'Robustez física e acuidade visual para manuseio de microscopia e reagentes',
+    escalaTrabalho: 'Regime Laboratorial e Equipas de Piquete de Cena de Crime'
+  },
+  {
+    id: 'CAR-03',
+    codigo: 'SERNIC-CAR-03',
+    nome: 'Inteligência Digital e Combate ao Cibercrime',
+    regime: 'Carreira Técnica Superior Especializada',
+    ramo: 'Divisão de Ciberinteligência e Crimes Tecnológicos',
+    grauMinimo: 'Licenciatura',
+    enquadramentoTSU: 'Faixa TSU-14 a TSU-18 (+35% Subsídio Tecnológico Forense)',
+    vagas: 45,
+    status: 'Activa',
+    descricao: 'Peritagem forense computacional e em dispositivos móveis, extração de provas eletrónicas, investigação de fraudes cibernéticas e combate ao terrorismo em meios digitais.',
+    cursosAceites: 'Engenharia Informática, Ciência da Computação, Segurança de Redes, Telecomunicações',
+    idadeMinima: 21,
+    idadeMaxima: 40,
+    requisitoFisico: 'Capacidade analítica avançada e resistência psicológica ao stress',
+    escalaTrabalho: 'Plantão de Segurança da Informação e Investigação Digital 24/7'
+  },
+  {
+    id: 'CAR-04',
+    codigo: 'SERNIC-CAR-04',
+    nome: 'Medicina Legal e Toxicologia Forense',
+    regime: 'Carreira Especial de Saúde Forense',
+    ramo: 'Departamento de Tanatologia e Toxicologia Forense',
+    grauMinimo: 'Licenciatura',
+    enquadramentoTSU: 'Faixa TSU-15 a TSU-19 (+45% Subsídio de Insalubridade e Risco)',
+    vagas: 20,
+    status: 'Activa',
+    descricao: 'Exames de tanatologia forense (autópsias), exame de corpo de delito, análise de substâncias tóxicas, estupefacientes e perícias clínicas médico-legais.',
+    cursosAceites: 'Medicina Geral, Ciências Farmacêuticas, Bioquímica Clínica, Toxicologia',
+    idadeMinima: 23,
+    idadeMaxima: 42,
+    requisitoFisico: 'Resistência a ambientes insalubres e imunização epidemiológica obrigatória',
+    escalaTrabalho: 'Regime de Piquete Médico-Legal e Intervenções de Urgência'
+  },
+  {
+    id: 'CAR-05',
+    codigo: 'SERNIC-CAR-05',
+    nome: 'Corpo Técnico Operativo e Vigilância Policial',
+    regime: 'Carreira de Apoio Policial',
+    ramo: 'Apoio Operacional, Segurança e Logística Policial',
+    grauMinimo: '12ª Classe / Nível Médio',
+    enquadramentoTSU: 'Faixa TSU-07 a TSU-10 (+25% Subsídio de Turno Policial)',
+    vagas: 80,
+    status: 'Activa',
+    descricao: 'Apoio logístico em operações no terreno, vigilância e segurança perimétrica, transporte de detidos e custódia segura de armamento e vestígios apreendidos.',
+    cursosAceites: '12ª Classe do SNE Concluída, Ensino Técnico Profissional',
+    idadeMinima: 18,
+    idadeMaxima: 30,
+    requisitoFisico: 'Robustez física plena, sem limitações motoras; Carta de condução válida',
+    escalaTrabalho: 'Turnos Rotativos Policiais (12h/24h e 12h/48h)'
+  },
+  {
+    id: 'CAR-06',
+    codigo: 'SERNIC-CAR-06',
+    nome: 'Operações Táticas e Intervenção de Alto Risco',
+    regime: 'Carreira de Regime Especial - Intervenção Rápida',
+    ramo: 'Grupo de Operações e Resgate Tático Especial',
+    grauMinimo: '12ª Classe / Nível Médio',
+    enquadramentoTSU: 'Faixa TSU-09 a TSU-13 (+45% Subsídio de Alto Risco Operacional)',
+    vagas: 30,
+    status: 'Activa',
+    descricao: 'Cumprimento de mandados de captura em situações de extrema perigosidade, resgate de reféns, escolta tática de segurança e apoio armado a buscas de alto risco.',
+    cursosAceites: '12ª Classe Concluída + Aptidão Física de Força Especial',
+    idadeMinima: 20,
+    idadeMaxima: 32,
+    requisitoFisico: 'Condição atlética de elite, destreza tática e pontaria comprovada',
+    escalaTrabalho: 'Regime de Prontidão Tática Imediata'
+  }
+];
+
+const STORAGE_KEY_CARREIRAS = 'sernic_concurso_carreiras_v2';
+
+export function getStoredCarreiras() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_CARREIRAS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.warn('Erro ao ler carreiras do localStorage', e);
+  }
+  try {
+    localStorage.setItem(STORAGE_KEY_CARREIRAS, JSON.stringify(INITIAL_CARREIRAS));
+  } catch {}
+  return INITIAL_CARREIRAS;
+}
+
+export function saveStoredCarreiras(list) {
+  try {
+    localStorage.setItem(STORAGE_KEY_CARREIRAS, JSON.stringify(list));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sernic-carreiras-updated', { detail: list }));
+    }
+  } catch (e) {
+    console.warn('Erro ao salvar carreiras no localStorage', e);
+  }
+  return list;
+}
+
+export function createStoredCarreira(data, operador = 'Direcção de Recursos Humanos - SERNIC') {
+  const current = getStoredCarreiras();
+  const nextNum = current.length + 1;
+  const newId = data.id || `CAR-${String(nextNum).padStart(2, '0')}`;
+  const newCodigo = data.codigo || `SERNIC-CAR-${String(nextNum).padStart(2, '0')}`;
+
+  const novaCarreira = {
+    id: newId,
+    codigo: newCodigo,
+    nome: data.nome || 'Nova Carreira Oficial',
+    regime: data.regime || 'Carreira de Regime Especial - SERNIC',
+    ramo: data.ramo || 'Investigação Geral',
+    grauMinimo: data.grauMinimo || 'Licenciatura',
+    enquadramentoTSU: data.enquadramentoTSU || 'Tabela Salarial Única (TSU) + Risco',
+    vagas: Number(data.vagas) || 10,
+    status: data.status || 'Activa',
+    descricao: data.descricao || 'Funções policiais e de investigação criminal nos termos estatutários.',
+    cursosAceites: data.cursosAceites || 'Direito, Ciências Policiais, Criminologia',
+    idadeMinima: Number(data.idadeMinima) || 21,
+    idadeMaxima: Number(data.idadeMaxima) || 35,
+    requisitoFisico: data.requisitoFisico || 'Robustez física comprovada por junta médica.',
+    escalaTrabalho: data.escalaTrabalho || 'Regime de Turnos e Permanência'
+  };
+
+  const updated = [novaCarreira, ...current];
+  saveStoredCarreiras(updated);
+
+  addStoredAuditoria({
+    acao: 'Registo de Nova Carreira Oficial',
+    candidato: `${novaCarreira.nome} (${novaCarreira.codigo})`,
+    estadoAnterior: 'Inexistente',
+    novoEstado: novaCarreira.status,
+    motivo: `Criação da carreira estatutária com ${novaCarreira.vagas} vagas fixadas`,
+    operador: operador
+  });
+
+  return novaCarreira;
+}
+
+export function updateStoredCarreira(id, updates, operador = 'Direcção de Recursos Humanos - SERNIC') {
+  const current = getStoredCarreiras();
+  const index = current.findIndex(c => c.id === id);
+  if (index === -1) return null;
+
+  const anterior = current[index];
+  const updatedCarreira = {
+    ...anterior,
+    ...updates,
+    vagas: updates.vagas !== undefined ? Number(updates.vagas) : anterior.vagas,
+    idadeMinima: updates.idadeMinima !== undefined ? Number(updates.idadeMinima) : anterior.idadeMinima,
+    idadeMaxima: updates.idadeMaxima !== undefined ? Number(updates.idadeMaxima) : anterior.idadeMaxima
+  };
+
+  current[index] = updatedCarreira;
+  saveStoredCarreiras(current);
+
+  addStoredAuditoria({
+    acao: 'Edição / Atualização de Carreira',
+    candidato: `${updatedCarreira.nome} (${updatedCarreira.codigo})`,
+    estadoAnterior: anterior.status,
+    novoEstado: updatedCarreira.status,
+    motivo: updates.motivoAudit || `Alteração dos requisitos, regime (${updatedCarreira.regime}) ou quotas (${updatedCarreira.vagas} vagas)`,
+    operador: operador
+  });
+
+  return updatedCarreira;
+}
+
+export function deleteStoredCarreira(id, operador = 'Direcção de Recursos Humanos - SERNIC') {
+  const current = getStoredCarreiras();
+  const target = current.find(c => c.id === id);
+  if (!target) return false;
+
+  const filtered = current.filter(c => c.id !== id);
+  saveStoredCarreiras(filtered);
+
+  addStoredAuditoria({
+    acao: 'Eliminação de Carreira Oficial',
+    candidato: `${target.nome} (${target.codigo})`,
+    estadoAnterior: target.status,
+    novoEstado: 'Eliminado',
+    motivo: `Remoção da carreira do quadro oficial do concurso`,
+    operador: operador
+  });
+
+  return true;
+}
+
+

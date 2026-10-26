@@ -97,7 +97,13 @@ import {
   getGenderText,
   isPrazoSubmissaoExpirado,
   formatarDataLimiteExtenso,
-  getStatusEfetivoVaga
+  getStatusEfetivoVaga,
+  INITIAL_CARREIRAS,
+  getStoredCarreiras,
+  saveStoredCarreiras,
+  createStoredCarreira,
+  updateStoredCarreira,
+  deleteStoredCarreira
 } from '../mockData';
 import sernicLogo from '../../assets/sernic-logo.png';
 import DraggableSubAba from '../components/DraggableSubAba';
@@ -140,6 +146,7 @@ export default function GestorPortalModule({
   const [listas, setListas] = useState(() => getStoredListasPublicadas());
   const [auditoria, setAuditoria] = useState(() => getStoredAuditoria());
   const [vagas, setVagas] = useState(() => getStoredVagas());
+  const [carreiras, setCarreiras] = useState(() => getStoredCarreiras());
 
   // Dados do Módulo de Definições
   const [cursos, setCursos] = useState(() => getStoredCursos());
@@ -153,6 +160,7 @@ export default function GestorPortalModule({
     setListas(getStoredListasPublicadas());
     setAuditoria(getStoredAuditoria());
     setVagas(getStoredVagas());
+    setCarreiras(getStoredCarreiras());
     setCursos(getStoredCursos());
     setLocais(getStoredLocais());
     setDefinicoes(getStoredDefinicoes());
@@ -166,15 +174,18 @@ export default function GestorPortalModule({
   useEffect(() => {
     const handleSync = () => {
       setVagas(getStoredVagas());
+      setCarreiras(getStoredCarreiras());
       setCandidatos(deduplicateCandidaturas(getStoredCandidaturas()));
       setListas(getStoredListasPublicadas());
       setAuditoria(getStoredAuditoria());
       setPaletasCores(getStoredPaletasCores());
     };
     window.addEventListener('sernic-vagas-updated', handleSync);
+    window.addEventListener('sernic-carreiras-updated', handleSync);
     window.addEventListener('storage', handleSync);
     return () => {
       window.removeEventListener('sernic-vagas-updated', handleSync);
+      window.removeEventListener('sernic-carreiras-updated', handleSync);
       window.removeEventListener('storage', handleSync);
     };
   }, []);
@@ -182,8 +193,8 @@ export default function GestorPortalModule({
   // ========================================================
   // ESTADOS DO MÓDULO "DEFINIÇÕES DO SISTEMA"
   // ========================================================
-  // Sub-abas geridas a partir da Barra Lateral: 'cursos' | 'locais' | 'temas' | 'idioma' | 'geral'
-  const [internalDefinicoesSubTab, setInternalDefinicoesSubTab] = useState('cursos');
+  // Sub-abas geridas a partir da Barra Lateral: 'carreiras' | 'cursos' | 'locais' | 'temas' | 'idioma' | 'geral'
+  const [internalDefinicoesSubTab, setInternalDefinicoesSubTab] = useState('carreiras');
   const definicoesSubTab = propDefinicoesSubTab || internalDefinicoesSubTab;
   const setDefinicoesSubTab = (tab) => {
     if (onDefinicoesSubTabChange) {
@@ -191,6 +202,35 @@ export default function GestorPortalModule({
     }
     setInternalDefinicoesSubTab(tab);
   };
+
+  // ========================================================
+  // ESTADOS DO MÓDULO "CARREIRAS OFICIAIS DO SERNIC"
+  // ========================================================
+  const [buscaCarreira, setBuscaCarreira] = useState('');
+  const [filtroRegimeCarreira, setFiltroRegimeCarreira] = useState('todos');
+  const [filtroGrauCarreira, setFiltroGrauCarreira] = useState('todos');
+  const [filtroStatusCarreira, setFiltroStatusCarreira] = useState('todos');
+  const [isCarreiraModalOpen, setIsCarreiraModalOpen] = useState(false);
+  const [editingCarreira, setEditingCarreira] = useState(null);
+  const [carreiraForm, setCarreiraForm] = useState({
+    codigo: '',
+    nome: '',
+    regime: 'Carreira de Regime Especial - SERNIC',
+    ramo: '',
+    grauMinimo: 'Licenciatura',
+    enquadramentoTSU: 'Faixa TSU-14 a TSU-18 (+40% Risco e Disponibilidade)',
+    vagas: 20,
+    status: 'Activa',
+    descricao: '',
+    cursosAceites: '',
+    idadeMinima: 21,
+    idadeMaxima: 35,
+    requisitoFisico: 'Aptidão física e psicológica atestada por junta médica oficial.',
+    escalaTrabalho: 'Regime de Permanência e Turnos Operacionais 24/7'
+  });
+
+  // Modo de exibição na aba Vagas: 'editais' | 'carreiras'
+  const [vagasTabMode, setVagasTabMode] = useState('editais');
 
   // CRUD DE PALETAS DE CORES & TEMAS INSTITUCIONAIS
   const [isPaletaModalOpen, setIsPaletaModalOpen] = useState(false);
@@ -1185,6 +1225,115 @@ export default function GestorPortalModule({
   // ========================================================
   // HANDLERS DO MÓDULO DE DEFINIÇÕES
   // ========================================================
+  // 0. Carreiras Oficiais do SERNIC
+  const filteredCarreiras = useMemo(() => {
+    return carreiras.filter(c => {
+      const q = buscaCarreira.toLowerCase().trim();
+      const matchBusca = !q || 
+        c.nome.toLowerCase().includes(q) || 
+        c.codigo.toLowerCase().includes(q) ||
+        (c.ramo && c.ramo.toLowerCase().includes(q)) ||
+        (c.enquadramentoTSU && c.enquadramentoTSU.toLowerCase().includes(q)) ||
+        (c.cursosAceites && c.cursosAceites.toLowerCase().includes(q));
+      
+      const matchRegime = filtroRegimeCarreira === 'todos' || c.regime === filtroRegimeCarreira;
+      const matchGrau = filtroGrauCarreira === 'todos' || c.grauMinimo === filtroGrauCarreira;
+      const matchStatus = filtroStatusCarreira === 'todos' || c.status === filtroStatusCarreira;
+
+      return matchBusca && matchRegime && matchGrau && matchStatus;
+    });
+  }, [carreiras, buscaCarreira, filtroRegimeCarreira, filtroGrauCarreira, filtroStatusCarreira]);
+
+  const handleOpenNovaCarreira = () => {
+    setEditingCarreira(null);
+    setCarreiraForm({
+      codigo: `SERNIC-CAR-0${carreiras.length + 1}`,
+      nome: '',
+      regime: 'Carreira de Regime Especial - SERNIC',
+      ramo: 'Investigação Criminal e Instrução Processual Penal',
+      grauMinimo: 'Licenciatura',
+      enquadramentoTSU: 'Faixa TSU-14 a TSU-18 (+40% Risco e Disponibilidade)',
+      vagas: 25,
+      status: 'Activa',
+      descricao: '',
+      cursosAceites: 'Direito, Ciências Policiais, Criminologia, Psicologia Forense',
+      idadeMinima: 21,
+      idadeMaxima: 35,
+      requisitoFisico: 'Aptidão física e psíquica comprovada por junta médica oficial.',
+      escalaTrabalho: 'Regime de Permanência e Turnos Operacionais 24/7'
+    });
+    setIsCarreiraModalOpen(true);
+  };
+
+  const handleOpenEditCarreira = (carreira) => {
+    setEditingCarreira(carreira);
+    setCarreiraForm({
+      codigo: carreira.codigo || `SERNIC-CAR-01`,
+      nome: carreira.nome || '',
+      regime: carreira.regime || 'Carreira de Regime Especial - SERNIC',
+      ramo: carreira.ramo || '',
+      grauMinimo: carreira.grauMinimo || 'Licenciatura',
+      enquadramentoTSU: carreira.enquadramentoTSU || '',
+      vagas: carreira.vagas !== undefined ? carreira.vagas : 10,
+      status: carreira.status || 'Activa',
+      descricao: carreira.descricao || '',
+      cursosAceites: carreira.cursosAceites || '',
+      idadeMinima: carreira.idadeMinima || 21,
+      idadeMaxima: carreira.idadeMaxima || 35,
+      requisitoFisico: carreira.requisitoFisico || '',
+      escalaTrabalho: carreira.escalaTrabalho || ''
+    });
+    setIsCarreiraModalOpen(true);
+  };
+
+  const handleSaveCarreira = (e) => {
+    if (e) e.preventDefault();
+    if (!carreiraForm.nome.trim()) {
+      if (onNotify) onNotify('warning', 'O nome da carreira é de preenchimento obrigatório.');
+      return;
+    }
+
+    const operador = currentUser?.name ? `${currentUser.name} (${currentUser.cargo || 'Presidente do Júri'})` : 'Direcção de Recursos Humanos - SERNIC';
+
+    if (editingCarreira) {
+      updateStoredCarreira(editingCarreira.id, carreiraForm, operador);
+      setCarreiras(getStoredCarreiras());
+      if (onNotify) onNotify('success', `Carreira "${carreiraForm.nome}" atualizada com sucesso!`);
+    } else {
+      createStoredCarreira(carreiraForm, operador);
+      setCarreiras(getStoredCarreiras());
+      if (onNotify) onNotify('success', `Carreira "${carreiraForm.nome}" cadastrada no quadro com sucesso!`);
+    }
+
+    setIsCarreiraModalOpen(false);
+    setEditingCarreira(null);
+  };
+
+  const handleToggleCarreiraStatus = (id) => {
+    const target = carreiras.find(c => c.id === id);
+    if (!target) return;
+    const novoStatus = target.status === 'Activa' ? 'Inactiva' : 'Activa';
+    const operador = currentUser?.name ? `${currentUser.name} (${currentUser.cargo || 'Presidente do Júri'})` : 'Comissão do Concurso - SERNIC';
+    
+    updateStoredCarreira(id, { status: novoStatus }, operador);
+    setCarreiras(getStoredCarreiras());
+    if (onNotify) {
+      onNotify('info', `Carreira "${target.nome}" passou para estado: ${novoStatus}.`);
+    }
+  };
+
+  const handleDeleteCarreira = (id) => {
+    const target = carreiras.find(c => c.id === id);
+    if (!target) return;
+
+    if (window.confirm(`Tem a certeza de que deseja eliminar a carreira "${target.nome}" (${target.codigo})? O registo será lavrado no Livro de Atas.`)) {
+      const operador = currentUser?.name ? `${currentUser.name} (${currentUser.cargo || 'Presidente do Júri'})` : 'Comissão do Concurso - SERNIC';
+      deleteStoredCarreira(id, operador);
+      setCarreiras(getStoredCarreiras());
+      if (onNotify) onNotify('success', `Carreira "${target.nome}" eliminada com sucesso.`);
+    }
+  };
+
   // 1. Cursos Homologados
   const filteredCursos = useMemo(() => {
     return cursos.filter(c => {
@@ -3489,14 +3638,29 @@ export default function GestorPortalModule({
           ======================================================== */}
       {gestorTab === 'vagas' && (
         <div className="gestor-tab-content fadeIn">
-          <div className="vagas-gestor-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          {/* TOPO INSTITUCIONAL COM VISUAL SERNIC */}
+          <div className="vagas-gestor-header">
             <div>
-              <h3>Quotas e Editais Oficiais Autorizados</h3>
-              <p>Quadro de vagas fixado pelo Ministério da Economia e Finanças para o Concurso SERNIC 2026.</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem' }}>
+                <span className="carreira-badge-regime">
+                  <ShieldCheck size={14} />
+                  <span>Dotação Orçamental & Estatutos</span>
+                </span>
+                <span style={{ fontSize: '0.82rem', color: 'var(--portal-text-muted)' }}>
+                  Ministério da Economia e Finanças • SERNIC 2026
+                </span>
+              </div>
+              <h3 style={{ margin: '0 0 0.35rem 0', fontSize: '1.45rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>
+                Quotas, Editais & Carreiras Oficiais Autorizadas
+              </h3>
+              <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--portal-text-muted)' }}>
+                Gestão integrada do quadro de vagas, editais públicos de admissão e carreiras de investigação criminal.
+              </p>
             </div>
+
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
               <div className="total-vagas-badge">
-                Total Autorizado: <strong>{vagas.reduce((acc, v) => acc + (Number(v.vagas) || 0), 0)} Vagas</strong>
+                Total de Vagas: <strong>{vagas.reduce((acc, v) => acc + (Number(v.vagas) || 0), 0)} Autorizadas</strong>
               </div>
               <button
                 type="button"
@@ -3507,103 +3671,282 @@ export default function GestorPortalModule({
                 <Plus size={16} />
                 <span>Lançar Novo Concurso Oficial</span>
               </button>
+              <button
+                type="button"
+                className="gestor-btn-outline"
+                onClick={handleOpenNovaCarreira}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', padding: '0.6rem 1.1rem' }}
+              >
+                <Briefcase size={15} />
+                <span>Nova Carreira SERNIC</span>
+              </button>
             </div>
           </div>
 
-          <div className="vagas-gestor-grid">
-            {vagas.map(vaga => {
-              const countInscritos = candidatos.filter(c => c.vagaTitulo === vaga.titulo).length;
-              const ratio = vaga.vagas > 0 ? (countInscritos / vaga.vagas).toFixed(1) : '0';
+          {/* ALTERNADOR DE MODO: EDITAIS DE VAGAS vs CARREIRAS OFICIAIS */}
+          <div className="vagas-mode-switcher-bar">
+            <button
+              type="button"
+              className={`vagas-mode-pill ${vagasTabMode === 'editais' ? 'active' : ''}`}
+              onClick={() => setVagasTabMode('editais')}
+            >
+              <FileText size={16} />
+              <span>Concursos & Quotas de Vagas ({vagas.length})</span>
+            </button>
+            <button
+              type="button"
+              className={`vagas-mode-pill ${vagasTabMode === 'carreiras' ? 'active' : ''}`}
+              onClick={() => setVagasTabMode('carreiras')}
+            >
+              <Briefcase size={16} />
+              <span>Carreiras Oficiais SERNIC ({carreiras.length})</span>
+            </button>
+          </div>
 
-              return (
-                <div key={vaga.id} className="vaga-gestor-card">
-                  <div className="vaga-gestor-top">
-                    <span className="vaga-edital-cod">{vaga.codigoEdital}</span>
-                    <span 
-                      className={`vaga-status-chip ${isPrazoSubmissaoExpirado(vaga.dataLimite) ? 'fechado' : vaga.status === 'Aberto' ? 'aberto' : 'fechado'}`}
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => handleToggleVagaStatusGestor(vaga.id)}
-                      title="Clique para alternar estado Aberto / Encerrado"
-                    >
-                      {isPrazoSubmissaoExpirado(vaga.dataLimite) ? 'Prazo Expirado' : vaga.status} (Alternar)
-                    </span>
-                  </div>
+          {/* MODO 1: EDITAIS & QUOTAS DE VAGAS */}
+          {vagasTabMode === 'editais' && (
+            <div className="vagas-gestor-grid fadeIn">
+              {vagas.map(vaga => {
+                const countInscritos = candidatos.filter(c => c.vagaTitulo === vaga.titulo).length;
+                const ratio = vaga.vagas > 0 ? (countInscritos / vaga.vagas).toFixed(1) : '0';
+                const correspondenteCarreira = carreiras.find(c => 
+                  c.nome.toLowerCase() === (vaga.carreira || '').toLowerCase() ||
+                  c.nome.toLowerCase() === vaga.titulo.toLowerCase() ||
+                  (vaga.carreira && c.nome.toLowerCase().includes(vaga.carreira.toLowerCase()))
+                );
 
-                  <h4>{vaga.titulo}</h4>
-                  <p className="vaga-carreira-desc">{vaga.carreira}</p>
-
-                  <div className="vaga-metrics-grid">
-                    <div className="vaga-metric-box">
-                      <span className="label">Vagas Oficiais</span>
-                      <strong className="value red">{vaga.vagas}</strong>
-                    </div>
-                    <div className="vaga-metric-box">
-                      <span className="label">Inscritos</span>
-                      <strong className="value">{countInscritos}</strong>
-                    </div>
-                    <div className="vaga-metric-box">
-                      <span className="label">Concorrência</span>
-                      <strong className="value gold">{ratio} : 1</strong>
-                    </div>
-                  </div>
-
-                  <div className="vaga-details-box">
-                    <div className="detail-line">
-                      <MapPin size={14} color="#64748b" />
-                      <span>{vaga.local}</span>
-                    </div>
-                    <div className="detail-line">
-                      <Calendar size={14} color={isPrazoSubmissaoExpirado(vaga.dataLimite) ? '#dc2626' : '#64748b'} />
-                      <span>
-                        Prazo: <strong>{vaga.dataLimite}</strong>
-                        {isPrazoSubmissaoExpirado(vaga.dataLimite) ? (
-                          <span className="tag-prazo-expirado">
-                            <Lock size={11} /> Prazo Expirado
-                          </span>
-                        ) : (
-                          <span className="tag-prazo-aberto">
-                            <CheckCircle2 size={11} /> Submissões Abertas
-                          </span>
-                        )}
+                return (
+                  <div key={vaga.id} className="vaga-gestor-card">
+                    <div className="vaga-gestor-top">
+                      <span className="vaga-edital-cod">{vaga.codigoEdital}</span>
+                      <span 
+                        className={`vaga-status-chip ${isPrazoSubmissaoExpirado(vaga.dataLimite) ? 'fechado' : vaga.status === 'Aberto' ? 'aberto' : 'fechado'}`}
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => handleToggleVagaStatusGestor(vaga.id)}
+                        title="Clique para alternar estado Aberto / Encerrado"
+                      >
+                        {isPrazoSubmissaoExpirado(vaga.dataLimite) ? 'Prazo Expirado' : vaga.status} (Alternar)
                       </span>
                     </div>
-                  </div>
 
-                  <div className="vaga-gestor-footer" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button
-                        type="button"
-                        className="sub-aba-btn-action"
-                        style={{ flex: 1, justifyContent: 'center' }}
-                        onClick={() => handleOpenEditConcursoGestor(vaga)}
-                      >
-                        <Edit3 size={13} color="#c32026" />
-                        <span>Editar Concurso</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="sub-aba-btn-action danger"
-                        onClick={() => handleDeleteVagaGestor(vaga.id)}
-                        title="Excluir este concurso"
-                      >
-                        <Trash2 size={13} />
-                        <span>Excluir</span>
-                      </button>
+                    <h4>{vaga.titulo}</h4>
+                    <p className="vaga-carreira-desc">
+                      <Briefcase size={13} style={{ display: 'inline', marginRight: '4px', verticalAlign: '-2px' }} />
+                      {vaga.carreira}
+                    </p>
+
+                    <div className="vaga-metrics-grid">
+                      <div className="vaga-metric-box">
+                        <span className="label">Vagas Oficiais</span>
+                        <strong className="value red">{vaga.vagas}</strong>
+                      </div>
+                      <div className="vaga-metric-box">
+                        <span className="label">Inscritos</span>
+                        <strong className="value">{countInscritos}</strong>
+                      </div>
+                      <div className="vaga-metric-box">
+                        <span className="label">Concorrência</span>
+                        <strong className="value gold">{ratio} : 1</strong>
+                      </div>
                     </div>
 
-                    <button
-                      type="button"
-                      className="btn-ver-edital-action"
-                      onClick={() => navigate('/portal-recrutamento/recrutamento')}
-                    >
-                      <span>Ver Aviso de Abertura Completo</span>
-                      <ArrowRight size={14} />
-                    </button>
+                    <div className="vaga-details-box">
+                      <div className="detail-line">
+                        <MapPin size={14} color="#64748b" />
+                        <span>{vaga.local}</span>
+                      </div>
+                      <div className="detail-line">
+                        <Calendar size={14} color={isPrazoSubmissaoExpirado(vaga.dataLimite) ? '#dc2626' : '#64748b'} />
+                        <span>
+                          Prazo: <strong>{vaga.dataLimite}</strong>
+                          {isPrazoSubmissaoExpirado(vaga.dataLimite) ? (
+                            <span className="tag-prazo-expirado">
+                              <Lock size={11} /> Prazo Expirado
+                            </span>
+                          ) : (
+                            <span className="tag-prazo-aberto">
+                              <CheckCircle2 size={11} /> Submissões Abertas
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="vaga-gestor-footer" style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                        <button
+                          type="button"
+                          className="sub-aba-btn-action"
+                          style={{ justifyContent: 'center' }}
+                          onClick={() => handleOpenEditConcursoGestor(vaga)}
+                        >
+                          <Edit3 size={13} color="#c32026" />
+                          <span>Editar Concurso</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className="sub-aba-btn-action"
+                          style={{ justifyContent: 'center', borderColor: '#c59b27', color: '#b45309' }}
+                          onClick={() => {
+                            if (correspondenteCarreira) {
+                              handleOpenEditCarreira(correspondenteCarreira);
+                            } else {
+                              handleOpenNovaCarreira();
+                            }
+                          }}
+                          title="Editar os parâmetros estatutários da carreira vinculada"
+                        >
+                          <Briefcase size={13} color="#c59b27" />
+                          <span>Editar Carreira</span>
+                        </button>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          type="button"
+                          className="btn-ver-edital-action"
+                          style={{ flex: 1 }}
+                          onClick={() => navigate('/portal-recrutamento/recrutamento')}
+                        >
+                          <span>Ver Aviso de Abertura</span>
+                          <ArrowRight size={14} />
+                        </button>
+
+                        <button
+                          type="button"
+                          className="sub-aba-btn-action danger"
+                          onClick={() => handleDeleteVagaGestor(vaga.id)}
+                          title="Excluir este concurso"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* MODO 2: CARREIRAS OFICIAIS SERNIC */}
+          {vagasTabMode === 'carreiras' && (
+            <div className="carreiras-mode-container fadeIn">
+              <div className="definicoes-panel-top" style={{ marginBottom: '1.25rem' }}>
+                <div>
+                  <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.2rem', fontWeight: 800 }}>
+                    Carreiras do Quadro do SERNIC
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--portal-text-muted)' }}>
+                    Clique em "Editar Carreira" para alterar o regime, enquadramento TSU, requisitos ou quotas.
+                  </p>
                 </div>
-              );
-            })}
-          </div>
+
+                <button
+                  type="button"
+                  className="gestor-btn-primary-red"
+                  onClick={handleOpenNovaCarreira}
+                >
+                  <Plus size={16} />
+                  <span>Cadastrar Nova Carreira</span>
+                </button>
+              </div>
+
+              <div className="carreiras-grid">
+                {carreiras.map(c => {
+                  const vagasCount = Number(c.vagas) || 0;
+                  const inscritosCount = candidatos.filter(cand => 
+                    cand.vagaTitulo === c.nome || cand.carreira === c.nome
+                  ).length;
+
+                  return (
+                    <div key={c.id} className="carreira-card-sernic">
+                      <div className="carreira-card-header">
+                        <div className="carreira-card-meta">
+                          <span className="carreira-code-tag">{c.codigo}</span>
+                          <span className="carreira-regime-pill">{c.regime}</span>
+                        </div>
+                        
+                        <div 
+                          className={`carreira-status-badge ${c.status === 'Activa' ? 'activa' : 'inactiva'}`}
+                          onClick={() => handleToggleCarreiraStatus(c.id)}
+                          title="Clique para alternar estado"
+                        >
+                          <span className="status-dot" />
+                          <span>{c.status}</span>
+                        </div>
+                      </div>
+
+                      <div className="carreira-card-body">
+                        <h4 className="carreira-title">{c.nome}</h4>
+                        <div className="carreira-ramo-line">
+                          <Layers size={14} color="#c32026" />
+                          <span>{c.ramo || 'Investigação Geral'}</span>
+                        </div>
+
+                        <p className="carreira-desc">{c.descricao}</p>
+
+                        <div className="carreira-indicators-box">
+                          <div className="carreira-indicator-item">
+                            <span className="ind-label">Grau Mínimo</span>
+                            <strong className="ind-val">{c.grauMinimo}</strong>
+                          </div>
+                          <div className="carreira-indicator-item">
+                            <span className="ind-label">Quotas</span>
+                            <strong className="ind-val red">{vagasCount} Vagas</strong>
+                          </div>
+                          <div className="carreira-indicator-item">
+                            <span className="ind-label">Idade</span>
+                            <strong className="ind-val">{c.idadeMinima} a {c.idadeMaxima}a</strong>
+                          </div>
+                          <div className="carreira-indicator-item">
+                            <span className="ind-label">Inscritos</span>
+                            <strong className="ind-val gold">{inscritosCount}</strong>
+                          </div>
+                        </div>
+
+                        {c.enquadramentoTSU && (
+                          <div className="carreira-tsu-box">
+                            <span className="tsu-title">TSU:</span>
+                            <span className="tsu-text">{c.enquadramentoTSU}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="carreira-card-footer">
+                        <button
+                          type="button"
+                          className="carreira-btn-action edit"
+                          onClick={() => handleOpenEditCarreira(c)}
+                        >
+                          <Edit3 size={14} />
+                          <span>Editar Carreira</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className={`carreira-btn-action toggle ${c.status === 'Activa' ? 'desativar' : 'ativar'}`}
+                          onClick={() => handleToggleCarreiraStatus(c.id)}
+                        >
+                          <SlidersHorizontal size={14} />
+                          <span>{c.status === 'Activa' ? 'Suspender' : 'Activar'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className="carreira-btn-action delete"
+                          onClick={() => handleDeleteCarreira(c.id)}
+                          title="Eliminar carreira"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -3667,6 +4010,262 @@ export default function GestorPortalModule({
           ======================================================== */}
       {gestorTab === 'definicoes' && (
         <div className="gestor-tab-content fadeIn definicoes-tab-container">
+          {/* ========================================================
+              SUB-ABA 0: GESTÃO & EDIÇÃO DE CARREIRAS OFICIAIS DO SERNIC
+              ======================================================== */}
+          {definicoesSubTab === 'carreiras' && (
+            <div className="definicoes-panel-body fadeIn">
+              <div className="definicoes-panel-top">
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
+                    <span className="carreira-badge-regime">
+                      <ShieldCheck size={14} />
+                      <span>Estatuto Orgânico do SERNIC</span>
+                    </span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--portal-text-muted)' }}>
+                      Decreto n.º 24/2017 & EGFAE
+                    </span>
+                  </div>
+                  <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1.25rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>
+                    Quadro Geral de Carreiras Oficiais & Parâmetros de Ingresso
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '0.86rem', color: 'var(--portal-text-muted)' }}>
+                    Gestão, edição de regimes estatutários, graus académicos de acesso, enquadramentos na TSU e quotas autorizadas.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="gestor-btn-outline"
+                    onClick={reloadData}
+                    title="Recarregar e sincronizar carreiras"
+                  >
+                    <RefreshCw size={15} />
+                    <span>Actualizar</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="gestor-btn-primary-red"
+                    onClick={handleOpenNovaCarreira}
+                  >
+                    <Plus size={16} />
+                    <span>Homologar Nova Carreira</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* BARRA DE ESTATÍSTICAS E RESUMO DAS CARREIRAS */}
+              <div className="carreira-kpi-ribbon">
+                <div className="carreira-kpi-pill">
+                  <span className="carreira-kpi-num">{carreiras.length}</span>
+                  <span className="carreira-kpi-label">Carreiras no Quadro</span>
+                </div>
+                <div className="carreira-kpi-pill">
+                  <span className="carreira-kpi-num green">{carreiras.filter(c => c.status === 'Activa').length}</span>
+                  <span className="carreira-kpi-label">Carreiras Activas</span>
+                </div>
+                <div className="carreira-kpi-pill">
+                  <span className="carreira-kpi-num red">{carreiras.reduce((acc, c) => acc + (Number(c.vagas) || 0), 0)}</span>
+                  <span className="carreira-kpi-label">Quotas de Vagas Fixadas</span>
+                </div>
+                <div className="carreira-kpi-pill">
+                  <span className="carreira-kpi-num gold">{carreiras.filter(c => (c.regime || '').includes('Especial')).length}</span>
+                  <span className="carreira-kpi-label">Regimes Especiais Policiais</span>
+                </div>
+              </div>
+
+              {/* FILTROS E PESQUISA DE CARREIRAS */}
+              <div className="definicoes-filters-group" style={{ marginBottom: '0.5rem' }}>
+                <div className="definicoes-search-box">
+                  <Search size={16} />
+                  <input
+                    type="text"
+                    placeholder="Pesquisar carreira por nome, código, ramo ou cursos..."
+                    value={buscaCarreira}
+                    onChange={(e) => setBuscaCarreira(e.target.value)}
+                  />
+                  {buscaCarreira && (
+                    <button type="button" onClick={() => setBuscaCarreira('')} className="btn-clear-search">
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                <select
+                  className="definicoes-select"
+                  value={filtroRegimeCarreira}
+                  onChange={(e) => setFiltroRegimeCarreira(e.target.value)}
+                >
+                  <option value="todos">Todos os Regimes Estatutários</option>
+                  <option value="Carreira de Regime Especial - SERNIC">Regime Especial SERNIC</option>
+                  <option value="Carreira Técnica Especial Forense">Técnica Especial Forense</option>
+                  <option value="Carreira Técnica Superior Especializada">Técnica Superior Especializada</option>
+                  <option value="Carreira Especial de Saúde Forense">Saúde Forense</option>
+                  <option value="Carreira de Apoio Policial">Apoio Policial</option>
+                  <option value="Carreira de Regime Especial - Intervenção Rápida">Intervenção Rápida</option>
+                </select>
+
+                <select
+                  className="definicoes-select"
+                  value={filtroGrauCarreira}
+                  onChange={(e) => setFiltroGrauCarreira(e.target.value)}
+                >
+                  <option value="todos">Todos os Níveis de Escolaridade</option>
+                  <option value="Licenciatura">Licenciatura</option>
+                  <option value="12ª Classe / Nível Médio">12ª Classe / Nível Médio</option>
+                  <option value="Mestrado">Mestrado</option>
+                </select>
+
+                <select
+                  className="definicoes-select"
+                  value={filtroStatusCarreira}
+                  onChange={(e) => setFiltroStatusCarreira(e.target.value)}
+                >
+                  <option value="todos">Todos os Estados</option>
+                  <option value="Activa">Activa</option>
+                  <option value="Inactiva">Inactiva</option>
+                </select>
+              </div>
+
+              {/* LISTA / GRID DE CARREIRAS COM DESIGN INSTITUCIONAL DE ALTO PADRÃO */}
+              {filteredCarreiras.length === 0 ? (
+                <div className="empty-state-card" style={{ padding: '3rem 2rem', textAlign: 'center' }}>
+                  <Briefcase size={42} color="var(--portal-text-muted)" style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--portal-text-main)' }}>Nenhuma carreira encontrada</h4>
+                  <p style={{ margin: 0, color: 'var(--portal-text-muted)', fontSize: '0.88rem' }}>
+                    Tente ajustar os filtros de busca ou cadastre uma nova carreira para o quadro oficial.
+                  </p>
+                  <button
+                    type="button"
+                    className="gestor-btn-primary-red"
+                    onClick={handleOpenNovaCarreira}
+                    style={{ marginTop: '1.25rem' }}
+                  >
+                    <Plus size={15} />
+                    <span>Cadastrar Carreira Agora</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="carreiras-grid">
+                  {filteredCarreiras.map(c => {
+                    const vagasCount = Number(c.vagas) || 0;
+                    const inscritosCount = candidatos.filter(cand => 
+                      cand.vagaTitulo === c.nome || cand.carreira === c.nome
+                    ).length;
+
+                    return (
+                      <div key={c.id} className="carreira-card-sernic">
+                        {/* Topo do Card */}
+                        <div className="carreira-card-header">
+                          <div className="carreira-card-meta">
+                            <span className="carreira-code-tag">{c.codigo}</span>
+                            <span className="carreira-regime-pill">{c.regime}</span>
+                          </div>
+                          
+                          <div 
+                            className={`carreira-status-badge ${c.status === 'Activa' ? 'activa' : 'inactiva'}`}
+                            onClick={() => handleToggleCarreiraStatus(c.id)}
+                            title="Clique para alternar estado Activa / Inactiva"
+                          >
+                            <span className="status-dot" />
+                            <span>{c.status}</span>
+                          </div>
+                        </div>
+
+                        {/* Título & Ramo */}
+                        <div className="carreira-card-body">
+                          <h4 className="carreira-title">{c.nome}</h4>
+                          <div className="carreira-ramo-line">
+                            <Layers size={14} color="#c32026" />
+                            <span>{c.ramo || 'Investigação Geral'}</span>
+                          </div>
+
+                          <p className="carreira-desc">
+                            {c.descricao}
+                          </p>
+
+                          {/* Mini Grid de Indicadores */}
+                          <div className="carreira-indicators-box">
+                            <div className="carreira-indicator-item">
+                              <span className="ind-label">Grau Mínimo</span>
+                              <strong className="ind-val">{c.grauMinimo}</strong>
+                            </div>
+                            <div className="carreira-indicator-item">
+                              <span className="ind-label">Quotas Fixadas</span>
+                              <strong className="ind-val red">{vagasCount} Vagas</strong>
+                            </div>
+                            <div className="carreira-indicator-item">
+                              <span className="ind-label">Idade Permitida</span>
+                              <strong className="ind-val">{c.idadeMinima} a {c.idadeMaxima} anos</strong>
+                            </div>
+                            <div className="carreira-indicator-item">
+                              <span className="ind-label">Candidatos</span>
+                              <strong className="ind-val gold">{inscritosCount}</strong>
+                            </div>
+                          </div>
+
+                          {/* Enquadramento TSU */}
+                          {c.enquadramentoTSU && (
+                            <div className="carreira-tsu-box">
+                              <span className="tsu-title">Enquadramento TSU:</span>
+                              <span className="tsu-text">{c.enquadramentoTSU}</span>
+                            </div>
+                          )}
+
+                          {/* Cursos Homologados */}
+                          {c.cursosAceites && (
+                            <div className="carreira-cursos-chip-box">
+                              <span className="cursos-label">Formações Elegíveis:</span>
+                              <div className="cursos-tags-list">
+                                {c.cursosAceites.split(',').map((cur, idx) => (
+                                  <span key={idx} className="curso-tag-item">
+                                    {cur.trim()}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Rodapé com Acções */}
+                        <div className="carreira-card-footer">
+                          <button
+                            type="button"
+                            className="carreira-btn-action edit"
+                            onClick={() => handleOpenEditCarreira(c)}
+                          >
+                            <Edit3 size={14} />
+                            <span>Editar Carreira</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            className={`carreira-btn-action toggle ${c.status === 'Activa' ? 'desativar' : 'ativar'}`}
+                            onClick={() => handleToggleCarreiraStatus(c.id)}
+                            title={c.status === 'Activa' ? 'Desactivar esta carreira temporariamente' : 'Activar esta carreira'}
+                          >
+                            <SlidersHorizontal size={14} />
+                            <span>{c.status === 'Activa' ? 'Suspender' : 'Activar'}</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            className="carreira-btn-action delete"
+                            onClick={() => handleDeleteCarreira(c.id)}
+                            title="Eliminar carreira do catálogo"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ========================================================
               SUB-ABA 1: GESTÃO DE CURSOS HOMOLOGADOS
               ======================================================== */}
@@ -5585,6 +6184,295 @@ export default function GestorPortalModule({
                 >
                   Cancelar
                 </button>
+              </div>
+            </form>
+          </DraggableSubAba>
+        </div>,
+        document.body
+      )}
+
+      {/* ========================================================
+          MODAL DE CARREIRA OFICIAL (CADASTRAR NOVA OU EDITAR)
+          ======================================================== */}
+      {isCarreiraModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="gestor-modal-overlay fadeIn" onClick={(e) => {
+          if (e.target === e.currentTarget) setIsCarreiraModalOpen(false);
+        }}>
+          <DraggableSubAba 
+            className="gestor-modal-card definicoes-modal carreira-modal-dialog" 
+            style={{ width: 'min(860px, 95vw)', maxWidth: 'min(860px, 95vw)' }}
+            moveHandleLabel="Mover Ficha de Carreira"
+            onClose={() => setIsCarreiraModalOpen(false)}
+          >
+            <div className="dossier-modal-header" style={{ borderBottom: '2px solid #c32026' }}>
+              <div className="dossier-header-left">
+                <div className="dossier-modal-avatar" style={{ background: 'linear-gradient(135deg, #0f2042 0%, #c32026 100%)', color: '#fff' }}>
+                  <Briefcase size={24} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.15rem' }}>
+                    <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800, color: '#c32026' }}>
+                      REPÚBLICA DE MOÇAMBIQUE • SERNIC
+                    </span>
+                    <span className={`carreira-badge-status ${carreiraForm.status === 'Activa' ? 'activa' : 'inactiva'}`}>
+                      {carreiraForm.status}
+                    </span>
+                  </div>
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>
+                    {editingCarreira ? `Editar Carreira: ${editingCarreira.nome}` : 'Cadastrar Nova Carreira no Quadro do SERNIC'}
+                  </h3>
+                  <span className="dossier-protocolo" style={{ fontSize: '0.8rem', color: 'var(--portal-text-muted)' }}>
+                    {carreiraForm.codigo || 'SERNIC-CAR-NOVA'} • {carreiraForm.regime}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="dossier-close-btn"
+                onClick={() => setIsCarreiraModalOpen(false)}
+                title="Fechar formulário"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCarreira} className="dossier-modal-body" style={{ maxHeight: '72vh', overflowY: 'auto', padding: '1.5rem' }}>
+              
+              {/* BLOCO 1: IDENTIFICAÇÃO E REGIME */}
+              <div className="carreira-form-section">
+                <div className="carreira-section-title">
+                  <ShieldCheck size={16} color="#c32026" />
+                  <span>Identificação Estatutária da Carreira</span>
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
+                  <div className="form-group-custom">
+                    <label>Designação Oficial da Carreira *</label>
+                    <input
+                      type="text"
+                      className="definicoes-input"
+                      placeholder="Ex: Investigação Criminal e Instrução Processual"
+                      value={carreiraForm.nome}
+                      onChange={(e) => setCarreiraForm({ ...carreiraForm, nome: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Código Institucional SERNIC</label>
+                    <input
+                      type="text"
+                      className="definicoes-input"
+                      placeholder="Ex: SERNIC-CAR-01"
+                      value={carreiraForm.codigo}
+                      onChange={(e) => setCarreiraForm({ ...carreiraForm, codigo: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.2fr', gap: '1rem', marginTop: '0.75rem' }}>
+                  <div className="form-group-custom">
+                    <label>Regime Estatutário *</label>
+                    <select
+                      className="definicoes-select full"
+                      value={carreiraForm.regime}
+                      onChange={(e) => setCarreiraForm({ ...carreiraForm, regime: e.target.value })}
+                    >
+                      <option value="Carreira de Regime Especial - SERNIC">Carreira de Regime Especial - SERNIC</option>
+                      <option value="Carreira Técnica Especial Forense">Carreira Técnica Especial Forense</option>
+                      <option value="Carreira Técnica Superior Especializada">Carreira Técnica Superior Especializada</option>
+                      <option value="Carreira Especial de Saúde Forense">Carreira Especial de Saúde Forense</option>
+                      <option value="Carreira de Apoio Policial">Carreira de Apoio Policial</option>
+                      <option value="Carreira de Regime Especial - Intervenção Rápida">Carreira de Regime Especial - Intervenção Rápida</option>
+                      <option value="Regime Geral da Função Pública">Regime Geral da Função Pública</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Ramo / Departamento Orgânico</label>
+                    <input
+                      type="text"
+                      className="definicoes-input"
+                      placeholder="Ex: Laboratório Central de Criminalística"
+                      value={carreiraForm.ramo}
+                      onChange={(e) => setCarreiraForm({ ...carreiraForm, ramo: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* BLOCO 2: ENQUADRAMENTO SALARIAL, QUOTAS E REQUISITOS */}
+              <div className="carreira-form-section" style={{ marginTop: '1.25rem' }}>
+                <div className="carreira-section-title">
+                  <SlidersHorizontal size={16} color="#c59b27" />
+                  <span>Enquadramento Salarial (TSU), Vagas & Idade</span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                  <div className="form-group-custom">
+                    <label>Grau Académico de Ingresso *</label>
+                    <select
+                      className="definicoes-select full"
+                      value={carreiraForm.grauMinimo}
+                      onChange={(e) => setCarreiraForm({ ...carreiraForm, grauMinimo: e.target.value })}
+                    >
+                      <option value="Licenciatura">Licenciatura (Nível Superior)</option>
+                      <option value="Mestrado">Mestrado</option>
+                      <option value="12ª Classe / Nível Médio">12ª Classe / Nível Médio</option>
+                      <option value="Bacharelato">Bacharelato</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Quotas de Vagas Autorizadas</label>
+                    <input
+                      type="number"
+                      className="definicoes-input"
+                      value={carreiraForm.vagas}
+                      onChange={(e) => setCarreiraForm({ ...carreiraForm, vagas: Number(e.target.value) })}
+                      min="1"
+                      max="2000"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Estado da Carreira</label>
+                    <select
+                      className="definicoes-select full"
+                      value={carreiraForm.status}
+                      onChange={(e) => setCarreiraForm({ ...carreiraForm, status: e.target.value })}
+                    >
+                      <option value="Activa">Activa (Apta para Concursos)</option>
+                      <option value="Inactiva">Inactiva (Suspensa)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr', gap: '1rem', marginTop: '0.75rem' }}>
+                  <div className="form-group-custom">
+                    <label>Enquadramento TSU & Subsídios</label>
+                    <input
+                      type="text"
+                      className="definicoes-input"
+                      placeholder="Ex: Faixa TSU-14 a TSU-18 (+40% Risco)"
+                      value={carreiraForm.enquadramentoTSU}
+                      onChange={(e) => setCarreiraForm({ ...carreiraForm, enquadramentoTSU: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Idade Mínima</label>
+                    <input
+                      type="number"
+                      className="definicoes-input"
+                      value={carreiraForm.idadeMinima}
+                      onChange={(e) => setCarreiraForm({ ...carreiraForm, idadeMinima: Number(e.target.value) })}
+                      min="18"
+                      max="35"
+                    />
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Idade Máxima</label>
+                    <input
+                      type="number"
+                      className="definicoes-input"
+                      value={carreiraForm.idadeMaxima}
+                      onChange={(e) => setCarreiraForm({ ...carreiraForm, idadeMaxima: Number(e.target.value) })}
+                      min="21"
+                      max="55"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* BLOCO 3: CURSOS AUTORIZADOS, COMPETÊNCIAS E REQUISITOS OPERATIVOS */}
+              <div className="carreira-form-section" style={{ marginTop: '1.25rem' }}>
+                <div className="carreira-section-title">
+                  <BookOpen size={16} color="#15803d" />
+                  <span>Áreas de Formação & Perfil Funcional</span>
+                </div>
+
+                <div className="form-group-custom">
+                  <label>Cursos e Formações Académicas Aceites (separadas por vírgula)</label>
+                  <input
+                    type="text"
+                    className="definicoes-input"
+                    placeholder="Ex: Direito, Ciências Policiais, Criminologia, Psicologia Forense"
+                    value={carreiraForm.cursosAceites}
+                    onChange={(e) => setCarreiraForm({ ...carreiraForm, cursosAceites: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group-custom" style={{ marginTop: '0.75rem' }}>
+                  <label>Descrição das Atribuições e Competências Oficiais</label>
+                  <textarea
+                    className="definicoes-input"
+                    rows={3}
+                    placeholder="Descreva as responsabilidades operacionais, de instrução ou perícia forense desta carreira..."
+                    value={carreiraForm.descricao}
+                    onChange={(e) => setCarreiraForm({ ...carreiraForm, descricao: e.target.value })}
+                    style={{ resize: 'vertical' }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.75rem' }}>
+                  <div className="form-group-custom">
+                    <label>Requisitos Físicos e Médicos</label>
+                    <input
+                      type="text"
+                      className="definicoes-input"
+                      placeholder="Ex: Robustez física atestada; Altura mínima 1.65m (H) / 1.60m (M)"
+                      value={carreiraForm.requisitoFisico}
+                      onChange={(e) => setCarreiraForm({ ...carreiraForm, requisitoFisico: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="form-group-custom">
+                    <label>Escala de Trabalho e Regime</label>
+                    <input
+                      type="text"
+                      className="definicoes-input"
+                      placeholder="Ex: Regime de Permanência e Turnos Operacionais 24/7"
+                      value={carreiraForm.escalaTrabalho}
+                      onChange={(e) => setCarreiraForm({ ...carreiraForm, escalaTrabalho: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* RODAPÉ DO FORMULÁRIO */}
+              <div className="dossier-modal-footer" style={{ marginTop: '1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className="gestor-btn-secondary"
+                  onClick={() => setIsCarreiraModalOpen(false)}
+                >
+                  Cancelar
+                </button>
+
+                <div style={{ display: 'flex', gap: '0.6rem' }}>
+                  {editingCarreira && (
+                    <button
+                      type="button"
+                      className="gestor-btn-outline danger"
+                      onClick={() => {
+                        handleDeleteCarreira(editingCarreira.id);
+                        setIsCarreiraModalOpen(false);
+                      }}
+                      style={{ color: '#c32026', borderColor: '#fca5a5' }}
+                    >
+                      <Trash2 size={15} />
+                      <span>Eliminar Carreira</span>
+                    </button>
+                  )}
+                  <button type="submit" className="gestor-btn-primary-red">
+                    <Save size={15} />
+                    <span>{editingCarreira ? 'Salvar Alterações da Carreira' : 'Homologar & Cadastrar Carreira'}</span>
+                  </button>
+                </div>
               </div>
             </form>
           </DraggableSubAba>

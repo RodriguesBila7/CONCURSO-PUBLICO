@@ -478,9 +478,23 @@ export default function PortalLayout({
                 />
               </button>
 
-              {/* AS 5 OPÇÕES DEMONSTRADAS NA IMAGEM DIRETAMENTE NA PARTE LATERAL */}
+              {/* SUBMENU DE DEFINIÇÕES DO GESTOR */}
               {gestorTab === 'definicoes' && !isSidebarCollapsed && (
                 <div className="portal-sidebar-submenu">
+                  <button
+                    type="button"
+                    className={`portal-sidebar-sub-btn ${definicoesSubTab === 'carreiras' ? 'active' : ''}`}
+                    onClick={() => {
+                      handleSelectGestorTab('definicoes');
+                      if (onDefinicoesSubTabChange) onDefinicoesSubTabChange('carreiras');
+                    }}
+                    aria-label="Carreiras Oficiais do SERNIC"
+                  >
+                    <Briefcase size={16} />
+                    <span>Carreiras Oficiais</span>
+                    <span className="portal-sidebar-sub-badge">6</span>
+                  </button>
+
                   <button
                     type="button"
                     className={`portal-sidebar-sub-btn ${definicoesSubTab === 'cursos' ? 'active' : ''}`}
