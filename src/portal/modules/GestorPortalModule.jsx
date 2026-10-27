@@ -4668,169 +4668,154 @@ export default function GestorPortalModule({
                     </select>
                   </div>
 
-                  {/* GRELHA DE CARTÕES DE MEMBROS */}
-                  {filteredPerfis.length === 0 ? (
-                    <div className="empty-state-card" style={{ padding: '3rem 2rem', textAlign: 'center' }}>
-                      <Users size={42} color="var(--portal-text-muted)" style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
-                      <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--portal-text-main)' }}>Nenhum membro encontrado</h4>
-                      <p style={{ margin: 0, color: 'var(--portal-text-muted)', fontSize: '0.88rem' }}>
-                        Verifique o termo de pesquisa ou adicione um novo colaborador ao júri.
-                      </p>
-                      <button
-                        type="button"
-                        className="gestor-btn-primary-red"
-                        onClick={handleOpenNovoPerfil}
-                        style={{ marginTop: '1.25rem' }}
-                      >
-                        <Plus size={15} />
-                        <span>Adicionar Membro Agora</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="perfis-team-grid">
-                      {filteredPerfis.map(p => {
-                        const countPermissoes = Object.values(p.permissoes || {}).filter(Boolean).length;
-                        return (
-                          <div key={p.id} className="perfil-member-card">
-                            {/* Topo do Cartão com Avatar */}
-                            <div className="perfil-card-top">
-                              <div className="perfil-avatar-wrap">
-                                <div 
-                                  className="perfil-avatar-circle"
-                                  style={{ backgroundColor: p.avatarCor || '#0f2042' }}
-                                >
-                                  {p.nome ? p.nome.split(' ').map(n => n[0]).slice(0, 2).join('') : 'U'}
-                                </div>
-                                <span className={`perfil-status-indicator ${p.estado === 'Activo' ? 'ativo' : 'pausado'}`} />
-                              </div>
+                  {/* TABELA INSTITUCIONAL SERNIC LIMPA E SEM POLUIÇÃO */}
+                  <div className="definicoes-table-wrap">
+                    <table className="definicoes-table">
+                      <thead>
+                        <tr>
+                          <th style={{ width: '85px' }}>Código</th>
+                          <th>Membro da Comissão</th>
+                          <th>Cargo / Função</th>
+                          <th>Papel no Júri</th>
+                          <th>Contactos</th>
+                          <th style={{ width: '135px' }}>Permissões</th>
+                          <th style={{ width: '120px' }}>Estado</th>
+                          <th style={{ width: '110px', textAlign: 'center' }}>Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredPerfis.length === 0 ? (
+                          <tr>
+                            <td colSpan="8" style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--portal-text-muted)' }}>
+                              Nenhum membro encontrado com os filtros aplicados.
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredPerfis.map((p) => {
+                            const countPermissoes = Object.values(p.permissoes || {}).filter(Boolean).length;
+                            const totalPermissoes = Object.keys(p.permissoes || {}).length;
+                            const iniciais = p.nome ? p.nome.split(' ').map(n => n[0]).slice(0, 2).join('') : 'U';
 
-                              <div className="perfil-card-header-info">
-                                <div className="perfil-top-badges">
-                                  <span className="perfil-id-badge">{p.id}</span>
-                                  <span 
-                                    className={`perfil-state-chip ${p.estado === 'Activo' ? 'ativo' : 'pausado'}`}
-                                    onClick={() => handleTogglePerfilStatus(p.id)}
-                                    title="Clique para alternar Activo / Em Pausa"
-                                  >
-                                    {p.estado}
+                            return (
+                              <tr key={p.id}>
+                                <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#c32026' }}>
+                                  {p.id}
+                                </td>
+                                <td>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                                    <div 
+                                      style={{
+                                        width: '36px',
+                                        height: '36px',
+                                        borderRadius: '50%',
+                                        background: p.avatarCor || '#0f2042',
+                                        color: '#ffffff',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontWeight: 700,
+                                        fontSize: '0.82rem',
+                                        flexShrink: 0,
+                                        boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
+                                      }}
+                                    >
+                                      {iniciais}
+                                    </div>
+                                    <div>
+                                      <strong style={{ display: 'block', fontSize: '0.9rem', color: 'var(--portal-text-main)' }}>
+                                        {p.nome}
+                                      </strong>
+                                      <span style={{ fontSize: '0.75rem', color: 'var(--portal-text-muted)' }}>
+                                        {p.departamento || 'Comissão SERNIC'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td>
+                                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--portal-text-main)' }}>
+                                    {p.cargo}
                                   </span>
-                                </div>
-                                <h4 className="perfil-member-name">{p.nome}</h4>
-                                <span className="perfil-member-role">{p.cargo}</span>
-                              </div>
-                            </div>
-
-                            {/* Informações Institucionais & Contactos */}
-                            <div className="perfil-card-info-body">
-                              <div className="perfil-dept-line">
-                                <Building size={14} color="#64748b" />
-                                <span>{p.departamento}</span>
-                              </div>
-
-                              <div className="perfil-contacts-row">
-                                <div className="perfil-contact-pill">
-                                  <Mail size={13} color="#64748b" />
-                                  <span>{p.email}</span>
-                                </div>
-                                <div className="perfil-contact-pill">
-                                  <Phone size={13} color="#64748b" />
-                                  <span>{p.telefone}</span>
-                                </div>
-                              </div>
-
-                              {/* Tipo de Perfil e Nota Humanizada */}
-                              <div className="perfil-type-box">
-                                <div className="perfil-type-title">
-                                  <KeyRound size={14} color="#c32026" />
-                                  <strong>{p.tipoPerfil}</strong>
-                                </div>
-                                <p className="perfil-human-note">
-                                  "{p.notaHumanizada || p.descricaoPerfil}"
-                                </p>
-                              </div>
-
-                              {/* Lista de Permissões Visuais */}
-                              <div className="perfil-permissions-summary">
-                                <div className="perm-summary-header">
-                                  <span>Permissões Concedidas ({countPermissoes}):</span>
-                                </div>
-                                <div className="perm-chips-cloud">
-                                  {p.permissoes?.visualizarCandidatos && (
-                                    <span className="perm-chip active">
-                                      <CheckCircle2 size={12} /> Ver Inscritos
-                                    </span>
-                                  )}
-                                  {p.permissoes?.deliberarFase1 && (
-                                    <span className="perm-chip active gold">
-                                      <FileSignature size={12} /> Triagem 1ª Fase
-                                    </span>
-                                  )}
-                                  {p.permissoes?.homologarFinal && (
-                                    <span className="perm-chip active red">
-                                      <ShieldCheck size={12} /> Homologação Final
-                                    </span>
-                                  )}
-                                  {p.permissoes?.publicarPautas && (
-                                    <span className="perm-chip active">
-                                      <FileText size={12} /> Publicar Pautas
-                                    </span>
-                                  )}
-                                  {p.permissoes?.gerirVagasCarreiras && (
-                                    <span className="perm-chip active">
-                                      <Briefcase size={12} /> Vagas & Carreiras
-                                    </span>
-                                  )}
-                                  {p.permissoes?.consultarAuditoria && (
-                                    <span className="perm-chip active">
-                                      <History size={12} /> Livro de Atas
-                                    </span>
-                                  )}
-                                  {p.permissoes?.gerirPerfisAcessos && (
-                                    <span className="perm-chip active blue">
-                                      <Users size={12} /> Gerir Acessos
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Rodapé com Ações */}
-                            <div className="perfil-card-footer">
-                              <button
-                                type="button"
-                                className="perfil-btn-action edit"
-                                onClick={() => handleOpenEditPerfil(p)}
-                              >
-                                <Edit3 size={14} />
-                                <span>Editar Permissões</span>
-                              </button>
-
-                              <button
-                                type="button"
-                                className={`perfil-btn-action toggle ${p.estado === 'Activo' ? 'pausar' : 'ativar'}`}
-                                onClick={() => handleTogglePerfilStatus(p.id)}
-                                title={p.estado === 'Activo' ? 'Suspender temporariamente o acesso' : 'Reativar o acesso'}
-                              >
-                                <SlidersHorizontal size={14} />
-                                <span>{p.estado === 'Activo' ? 'Pausar' : 'Activar'}</span>
-                              </button>
-
-                              {p.id !== 'PRF-01' && (
-                                <button
-                                  type="button"
-                                  className="perfil-btn-action delete"
-                                  onClick={() => handleDeletePerfil(p.id)}
-                                  title="Remover este perfil da comissão"
-                                >
-                                  <Trash2 size={14} />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                                </td>
+                                <td>
+                                  <span 
+                                    className="grau-badge"
+                                    style={{
+                                      background: p.tipoPerfil?.includes('Administrador') ? 'rgba(195, 32, 38, 0.08)' : 'rgba(15, 32, 66, 0.08)',
+                                      color: p.tipoPerfil?.includes('Administrador') ? '#c32026' : '#0f2042',
+                                      borderColor: p.tipoPerfil?.includes('Administrador') ? 'rgba(195, 32, 38, 0.25)' : 'rgba(15, 32, 66, 0.25)'
+                                    }}
+                                  >
+                                    {p.tipoPerfil}
+                                  </span>
+                                </td>
+                                <td>
+                                  <div style={{ fontSize: '0.8rem', color: 'var(--portal-text-main)' }}>
+                                    {p.email}
+                                  </div>
+                                  <div style={{ fontSize: '0.74rem', color: 'var(--portal-text-muted)' }}>
+                                    {p.telefone}
+                                  </div>
+                                </td>
+                                <td>
+                                  <span 
+                                    className="nota-min-badge" 
+                                    style={{ 
+                                      background: countPermissoes >= 5 ? 'rgba(5, 150, 105, 0.1)' : 'rgba(197, 155, 39, 0.1)', 
+                                      color: countPermissoes >= 5 ? '#059669' : '#b45309' 
+                                    }}
+                                  >
+                                    {countPermissoes} de {totalPermissoes} activas
+                                  </span>
+                                </td>
+                                <td>
+                                  <button
+                                    type="button"
+                                    className={`status-toggle-btn ${p.estado === 'Activo' ? 'is-active' : 'is-inactive'}`}
+                                    onClick={() => handleTogglePerfilStatus(p.id)}
+                                    title="Clique para alternar o estado do membro"
+                                  >
+                                    {p.estado === 'Activo' ? (
+                                      <>
+                                        <Check size={13} />
+                                        <span>Activo</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <X size={13} />
+                                        <span>Em Pausa</span>
+                                      </>
+                                    )}
+                                  </button>
+                                </td>
+                                <td style={{ textAlign: 'center' }}>
+                                  <div className="definicoes-row-actions">
+                                    <button
+                                      type="button"
+                                      className="action-icon-btn edit"
+                                      onClick={() => handleOpenEditPerfil(p)}
+                                      title="Editar credenciais e permissões"
+                                    >
+                                      <Edit3 size={15} />
+                                    </button>
+                                    {p.id !== 'PRF-01' && (
+                                      <button
+                                        type="button"
+                                        className="action-icon-btn delete"
+                                        onClick={() => handleDeletePerfil(p.id)}
+                                        title="Remover membro"
+                                      >
+                                        <Trash2 size={15} />
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
 
@@ -7214,44 +7199,35 @@ export default function GestorPortalModule({
       )}
 
       {/* ========================================================
-          MODAL DE GESTÃO DE PERFIL & PERMISSÕES HUMANIZADAS
+          MODAL DE GESTÃO DE PERFIL & CREDENCIAMENTO (LIMPO & OFICIAL)
           ======================================================== */}
       {isPerfilModalOpen && typeof document !== 'undefined' && createPortal(
         <div className="gestor-modal-overlay fadeIn" onClick={(e) => {
           if (e.target === e.currentTarget) setIsPerfilModalOpen(false);
         }}>
           <DraggableSubAba
-            className="gestor-modal-card definicoes-modal perfil-modal-dialog"
-            style={{ width: 'min(880px, 95vw)', maxWidth: 'min(880px, 95vw)' }}
-            moveHandleLabel="Mover Ficha de Perfil & Permissões"
+            className="gestor-modal-card definicoes-modal"
+            style={{ width: 'min(720px, 94vw)', maxWidth: 'min(720px, 94vw)' }}
+            moveHandleLabel="Mover Credenciamento de Membro"
             onClose={() => setIsPerfilModalOpen(false)}
           >
-            <div className="dossier-modal-header" style={{ borderBottom: '2px solid #0f2042' }}>
+            <div className="dossier-modal-header">
               <div className="dossier-header-left">
                 <div 
                   className="dossier-modal-avatar" 
                   style={{ 
-                    background: perfilForm.avatarColor || '#0f2042', 
-                    color: '#ffffff',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.18)' 
+                    background: perfilForm.avatarCor || '#0f2042', 
+                    color: '#ffffff' 
                   }}
                 >
-                  <UserCheck size={26} />
+                  <UserCheck size={24} />
                 </div>
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.15rem' }}>
-                    <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800, color: '#c59b27' }}>
-                      SERNIC • COMISSÃO DO JÚRI & OPERAÇÕES
-                    </span>
-                    <span className={`carreira-badge-status ${perfilForm.status === 'Activo' ? 'activa' : 'inactiva'}`}>
-                      {perfilForm.status}
-                    </span>
-                  </div>
-                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>
-                    {editingPerfil ? `Editar Perfil de Membro: ${editingPerfil.nome}` : 'Credenciar Novo Membro no Júri / Equipa'}
+                  <h3 style={{ margin: 0, fontSize: '1.18rem', fontWeight: 800 }}>
+                    {editingPerfil ? `Editar Membro: ${editingPerfil.nome}` : 'Credenciar Novo Membro da Comissão'}
                   </h3>
-                  <span className="dossier-protocolo" style={{ fontSize: '0.8rem', color: 'var(--portal-text-muted)' }}>
-                    Gestão humanizada e simplificada de atribuições e privilégios operacionais
+                  <span className="dossier-protocolo">
+                    {editingPerfil ? `${editingPerfil.id} • ${editingPerfil.tipoPerfil}` : 'Novo Cadastro • Comissão do Concurso SERNIC'}
                   </span>
                 </div>
               </div>
@@ -7261,314 +7237,212 @@ export default function GestorPortalModule({
                 onClick={() => setIsPerfilModalOpen(false)}
                 title="Fechar formulário"
               >
-                <X size={20} />
+                ✕
               </button>
             </div>
 
             <form onSubmit={handleSavePerfil} className="dossier-modal-body">
-              {/* ATALHO HUMANIZADO: MODELOS DE PERFIL RÁPIDO */}
-              <div className="perfil-quick-templates-box">
-                <div className="perfil-quick-header">
-                  <Sparkles size={16} color="#c59b27" />
-                  <strong>Atribuição Rápida de Funções em 1 Clique</strong>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--portal-text-muted)' }}>
-                    (Preenche as permissões ideais recomendadas para cada especialidade)
-                  </span>
+              {/* ATALHO DE FUNÇÃO RÁPIDA: SELECT NATIVO LIMPO */}
+              <div className="form-group-custom" style={{ background: 'var(--portal-bg-hover)', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid var(--portal-border)', marginBottom: '1rem' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: 700, color: '#c59b27' }}>
+                  <Sparkles size={15} />
+                  <span>Atribuição Rápida de Papel no Júri (Define as permissões ideais)</span>
+                </label>
+                <select
+                  className="definicoes-select full"
+                  value={perfilForm.tipoPerfil}
+                  onChange={(e) => {
+                    const selectedRole = e.target.value;
+                    setPerfilForm(prev => ({ ...prev, tipoPerfil: selectedRole }));
+                    handleApplyRoleTemplate(selectedRole);
+                  }}
+                >
+                  <option value="Administrador Geral">Administrador Geral (Acesso total ao concurso)</option>
+                  <option value="Gestora de Triagem Documental">Gestora de Triagem Documental (1ª Fase & Pautas)</option>
+                  <option value="Examinador Técnico & Psicotécnico">Examinador Técnico & Psicotécnico (Notas e Provas)</option>
+                  <option value="Avaliadora Médica & Saúde">Avaliadora Médica & Saúde (Junta Médica & Inspeções)</option>
+                  <option value="Auditor de Conformidade">Auditor de Conformidade (Livro de Atas & Relatórios)</option>
+                </select>
+              </div>
+
+              {/* IDENTIFICAÇÃO EM 2 COLUNAS PADRONIZADAS */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div className="form-group-custom">
+                  <label>Nome Completo do Membro *</label>
+                  <input
+                    type="text"
+                    className="definicoes-input"
+                    required
+                    placeholder="Ex: Dra. Maria Helena Tembe"
+                    value={perfilForm.nome}
+                    onChange={(e) => setPerfilForm({ ...perfilForm, nome: e.target.value })}
+                  />
                 </div>
-                <div className="perfil-templates-row">
-                  <button
-                    type="button"
-                    className="btn-perfil-template"
-                    onClick={() => handleApplyRoleTemplate('admin')}
+
+                <div className="form-group-custom">
+                  <label>Cargo / Função Oficial *</label>
+                  <input
+                    type="text"
+                    className="definicoes-input"
+                    required
+                    placeholder="Ex: Vogal do Júri de Seleção"
+                    value={perfilForm.cargo}
+                    onChange={(e) => setPerfilForm({ ...perfilForm, cargo: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group-custom">
+                  <label>Departamento / Divisão</label>
+                  <input
+                    type="text"
+                    className="definicoes-input"
+                    placeholder="Ex: Divisão de Recursos Humanos - SERNIC"
+                    value={perfilForm.departamento}
+                    onChange={(e) => setPerfilForm({ ...perfilForm, departamento: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group-custom">
+                  <label>Email Institucional</label>
+                  <input
+                    type="email"
+                    className="definicoes-input"
+                    placeholder="Ex: maria.tembe@sernic.gov.mz"
+                    value={perfilForm.email}
+                    onChange={(e) => setPerfilForm({ ...perfilForm, email: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group-custom">
+                  <label>Contacto Telefónico</label>
+                  <input
+                    type="text"
+                    className="definicoes-input"
+                    placeholder="+258 84 000 0000"
+                    value={perfilForm.telefone}
+                    onChange={(e) => setPerfilForm({ ...perfilForm, telefone: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-group-custom">
+                  <label>Estado do Acesso</label>
+                  <select
+                    className="definicoes-select full"
+                    value={perfilForm.estado}
+                    onChange={(e) => setPerfilForm({ ...perfilForm, estado: e.target.value })}
                   >
-                    <ShieldCheck size={14} color="#0f2042" />
-                    <span>Administrador Geral</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-perfil-template"
-                    onClick={() => handleApplyRoleTemplate('triagem')}
-                  >
-                    <FileCheck size={14} color="#059669" />
-                    <span>Gestor de Triagem</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-perfil-template"
-                    onClick={() => handleApplyRoleTemplate('examinador')}
-                  >
-                    <FileText size={14} color="#2563eb" />
-                    <span>Examinador Técnico</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-perfil-template"
-                    onClick={() => handleApplyRoleTemplate('medico')}
-                  >
-                    <Award size={14} color="#7c3aed" />
-                    <span>Júri / Avaliador Médico</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-perfil-template"
-                    onClick={() => handleApplyRoleTemplate('auditor')}
-                  >
-                    <History size={14} color="#d97706" />
-                    <span>Auditor Institucional</span>
-                  </button>
+                    <option value="Activo">Activo (Credenciado)</option>
+                    <option value="Em Pausa">Em Pausa (Suspenso Temporariamente)</option>
+                  </select>
                 </div>
               </div>
 
-              {/* DADOS HUMANOS DE IDENTIFICAÇÃO */}
-              <div className="perfil-form-section">
-                <h4 className="perfil-section-title">
-                  <Users size={16} color="#0f2042" />
-                  <span>Identificação do Membro</span>
-                </h4>
-                <div className="definicoes-form-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
-                  <div className="definicoes-form-group">
-                    <label>Nome Completo do Membro *</label>
+              {/* PERMISSÕES LIMPAS EM CHECKBOXES */}
+              <div style={{ marginBottom: '1rem', borderTop: '1px solid var(--portal-border)', paddingTop: '0.85rem' }}>
+                <label style={{ display: 'block', fontWeight: 700, fontSize: '0.88rem', color: 'var(--portal-text-main)', marginBottom: '0.6rem' }}>
+                  Permissões de Acesso no Concurso
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', fontSize: '0.83rem', cursor: 'pointer', color: 'var(--portal-text-main)' }}>
                     <input
-                      type="text"
-                      className="definicoes-input"
-                      required
-                      placeholder="Ex: Dr. Armando Guebuza"
-                      value={perfilForm.nome}
-                      onChange={(e) => setPerfilForm(prev => ({ ...prev, nome: e.target.value }))}
+                      type="checkbox"
+                      checked={Boolean(perfilForm.permissoes?.visualizarCandidatos)}
+                      onChange={(e) => setPerfilForm(prev => ({
+                        ...prev,
+                        permissoes: { ...prev.permissoes, visualizarCandidatos: e.target.checked }
+                      }))}
                     />
-                  </div>
-
-                  <div className="definicoes-form-group">
-                    <label>Cargo / Função no Concurso *</label>
-                    <input
-                      type="text"
-                      className="definicoes-input"
-                      required
-                      placeholder="Ex: Vogal de Triagem Documental"
-                      value={perfilForm.cargo}
-                      onChange={(e) => setPerfilForm(prev => ({ ...prev, cargo: e.target.value }))}
-                    />
-                  </div>
-
-                  <div className="definicoes-form-group">
-                    <label>Departamento / Direcção</label>
-                    <input
-                      type="text"
-                      className="definicoes-input"
-                      placeholder="Ex: Direcção Nacional de Recursos Humanos"
-                      value={perfilForm.departamento}
-                      onChange={(e) => setPerfilForm(prev => ({ ...prev, departamento: e.target.value }))}
-                    />
-                  </div>
-
-                  <div className="definicoes-form-group">
-                    <label>Email Institucional</label>
-                    <input
-                      type="email"
-                      className="definicoes-input"
-                      placeholder="Ex: membro.juri@sernic.gov.mz"
-                      value={perfilForm.email}
-                      onChange={(e) => setPerfilForm(prev => ({ ...prev, email: e.target.value }))}
-                    />
-                  </div>
-
-                  <div className="definicoes-form-group">
-                    <label>Contacto Telefónico</label>
-                    <input
-                      type="text"
-                      className="definicoes-input"
-                      placeholder="Ex: +258 84 123 4567"
-                      value={perfilForm.telefone}
-                      onChange={(e) => setPerfilForm(prev => ({ ...prev, telefone: e.target.value }))}
-                    />
-                  </div>
-
-                  <div className="definicoes-form-group">
-                    <label>Estado do Acesso</label>
-                    <select
-                      className="definicoes-input"
-                      value={perfilForm.status}
-                      onChange={(e) => setPerfilForm(prev => ({ ...prev, status: e.target.value }))}
-                    >
-                      <option value="Activo">Activo (Credenciado)</option>
-                      <option value="Inactivo">Inactivo (Suspenso Temporariamente)</option>
-                    </select>
-                  </div>
-
-                  <div className="definicoes-form-group">
-                    <label>Cor Identificadora do Avatar</label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginTop: '0.25rem' }}>
-                      {['#0f2042', '#c32026', '#059669', '#2563eb', '#7c3aed', '#d97706', '#0891b2'].map(color => (
-                        <button
-                          key={color}
-                          type="button"
-                          onClick={() => setPerfilForm(prev => ({ ...prev, avatarColor: color }))}
-                          style={{
-                            width: '28px',
-                            height: '28px',
-                            borderRadius: '50%',
-                            background: color,
-                            border: perfilForm.avatarColor === color ? '3px solid #c59b27' : '2px solid rgba(0,0,0,0.1)',
-                            cursor: 'pointer',
-                            outline: 'none',
-                            transform: perfilForm.avatarColor === color ? 'scale(1.15)' : 'scale(1)',
-                            transition: 'all 0.15s ease'
-                          }}
-                          title={`Selecionar cor ${color}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* PERMISSÕES HUMANIZADAS E DESCRITIVAS */}
-              <div className="perfil-form-section" style={{ marginTop: '1.25rem' }}>
-                <h4 className="perfil-section-title">
-                  <KeyRound size={16} color="#0f2042" />
-                  <span>Permissões e Níveis de Acesso Humanizados</span>
-                </h4>
-                <p style={{ margin: '0 0 1rem 0', fontSize: '0.82rem', color: 'var(--portal-text-muted)' }}>
-                  Active ou desactive as responsabilidades deste membro. Cada privilégio é expresso de forma simples, sem códigos indecifráveis.
-                </p>
-
-                <div className="perfil-permissoes-edit-grid">
-                  <label className={`perfil-perm-switch-box ${perfilForm.permissoes.triagem ? 'active' : ''}`}>
-                    <div className="perm-switch-top">
-                      <div className="perm-switch-title">
-                        <FileCheck size={17} color={perfilForm.permissoes.triagem ? '#059669' : '#64748b'} />
-                        <strong>Triagem de Documentos (1ª Fase)</strong>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={perfilForm.permissoes.triagem}
-                        onChange={(e) => setPerfilForm(prev => ({
-                          ...prev,
-                          permissoes: { ...prev.permissoes, triagem: e.target.checked }
-                        }))}
-                      />
-                    </div>
-                    <span className="perm-switch-desc">
-                      Permite validar BI, Certificados, NUIT e assinalar conformidade de candidaturas.
-                    </span>
+                    <span>Consultar e visualizar inscritos</span>
                   </label>
 
-                  <label className={`perfil-perm-switch-box ${perfilForm.permissoes.homologacao ? 'active' : ''}`}>
-                    <div className="perm-switch-top">
-                      <div className="perm-switch-title">
-                        <CheckCircle2 size={17} color={perfilForm.permissoes.homologacao ? '#059669' : '#64748b'} />
-                        <strong>Homologação Final de Resultados</strong>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={perfilForm.permissoes.homologacao}
-                        onChange={(e) => setPerfilForm(prev => ({
-                          ...prev,
-                          permissoes: { ...prev.permissoes, homologacao: e.target.checked }
-                        }))}
-                      />
-                    </div>
-                    <span className="perm-switch-desc">
-                      Aprovar actas de júri, validar admitidos finais e despachos superiores do SERNIC.
-                    </span>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', fontSize: '0.83rem', cursor: 'pointer', color: 'var(--portal-text-main)' }}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(perfilForm.permissoes?.deliberarFase1)}
+                      onChange={(e) => setPerfilForm(prev => ({
+                        ...prev,
+                        permissoes: { ...prev.permissoes, deliberarFase1: e.target.checked }
+                      }))}
+                    />
+                    <span>Triagem documental da 1ª Fase</span>
                   </label>
 
-                  <label className={`perfil-perm-switch-box ${perfilForm.permissoes.pautas ? 'active' : ''}`}>
-                    <div className="perm-switch-top">
-                      <div className="perm-switch-title">
-                        <FileText size={17} color={perfilForm.permissoes.pautas ? '#2563eb' : '#64748b'} />
-                        <strong>Publicação de Pautas Oficiais</strong>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={perfilForm.permissoes.pautas}
-                        onChange={(e) => setPerfilForm(prev => ({
-                          ...prev,
-                          permissoes: { ...prev.permissoes, pautas: e.target.checked }
-                        }))}
-                      />
-                    </div>
-                    <span className="perm-switch-desc">
-                      Emitir pautas de admitidos, excluídos e calendários de exames no Portal Público.
-                    </span>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', fontSize: '0.83rem', cursor: 'pointer', color: 'var(--portal-text-main)' }}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(perfilForm.permissoes?.homologarFinal)}
+                      onChange={(e) => setPerfilForm(prev => ({
+                        ...prev,
+                        permissoes: { ...prev.permissoes, homologarFinal: e.target.checked }
+                      }))}
+                    />
+                    <span>Homologação final de resultados</span>
                   </label>
 
-                  <label className={`perfil-perm-switch-box ${perfilForm.permissoes.concursos ? 'active' : ''}`}>
-                    <div className="perm-switch-top">
-                      <div className="perm-switch-title">
-                        <Briefcase size={17} color={perfilForm.permissoes.concursos ? '#d97706' : '#64748b'} />
-                        <strong>Gestão de Concursos & Vagas</strong>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={perfilForm.permissoes.concursos}
-                        onChange={(e) => setPerfilForm(prev => ({
-                          ...prev,
-                          permissoes: { ...prev.permissoes, concursos: e.target.checked }
-                        }))}
-                      />
-                    </div>
-                    <span className="perm-switch-desc">
-                      Criar editais, definir prazos limites de submissão e editar vagas institucionais.
-                    </span>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', fontSize: '0.83rem', cursor: 'pointer', color: 'var(--portal-text-main)' }}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(perfilForm.permissoes?.publicarPautas)}
+                      onChange={(e) => setPerfilForm(prev => ({
+                        ...prev,
+                        permissoes: { ...prev.permissoes, publicarPautas: e.target.checked }
+                      }))}
+                    />
+                    <span>Publicação de pautas oficiais</span>
                   </label>
 
-                  <label className={`perfil-perm-switch-box ${perfilForm.permissoes.auditoria ? 'active' : ''}`}>
-                    <div className="perm-switch-top">
-                      <div className="perm-switch-title">
-                        <History size={17} color={perfilForm.permissoes.auditoria ? '#7c3aed' : '#64748b'} />
-                        <strong>Auditoria & Registo de Actas</strong>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={perfilForm.permissoes.auditoria}
-                        onChange={(e) => setPerfilForm(prev => ({
-                          ...prev,
-                          permissoes: { ...prev.permissoes, auditoria: e.target.checked }
-                        }))}
-                      />
-                    </div>
-                    <span className="perm-switch-desc">
-                      Consultar livro de registo forense, rastreabilidade de decisões e exportar actas.
-                    </span>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', fontSize: '0.83rem', cursor: 'pointer', color: 'var(--portal-text-main)' }}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(perfilForm.permissoes?.gerirVagasCarreiras)}
+                      onChange={(e) => setPerfilForm(prev => ({
+                        ...prev,
+                        permissoes: { ...prev.permissoes, gerirVagasCarreiras: e.target.checked }
+                      }))}
+                    />
+                    <span>Gestão de vagas e carreiras</span>
                   </label>
 
-                  <label className={`perfil-perm-switch-box ${perfilForm.permissoes.acessos ? 'active' : ''}`}>
-                    <div className="perm-switch-top">
-                      <div className="perm-switch-title">
-                        <ShieldCheck size={17} color={perfilForm.permissoes.acessos ? '#c32026' : '#64748b'} />
-                        <strong>Administração Geral & Acessos</strong>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={perfilForm.permissoes.acessos}
-                        onChange={(e) => setPerfilForm(prev => ({
-                          ...prev,
-                          permissoes: { ...prev.permissoes, acessos: e.target.checked }
-                        }))}
-                      />
-                    </div>
-                    <span className="perm-switch-desc">
-                      Gerir perfis da comissão, conceder novas credenciais e alterar definições estruturais.
-                    </span>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', fontSize: '0.83rem', cursor: 'pointer', color: 'var(--portal-text-main)' }}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(perfilForm.permissoes?.consultarAuditoria)}
+                      onChange={(e) => setPerfilForm(prev => ({
+                        ...prev,
+                        permissoes: { ...prev.permissoes, consultarAuditoria: e.target.checked }
+                      }))}
+                    />
+                    <span>Consulta ao livro de atas e auditoria</span>
+                  </label>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', fontSize: '0.83rem', cursor: 'pointer', color: 'var(--portal-text-main)' }}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(perfilForm.permissoes?.gerirPerfisAcessos)}
+                      onChange={(e) => setPerfilForm(prev => ({
+                        ...prev,
+                        permissoes: { ...prev.permissoes, gerirPerfisAcessos: e.target.checked }
+                      }))}
+                    />
+                    <span>Administração e gestão de acessos</span>
                   </label>
                 </div>
               </div>
 
-              {/* NOTA INSTITUCIONAL HUMANIZADA */}
-              <div className="definicoes-form-group" style={{ marginTop: '1.25rem' }}>
-                <label>Termo de Compromisso / Nota Humanizada do Membro</label>
-                <textarea
+              {/* NOTA INSTITUCIONAL COMPACTA */}
+              <div className="form-group-custom" style={{ marginBottom: '1rem' }}>
+                <label>Nota de Responsabilidade Institucional</label>
+                <input
+                  type="text"
                   className="definicoes-input"
-                  rows={2}
-                  placeholder="Ex: Designado por Despacho da Direcção-Geral para coordenação do júri de 2026."
-                  value={perfilForm.nota}
-                  onChange={(e) => setPerfilForm(prev => ({ ...prev, nota: e.target.value }))}
+                  placeholder="Ex: Membro designado por despacho para coordenar as bancas examinadoras."
+                  value={perfilForm.notaHumanizada || ''}
+                  onChange={(e) => setPerfilForm({ ...perfilForm, notaHumanizada: e.target.value })}
                 />
               </div>
 
-              {/* RODAPÉ DO MODAL */}
-              <div className="dossier-modal-footer" style={{ marginTop: '1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              {/* RODAPÉ OFICIAL SERNIC */}
+              <div className="dossier-modal-footer" style={{ marginTop: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <button
                   type="button"
                   className="gestor-btn-secondary"
@@ -7578,7 +7452,7 @@ export default function GestorPortalModule({
                 </button>
 
                 <div style={{ display: 'flex', gap: '0.6rem' }}>
-                  {editingPerfil && (
+                  {editingPerfil && editingPerfil.id !== 'PRF-01' && (
                     <button
                       type="button"
                       className="gestor-btn-outline danger"
@@ -7592,9 +7466,9 @@ export default function GestorPortalModule({
                       <span>Remover Membro</span>
                     </button>
                   )}
-                  <button type="submit" className="gestor-btn-primary-blue" style={{ background: '#0f2042', color: '#ffffff' }}>
+                  <button type="submit" className="gestor-btn-primary-red">
                     <Save size={15} />
-                    <span>{editingPerfil ? 'Salvar Credenciamento' : 'Gravar e Credenciar Membro'}</span>
+                    <span>{editingPerfil ? 'Salvar Credenciamento' : 'Guardar Credenciamento'}</span>
                   </button>
                 </div>
               </div>
