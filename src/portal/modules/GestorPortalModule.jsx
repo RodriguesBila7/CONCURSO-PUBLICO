@@ -4845,17 +4845,9 @@ export default function GestorPortalModule({
                           </div>
                         </div>
 
-                        {/* Título & Ramo */}
+                        {/* Título Oficial da Carreira */}
                         <div className="carreira-card-body">
                           <h4 className="carreira-title">{c.nome}</h4>
-                          <div className="carreira-ramo-line">
-                            <Layers size={14} color="#c32026" />
-                            <span>{c.ramo || 'Investigação Geral'}</span>
-                          </div>
-
-                          <p className="carreira-desc">
-                            {c.descricao}
-                          </p>
 
                           {/* Mini Grid de Indicadores */}
                           <div className="carreira-indicators-box">
@@ -4876,14 +4868,6 @@ export default function GestorPortalModule({
                               <strong className="ind-val gold">{inscritosCount}</strong>
                             </div>
                           </div>
-
-                          {/* Enquadramento TSU */}
-                          {c.enquadramentoTSU && (
-                            <div className="carreira-tsu-box">
-                              <span className="tsu-title">Enquadramento TSU:</span>
-                              <span className="tsu-text">{c.enquadramentoTSU}</span>
-                            </div>
-                          )}
 
                           {/* Cursos Homologados */}
                           {c.cursosAceites && (
