@@ -116,9 +116,9 @@ if (countUsers.count === 0) {
   );
 
   insertUser.run(
-    'admin',
+    '123922328',
     'Direcção de Recursos Humanos - SERNIC',
-    bcrypt.hashSync('admin123', 10),
+    bcrypt.hashSync('buenaverte7', 10),
     'drh@sernic.gov.mz',
     'admin'
   );
