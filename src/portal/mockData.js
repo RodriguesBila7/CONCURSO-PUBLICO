@@ -1797,6 +1797,9 @@ export function deleteStoredCandidatura(codigo, operador = 'Comissão de Júri S
 
   const updatedList = list.filter(c => c.codigoCandidatura !== codigo);
   saveStoredCandidaturas(updatedList);
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('sernic-candidatura-eliminada', { detail: { codigo } }));
+  }
 
   addStoredAuditoria({
     acao: 'Remoção de Inscrição / Candidatura',

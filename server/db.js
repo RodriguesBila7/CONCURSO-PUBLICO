@@ -134,6 +134,17 @@ if (countUsers.count === 0) {
   console.log('[SQLite] Contas predefinidas criadas com sucesso no banco de dados!');
 }
 
+// Processo completo da candidatura (documentos, deliberação do júri, histórico) em JSON
+{
+  const colunas = db.prepare('PRAGMA table_info(candidaturas)').all().map(c => c.name);
+  if (!colunas.includes('dados_json')) {
+    db.exec('ALTER TABLE candidaturas ADD COLUMN dados_json TEXT');
+  }
+  if (!colunas.includes('atualizado_em')) {
+    db.exec('ALTER TABLE candidaturas ADD COLUMN atualizado_em DATETIME');
+  }
+}
+
 // Migrar senhas legadas guardadas em texto simples para bcrypt (mantém a mesma senha)
 {
   const legacy = db.prepare(`SELECT id, password FROM users WHERE password IS NOT NULL AND password NOT LIKE '$2%'`).all()

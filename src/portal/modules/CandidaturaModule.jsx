@@ -556,7 +556,7 @@ export default function CandidaturaModule({
       const res = await fetch('/api/candidaturas/solicitar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ ...payload, processo: novoCandidato })
       });
       const data = await res.json();
       if (data.success) {

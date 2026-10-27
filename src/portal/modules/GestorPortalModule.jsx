@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import GestorServidorPanel from '../components/GestorServidorPanel';
+import { iniciarSincronizacao, pararSincronizacao } from '../processosSync';
+
+const ROTULO_SYNC = {
+  'a-carregar': 'A carregar do servidor...',
+  'a-gravar': 'A gravar no servidor...',
+  sincronizado: 'Gravado no servidor',
+  erro: 'Erro de ligação ao servidor'
+};
 import { 
   Users, 
   CheckCircle2, 
@@ -183,6 +191,34 @@ export default function GestorPortalModule({
       onNotify('success', 'Base de dados do concurso sincronizada com sucesso!');
     }
   };
+
+  // Ligação ao servidor: os processos das abas Inscritos e Avaliação vivem na base de dados oficial
+  const [estadoServidor, setEstadoServidor] = useState({ estado: 'a-carregar', detalhe: '' });
+
+  const sincronizarComServidor = async (manual = false) => {
+    const res = await iniciarSincronizacao({
+      onEstado: (estado, detalhe) => setEstadoServidor({ estado, detalhe: detalhe || '' }),
+      onErro: (msg) => { if (onNotify) onNotify('error', msg); },
+      onSessaoExpirada: () => {
+        if (onNotify) onNotify('error', 'A sua sessão expirou. Inicie sessão novamente.');
+        if (onLogout) onLogout();
+      }
+    });
+    setCandidatos(deduplicateCandidaturas(getStoredCandidaturas()));
+    setAuditoria(getStoredAuditoria());
+    if (onNotify && res.ok && (manual || res.importados > 0)) {
+      onNotify('success', res.importados > 0
+        ? `${res.total} candidaturas carregadas do servidor (${res.importados} enviadas deste navegador).`
+        : `${res.total} candidaturas carregadas do servidor.`);
+    } else if (onNotify && !res.ok && manual) {
+      onNotify('error', res.message || 'Não foi possível ligar ao servidor.');
+    }
+  };
+
+  useEffect(() => {
+    sincronizarComServidor();
+    return () => pararSincronizacao();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sincronização entre abas
   useEffect(() => {
@@ -2102,15 +2138,16 @@ export default function GestorPortalModule({
                 <button
                   type="button"
                   className="gestor-action-btn primary"
-                  onClick={() => {
-                    reloadData();
-                    if (onNotify) onNotify('info', 'Dados sincronizados com sucesso.');
-                  }}
-                  title="Actualizar dados da base de dados"
+                  onClick={() => sincronizarComServidor(true)}
+                  disabled={estadoServidor.estado === 'a-carregar'}
+                  title="Carregar do servidor as candidaturas mais recentes"
                 >
                   <RefreshCw size={16} />
-                  <span>Sincronizar Base</span>
+                  <span>{estadoServidor.estado === 'a-carregar' ? 'A sincronizar...' : 'Sincronizar Base'}</span>
                 </button>
+                <span className={`gestor-sync-pill ${estadoServidor.estado}`} role="status" title={estadoServidor.detalhe || ''}>
+                  {ROTULO_SYNC[estadoServidor.estado] || 'Servidor'}
+                </span>
               </div>
             </div>
           </div>
@@ -2587,6 +2624,19 @@ export default function GestorPortalModule({
                   <Printer size={15} />
                   <span>Imprimir</span>
                 </button>
+                <button
+                  type="button"
+                  className="gestor-btn-outline"
+                  onClick={() => sincronizarComServidor(true)}
+                  disabled={estadoServidor.estado === 'a-carregar'}
+                  title="Carregar do servidor as candidaturas mais recentes"
+                >
+                  <RefreshCw size={15} />
+                  <span>Actualizar do servidor</span>
+                </button>
+                <span className={`gestor-sync-pill on-card ${estadoServidor.estado}`} role="status" title={estadoServidor.detalhe || ''}>
+                  {ROTULO_SYNC[estadoServidor.estado] || 'Servidor'}
+                </span>
               </div>
             </div>
           </div>

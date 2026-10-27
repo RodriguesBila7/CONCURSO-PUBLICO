@@ -23,6 +23,15 @@ import {
   resolveSession,
   purgeExpiredSessions
 } from './sessions.js';
+import {
+  validarProcesso,
+  limparProcessoDoCandidato,
+  listarProcessos,
+  obterProcesso,
+  gravarProcesso,
+  eliminarProcesso,
+  sincronizarEstadoNoJson
+} from './processos.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -35,7 +44,9 @@ app.disable('x-powered-by');
 app.set('trust proxy', 'loopback');
 app.use(securityHeaders);
 app.use(cors(corsOptions()));
-app.use(express.json({ limit: '100kb' }));
+// A importação de processos do navegador precisa de um limite maior que os restantes pedidos
+app.use('/api/gestor/processos/importar', express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '300kb' }));
 
 app.use('/api', createRateLimiter({
   windowMs: 60 * 1000,
@@ -291,9 +302,18 @@ app.get('/api/gestor/candidaturas', requireGestor, (req, res) => {
 const ESTADOS_CANDIDATURA = [
   'Submetida com Sucesso',
   'Em Análise Documental',
-  'Admitida à Entrevista',
+  'Admitido na Análise Documental',
+  'Admitida na Análise Documental',
+  'Entrevista Profissional',
+  'Admitido',
   'Admitida',
-  'Suplente',
+  'Aprovado (Suplente)',
+  'Aprovada (Suplente)',
+  'Excluído na Análise Documental',
+  'Excluída na Análise Documental',
+  'Excluído na Entrevista',
+  'Excluída na Entrevista',
+  'Excluído',
   'Excluída'
 ];
 
@@ -308,20 +328,99 @@ app.post('/api/gestor/candidaturas/:id/estado', requireGestor, (req, res) => {
   if (!ESTADOS_CANDIDATURA.includes(estado)) {
     return res.status(400).json({ success: false, message: 'Estado de candidatura inválido.' });
   }
-  if (estado === 'Excluída' && motivo.length < 5) {
+  if (estado.startsWith('Exclu') && motivo.length < 5) {
     return res.status(400).json({ success: false, message: 'Indique o fundamento da exclusão.' });
   }
 
   const cand = db.prepare('SELECT codigo_candidatura, status FROM candidaturas WHERE id = ?').get(id);
   if (!cand) return res.status(404).json({ success: false, message: 'Candidatura não encontrada.' });
 
-  db.prepare('UPDATE candidaturas SET status = ? WHERE id = ?').run(estado, id);
+  db.prepare('UPDATE candidaturas SET status = ?, atualizado_em = CURRENT_TIMESTAMP WHERE id = ?').run(estado, id);
+  sincronizarEstadoNoJson(id, estado);
   logAudit(
     req.session.user.nuit,
     'ALTERAR_ESTADO_CANDIDATURA',
     `${cand.codigo_candidatura}: "${cand.status}" → "${estado}"${motivo ? ` (Fundamento: ${motivo})` : ''}`
   );
   res.json({ success: true, message: `Estado da candidatura ${cand.codigo_candidatura} actualizado para "${estado}".` });
+});
+
+// Processos completos usados pelas abas Inscritos e Avaliação dos Candidatos
+app.get('/api/gestor/processos', requireGestor, (req, res) => {
+  res.json({ success: true, processos: listarProcessos() });
+});
+
+function registarAlteracaoProcesso(nuitGestor, processo, resultado) {
+  const alvo = `${processo.codigoCandidatura} (${asTrimmedString(processo.nomeCompleto, 120)})`;
+  if (resultado.criado) {
+    logAudit(nuitGestor, 'PROCESSO_CRIADO', `${alvo} registado com estado "${resultado.estadoNovo}"`);
+  } else if (resultado.estadoAnterior !== resultado.estadoNovo) {
+    const motivo = asTrimmedString(processo.deliberacaoJuri?.motivoExclusao || processo.deliberacaoJuri?.parecer, 300);
+    logAudit(
+      nuitGestor,
+      'ALTERAR_ESTADO_CANDIDATURA',
+      `${alvo}: "${resultado.estadoAnterior}" → "${resultado.estadoNovo}"${motivo ? ` (Fundamento: ${motivo})` : ''}`
+    );
+  }
+}
+
+app.put('/api/gestor/processos/:codigo', requireGestor, (req, res) => {
+  const codigo = asTrimmedString(req.params.codigo, 40).toUpperCase();
+  const processo = req.body?.processo;
+  const erro = validarProcesso(processo);
+  if (erro) return res.status(400).json({ success: false, message: erro });
+  if (asTrimmedString(processo.codigoCandidatura, 40).toUpperCase() !== codigo) {
+    return res.status(400).json({ success: false, message: 'O código do processo não corresponde ao endereço.' });
+  }
+
+  try {
+    const resultado = gravarProcesso(processo);
+    registarAlteracaoProcesso(req.session.user.nuit, processo, resultado);
+    res.json({ success: true, criado: resultado.criado });
+  } catch (err) {
+    console.error('Erro ao gravar processo:', err);
+    res.status(500).json({ success: false, message: 'Não foi possível gravar o processo no servidor.' });
+  }
+});
+
+app.post('/api/gestor/processos/importar', requireGestor, (req, res) => {
+  const lista = Array.isArray(req.body?.processos) ? req.body.processos.slice(0, 1000) : null;
+  if (!lista) return res.status(400).json({ success: false, message: 'Lista de processos inválida.' });
+
+  const invalidos = [];
+  let importados = 0;
+  const importar = db.transaction(() => {
+    for (const p of lista) {
+      const erro = validarProcesso(p);
+      if (erro) {
+        invalidos.push({ codigo: asTrimmedString(p?.codigoCandidatura, 40), erro });
+        continue;
+      }
+      // A importação nunca substitui processos que já existem no servidor
+      if (obterProcesso(asTrimmedString(p.codigoCandidatura, 40).toUpperCase())) continue;
+      gravarProcesso(p);
+      importados += 1;
+    }
+  });
+
+  try {
+    importar();
+    if (importados > 0) {
+      logAudit(req.session.user.nuit, 'PROCESSOS_IMPORTADOS', `${importados} processo(s) enviados do navegador para o servidor`);
+    }
+    res.json({ success: true, importados, invalidos });
+  } catch (err) {
+    console.error('Erro ao importar processos:', err);
+    res.status(500).json({ success: false, message: 'Não foi possível importar os processos.' });
+  }
+});
+
+app.delete('/api/gestor/processos/:codigo', requireGestor, (req, res) => {
+  const codigo = asTrimmedString(req.params.codigo, 40).toUpperCase();
+  const removido = eliminarProcesso(codigo);
+  if (!removido) return res.status(404).json({ success: false, message: 'Candidatura não encontrada.' });
+  logAudit(req.session.user.nuit, 'PROCESSO_ELIMINADO', `${codigo} (${removido.nome_completo}) eliminado; estado anterior "${removido.status}"`);
+  res.json({ success: true });
 });
 
 app.get('/api/gestor/estados', requireGestor, (req, res) => {
@@ -407,11 +506,22 @@ app.post('/api/candidaturas/solicitar', sensitiveLimiter, (req, res) => {
       `).run(nuit, nomeCompleto, bcrypt.hashSync(password, 10), email, 'candidate');
     }
 
-    // Insert candidature
+    // Processo completo enviado pelo formulário (documentos, habilitações, fotografia)
+    const ESTADO_INICIAL = 'Em Análise Documental';
+    let dadosJson = null;
+    if (body.processo && !validarProcesso({ ...body.processo, codigoCandidatura: codigoCandidatura })) {
+      const limpo = limparProcessoDoCandidato(
+        { ...body.processo, codigoCandidatura: codigoCandidatura, nuit, nomeCompleto, email, telefone },
+        ESTADO_INICIAL
+      );
+      dadosJson = JSON.stringify(limpo);
+    }
+
     db.prepare(`
       INSERT INTO candidaturas (
-        codigo_candidatura, nuit, nome_completo, email, telefone, carreira, nivel_academico, bi_numero, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        codigo_candidatura, nuit, nome_completo, email, telefone, carreira, nivel_academico, bi_numero, status,
+        dados_json, atualizado_em
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `).run(
       codigoCandidatura,
       nuit,
@@ -421,7 +531,8 @@ app.post('/api/candidaturas/solicitar', sensitiveLimiter, (req, res) => {
       carreira,
       nivelAcademico || 'Médio / Superior',
       bi || '',
-      'Submetida com Sucesso'
+      dadosJson ? ESTADO_INICIAL : 'Submetida com Sucesso',
+      dadosJson
     );
 
     logAudit(nuit, 'NOVA_CANDIDATURA', `Candidatura ${codigoCandidatura} registada para ${carreira}`);

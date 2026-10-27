@@ -10487,6 +10487,40 @@ html.portal-modo-simplificado * {
   .gestor-login-card { padding: 2rem 1.5rem; }
 }
 
+.gestor-sync-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  white-space: nowrap;
+}
+
+.gestor-sync-pill::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #cbd5e1;
+}
+
+.gestor-sync-pill.on-card {
+  background: var(--portal-card-inner);
+  color: var(--portal-text-sub);
+  border-color: var(--portal-border);
+}
+
+.gestor-sync-pill.sincronizado::before { background: #4ade80; }
+.gestor-sync-pill.a-gravar::before,
+.gestor-sync-pill.a-carregar::before { background: #fbbf24; }
+.gestor-sync-pill.erro::before { background: #f87171; }
+
 /* ========================================================
    ÁREA DE GESTÃO — PAINEL DE CONTROLO DO SERVIDOR
    ======================================================== */
