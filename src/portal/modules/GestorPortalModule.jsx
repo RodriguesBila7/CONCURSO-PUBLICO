@@ -284,6 +284,7 @@ export default function GestorPortalModule({
   const [perfisViewMode, setPerfisViewMode] = useState('membros'); // 'membros' | 'acessibilidade'
   const [isPerfilModalOpen, setIsPerfilModalOpen] = useState(false);
   const [editingPerfil, setEditingPerfil] = useState(null);
+  const [perfilToDelete, setPerfilToDelete] = useState(null);
   const [perfilForm, setPerfilForm] = useState({
     nome: '',
     cargo: 'Técnico de Recursos Humanos',
@@ -1517,16 +1518,19 @@ export default function GestorPortalModule({
     if (onNotify) onNotify('info', `Estado de ${target.nome} alterado para "${novoEstado}".`);
   };
 
-  const handleDeletePerfil = (id) => {
+  const handleRequestDeletePerfil = (id) => {
     const target = perfis.find(p => p.id === id);
     if (!target) return;
+    setPerfilToDelete(target);
+  };
 
-    if (window.confirm(`Tem a certeza de que deseja revogar o acesso de "${target.nome}" (${target.cargo})?`)) {
-      const operador = currentUser?.name || 'Dr. Alberto Chissano';
-      deleteStoredPerfil(id, operador);
-      setPerfis(getStoredPerfis());
-      if (onNotify) onNotify('success', `Acesso de "${target.nome}" revogado com sucesso.`);
-    }
+  const handleConfirmDeletePerfil = () => {
+    if (!perfilToDelete) return;
+    const operador = currentUser?.name ? `${currentUser.name} (${currentUser.cargo || 'Gestor'})` : 'Dr. Alberto Chissano';
+    deleteStoredPerfil(perfilToDelete.id, operador);
+    setPerfis(getStoredPerfis());
+    if (onNotify) onNotify('success', `Credenciamento de "${perfilToDelete.nome}" revogado com sucesso e lavrado no Livro de Atas.`);
+    setPerfilToDelete(null);
   };
 
   const handleUpdateAcessibilidade = (updates) => {
@@ -4616,20 +4620,20 @@ export default function GestorPortalModule({
               {/* TOPO HUMANIZADO E INSTITUCIONAL */}
               <div className="definicoes-panel-top">
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
-                    <span className="carreira-badge-regime" style={{ borderColor: 'rgba(15, 32, 66, 0.25)', color: '#0f2042', background: 'rgba(15, 32, 66, 0.08)' }}>
-                      <UserCheck size={14} />
-                      <span>Governança Humanizada & Inclusão</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem' }}>
+                    <span className="carreira-badge-regime" style={{ borderColor: 'rgba(195, 32, 38, 0.25)', color: '#c32026', background: 'rgba(195, 32, 38, 0.08)' }}>
+                      <ShieldCheck size={14} />
+                      <span>Governança Humanizada & Segurança Institucional</span>
                     </span>
                     <span style={{ fontSize: '0.8rem', color: 'var(--portal-text-muted)' }}>
-                      Transparência • Acessibilidade Plena • SERNIC
+                      Comissão Central do Concurso • SERNIC Moçambique
                     </span>
                   </div>
-                  <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1.25rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>
+                  <h4 style={{ margin: '0 0 0.35rem 0', fontSize: '1.28rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>
                     Gestão de Perfis de Acesso & Acessibilidade
                   </h4>
-                  <p style={{ margin: 0, fontSize: '0.86rem', color: 'var(--portal-text-muted)' }}>
-                    Administre os membros da equipa com clareza, atribua permissões de forma intuitiva e ajuste o sistema para ser acessível e simples para todos.
+                  <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--portal-text-muted)', maxWidth: '780px', lineHeight: 1.5 }}>
+                    Credenciamento dos membros do júri, delegação de competências deliberativas e calibração de acessibilidade para uma experiência humanizada, simples e transparente.
                   </p>
                 </div>
 
@@ -4657,7 +4661,7 @@ export default function GestorPortalModule({
               </div>
 
               {/* ALTERNADOR DE MODO: MEMBROS & PERMISSÕES vs ACESSIBILIDADE */}
-              <div className="vagas-mode-switcher-bar" style={{ margin: '0.5rem 0 1rem 0' }}>
+              <div className="vagas-mode-switcher-bar" style={{ margin: '0.6rem 0 1.25rem 0' }}>
                 <button
                   type="button"
                   className={`vagas-mode-pill ${perfisViewMode === 'membros' ? 'active' : ''}`}
@@ -4710,7 +4714,7 @@ export default function GestorPortalModule({
                         onChange={(e) => setBuscaPerfil(e.target.value)}
                       />
                       {buscaPerfil && (
-                        <button type="button" onClick={() => setBuscaPerfil('')} className="btn-clear-search">
+                        <button type="button" onClick={() => setBuscaPerfil('')} className="btn-clear-search" title="Limpar pesquisa">
                           <X size={14} />
                         </button>
                       )}
@@ -4736,20 +4740,22 @@ export default function GestorPortalModule({
                       <thead>
                         <tr>
                           <th style={{ width: '85px' }}>Código</th>
-                          <th>Membro da Comissão</th>
-                          <th>Cargo / Função</th>
-                          <th>Papel no Júri</th>
-                          <th>Contactos</th>
-                          <th style={{ width: '135px' }}>Permissões</th>
-                          <th style={{ width: '120px' }}>Estado</th>
-                          <th style={{ width: '110px', textAlign: 'center' }}>Ações</th>
+                          <th style={{ minWidth: '220px' }}>Membro da Comissão</th>
+                          <th style={{ minWidth: '190px' }}>Cargo / Função</th>
+                          <th style={{ minWidth: '190px' }}>Papel no Júri</th>
+                          <th style={{ minWidth: '180px' }}>Contactos</th>
+                          <th style={{ width: '140px', textAlign: 'center' }}>Permissões</th>
+                          <th style={{ width: '120px', textAlign: 'center' }}>Estado</th>
+                          <th style={{ width: '100px', textAlign: 'center' }}>Ações</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredPerfis.length === 0 ? (
                           <tr>
-                            <td colSpan="8" style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--portal-text-muted)' }}>
-                              Nenhum membro encontrado com os filtros aplicados.
+                            <td colSpan="8" style={{ textAlign: 'center', padding: '3.5rem 1rem', color: 'var(--portal-text-muted)' }}>
+                              <AlertCircle size={32} color="#94a3b8" style={{ margin: '0 auto 0.75rem auto', display: 'block' }} />
+                              <strong style={{ fontSize: '0.95rem', display: 'block', marginBottom: '0.25rem', color: 'var(--portal-text-main)' }}>Nenhum membro encontrado</strong>
+                              <span>Não foram encontrados membros com os filtros de pesquisa aplicados.</span>
                             </td>
                           </tr>
                         ) : (
@@ -4760,41 +4766,41 @@ export default function GestorPortalModule({
 
                             return (
                               <tr key={p.id}>
-                                <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#c32026' }}>
+                                <td style={{ fontFamily: 'monospace', fontWeight: 800, color: '#c32026', fontSize: '0.85rem' }}>
                                   {p.id}
                                 </td>
                                 <td>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                     <div 
                                       style={{
-                                        width: '36px',
-                                        height: '36px',
+                                        width: '38px',
+                                        height: '38px',
                                         borderRadius: '50%',
                                         background: p.avatarCor || '#0f2042',
                                         color: '#ffffff',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        fontWeight: 700,
-                                        fontSize: '0.82rem',
+                                        fontWeight: 800,
+                                        fontSize: '0.84rem',
                                         flexShrink: 0,
-                                        boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
+                                        boxShadow: '0 2px 6px rgba(0,0,0,0.12)'
                                       }}
                                     >
                                       {iniciais}
                                     </div>
                                     <div>
-                                      <strong style={{ display: 'block', fontSize: '0.9rem', color: 'var(--portal-text-main)' }}>
+                                      <strong style={{ display: 'block', fontSize: '0.92rem', color: 'var(--portal-text-main)' }}>
                                         {p.nome}
                                       </strong>
-                                      <span style={{ fontSize: '0.75rem', color: 'var(--portal-text-muted)' }}>
+                                      <span style={{ fontSize: '0.76rem', color: 'var(--portal-text-muted)' }}>
                                         {p.departamento || 'Comissão SERNIC'}
                                       </span>
                                     </div>
                                   </div>
                                 </td>
                                 <td>
-                                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--portal-text-main)' }}>
+                                  <span style={{ fontSize: '0.86rem', fontWeight: 600, color: 'var(--portal-text-main)' }}>
                                     {p.cargo}
                                   </span>
                                 </td>
@@ -4804,32 +4810,40 @@ export default function GestorPortalModule({
                                     style={{
                                       background: p.tipoPerfil?.includes('Administrador') ? 'rgba(195, 32, 38, 0.08)' : 'rgba(15, 32, 66, 0.08)',
                                       color: p.tipoPerfil?.includes('Administrador') ? '#c32026' : '#0f2042',
-                                      borderColor: p.tipoPerfil?.includes('Administrador') ? 'rgba(195, 32, 38, 0.25)' : 'rgba(15, 32, 66, 0.25)'
+                                      borderColor: p.tipoPerfil?.includes('Administrador') ? 'rgba(195, 32, 38, 0.25)' : 'rgba(15, 32, 66, 0.25)',
+                                      whiteSpace: 'nowrap',
+                                      display: 'inline-block'
                                     }}
                                   >
                                     {p.tipoPerfil}
                                   </span>
                                 </td>
                                 <td>
-                                  <div style={{ fontSize: '0.8rem', color: 'var(--portal-text-main)' }}>
+                                  <div style={{ fontSize: '0.82rem', color: 'var(--portal-text-main)', fontWeight: 500 }}>
                                     {p.email}
                                   </div>
-                                  <div style={{ fontSize: '0.74rem', color: 'var(--portal-text-muted)' }}>
+                                  <div style={{ fontSize: '0.75rem', color: 'var(--portal-text-muted)' }}>
                                     {p.telefone}
                                   </div>
                                 </td>
-                                <td>
+                                <td style={{ textAlign: 'center' }}>
                                   <span 
-                                    className="nota-min-badge" 
                                     style={{ 
+                                      display: 'inline-block',
                                       background: countPermissoes >= 5 ? 'rgba(5, 150, 105, 0.1)' : 'rgba(197, 155, 39, 0.1)', 
-                                      color: countPermissoes >= 5 ? '#059669' : '#b45309' 
+                                      color: countPermissoes >= 5 ? '#059669' : '#b45309',
+                                      border: `1px solid ${countPermissoes >= 5 ? 'rgba(5, 150, 105, 0.25)' : 'rgba(197, 155, 39, 0.25)'}`,
+                                      padding: '0.22rem 0.6rem',
+                                      borderRadius: '6px',
+                                      fontWeight: 800,
+                                      fontSize: '0.76rem',
+                                      whiteSpace: 'nowrap'
                                     }}
                                   >
                                     {countPermissoes} de {totalPermissoes} activas
                                   </span>
                                 </td>
-                                <td>
+                                <td style={{ textAlign: 'center' }}>
                                   <button
                                     type="button"
                                     className={`status-toggle-btn ${p.estado === 'Activo' ? 'is-active' : 'is-inactive'}`}
@@ -4863,8 +4877,8 @@ export default function GestorPortalModule({
                                       <button
                                         type="button"
                                         className="action-icon-btn delete"
-                                        onClick={() => handleDeletePerfil(p.id)}
-                                        title="Remover membro"
+                                        onClick={() => handleRequestDeletePerfil(p.id)}
+                                        title="Revogar credenciamento institucional"
                                       >
                                         <Trash2 size={15} />
                                       </button>
@@ -7519,8 +7533,9 @@ export default function GestorPortalModule({
                       type="button"
                       className="gestor-btn-outline danger"
                       onClick={() => {
-                        handleDeletePerfil(editingPerfil.id);
+                        const target = editingPerfil;
                         setIsPerfilModalOpen(false);
+                        setPerfilToDelete(target);
                       }}
                       style={{ color: '#c32026', borderColor: '#fca5a5' }}
                     >
@@ -7535,6 +7550,173 @@ export default function GestorPortalModule({
                 </div>
               </div>
             </form>
+          </DraggableSubAba>
+        </div>,
+        document.body
+      )}
+
+      {/* ========================================================
+          SUB-ABA OFICIAL SERNIC: CONFIRMAÇÃO DE REVOGAÇÃO DE PERFIL
+          (SUBSTITUI O PROMPT NATIVO DO BROWSER POR SUB-ABA INSTITUCIONAL)
+          ======================================================== */}
+      {perfilToDelete && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="gestor-modal-overlay fadeIn" 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPerfilToDelete(null);
+          }}
+        >
+          <DraggableSubAba
+            className="gestor-modal-card definicoes-modal confirm-delete-sub-aba"
+            style={{ width: 'min(620px, 94vw)', maxWidth: 'min(620px, 94vw)' }}
+            moveHandleLabel="Mover Confirmação de Revogação"
+            onClose={() => setPerfilToDelete(null)}
+          >
+            {/* CABEÇALHO INSTITUCIONAL TIMBRADO SERNIC */}
+            <div 
+              className="dossier-modal-header" 
+              style={{ 
+                background: 'linear-gradient(135deg, rgba(195, 32, 38, 0.08) 0%, rgba(15, 32, 66, 0.05) 100%)',
+                borderBottom: '1px solid rgba(195, 32, 38, 0.25)'
+              }}
+            >
+              <div className="dossier-header-left">
+                <div 
+                  className="dossier-modal-avatar" 
+                  style={{ 
+                    background: '#c32026', 
+                    color: '#ffffff',
+                    boxShadow: '0 4px 14px rgba(195, 32, 38, 0.35)' 
+                  }}
+                >
+                  <AlertTriangle size={24} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.18rem', fontWeight: 800, color: '#c32026' }}>
+                    Revogação de Credenciamento & Acesso
+                  </h3>
+                  <span className="dossier-protocolo">
+                    SERNIC • Deliberação Administrativa do Júri
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="dossier-close-btn"
+                onClick={() => setPerfilToDelete(null)}
+                title="Fechar janela"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* CORPO DA SUB-ABA COM DESIGN INSTITUCIONAL DO SISTEMA */}
+            <div className="dossier-modal-body" style={{ padding: '1.5rem' }}>
+              {/* ALERTA DE AUDITORIA & SEGURANÇA */}
+              <div style={{
+                background: 'rgba(195, 32, 38, 0.05)',
+                border: '1px solid rgba(195, 32, 38, 0.22)',
+                borderRadius: '10px',
+                padding: '1rem 1.2rem',
+                marginBottom: '1.25rem',
+                display: 'flex',
+                gap: '0.85rem',
+                alignItems: 'flex-start'
+              }}>
+                <ShieldAlert size={26} color="#c32026" style={{ flexShrink: 0, marginTop: '2px' }} />
+                <div style={{ fontSize: '0.88rem', color: 'var(--portal-text-main)', lineHeight: 1.55 }}>
+                  <strong style={{ color: '#c32026', display: 'block', fontSize: '0.95rem', marginBottom: '0.25rem' }}>
+                    Atenção: Revogação de Acesso Oficial
+                  </strong>
+                  Tem a certeza de que deseja revogar o credenciamento e acesso deste membro? Esta deliberação administrativa será formalmente lavrada no <strong>Livro de Atas e Auditoria</strong> e as permissões de acesso ao concurso serão revogadas com efeito imediato.
+                </div>
+              </div>
+
+              {/* CARTÃO RESUMO DO MEMBRO */}
+              <div style={{
+                background: 'var(--portal-bg-hover)',
+                border: '1px solid var(--portal-border)',
+                borderRadius: '12px',
+                padding: '1.15rem 1.25rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1rem',
+                marginBottom: '1.25rem'
+              }}>
+                <div style={{
+                  width: '50px',
+                  height: '50px',
+                  borderRadius: '50%',
+                  background: perfilToDelete.avatarCor || '#0f2042',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.15rem',
+                  fontWeight: 800,
+                  flexShrink: 0,
+                  boxShadow: '0 3px 10px rgba(0, 0, 0, 0.15)'
+                }}>
+                  {perfilToDelete.nome ? perfilToDelete.nome.split(' ').map(n => n[0]).slice(0, 2).join('') : 'U'}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', marginBottom: '0.2rem' }}>
+                    <span style={{ 
+                      fontFamily: 'monospace', 
+                      fontWeight: 800, 
+                      fontSize: '0.78rem', 
+                      color: '#c32026', 
+                      background: 'rgba(195, 32, 38, 0.08)', 
+                      padding: '0.15rem 0.45rem', 
+                      borderRadius: '4px' 
+                    }}>
+                      {perfilToDelete.id}
+                    </span>
+                    <strong style={{ fontSize: '1.02rem', color: 'var(--portal-text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {perfilToDelete.nome}
+                    </strong>
+                  </div>
+                  <div style={{ fontSize: '0.84rem', color: 'var(--portal-text-muted)', marginBottom: '0.25rem' }}>
+                    {perfilToDelete.cargo} • {perfilToDelete.departamento || 'Comissão SERNIC'}
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span className="grau-badge" style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', whiteSpace: 'nowrap' }}>
+                      {perfilToDelete.tipoPerfil}
+                    </span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--portal-text-muted)' }}>
+                      {perfilToDelete.email}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* RODAPÉ OFICIAL SERNIC */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '0.75rem',
+                borderTop: '1px solid var(--portal-border)',
+                paddingTop: '1.25rem'
+              }}>
+                <button
+                  type="button"
+                  className="gestor-btn-secondary"
+                  onClick={() => setPerfilToDelete(null)}
+                  style={{ minWidth: '130px' }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="gestor-btn-primary-red"
+                  onClick={handleConfirmDeletePerfil}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1.35rem' }}
+                >
+                  <Trash2 size={16} />
+                  <span>Confirmar Revogação</span>
+                </button>
+              </div>
+            </div>
           </DraggableSubAba>
         </div>,
         document.body

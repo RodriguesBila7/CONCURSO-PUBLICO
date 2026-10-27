@@ -303,10 +303,10 @@ export default function App() {
       const h = window.location.hash.replace('#', '');
       if (h.startsWith('definicoes-')) {
         const sub = h.replace('definicoes-', '');
-        if (['cursos', 'locais', 'temas', 'idioma', 'geral'].includes(sub)) return sub;
+        if (['carreiras', 'perfis', 'cursos', 'locais', 'temas', 'idioma', 'geral'].includes(sub)) return sub;
       }
     }
-    return 'cursos';
+    return 'perfis';
   });
 
   const handleGestorTabChange = (tab) => {
@@ -331,7 +331,7 @@ export default function App() {
         if (h.startsWith('definicoes-')) {
           setGestorTab('definicoes');
           const sub = h.replace('definicoes-', '');
-          if (['cursos', 'locais', 'temas', 'idioma', 'geral'].includes(sub)) {
+          if (['carreiras', 'perfis', 'cursos', 'locais', 'temas', 'idioma', 'geral'].includes(sub)) {
             setDefinicoesSubTab(sub);
           }
         } else if (GESTOR_TABS.includes(h)) {
