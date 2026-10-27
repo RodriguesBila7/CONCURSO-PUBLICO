@@ -4540,12 +4540,6 @@ export default function GestorPortalModule({
 
                       <div className="carreira-card-body">
                         <h4 className="carreira-title">{c.nome}</h4>
-                        <div className="carreira-ramo-line">
-                          <Layers size={14} color="#c32026" />
-                          <span>{c.ramo || 'Investigação Geral'}</span>
-                        </div>
-
-                        <p className="carreira-desc">{c.descricao}</p>
 
                         <div className="carreira-indicators-box">
                           <div className="carreira-indicator-item">
@@ -4565,13 +4559,6 @@ export default function GestorPortalModule({
                             <strong className="ind-val gold">{inscritosCount}</strong>
                           </div>
                         </div>
-
-                        {c.enquadramentoTSU && (
-                          <div className="carreira-tsu-box">
-                            <span className="tsu-title">TSU:</span>
-                            <span className="tsu-text">{c.enquadramentoTSU}</span>
-                          </div>
-                        )}
                       </div>
 
                       <div className="carreira-card-footer">
@@ -7479,7 +7466,7 @@ export default function GestorPortalModule({
               <div className="carreira-form-section" style={{ marginTop: '1.25rem' }}>
                 <div className="carreira-section-title">
                   <BookOpen size={16} color="#15803d" />
-                  <span>Áreas de Formação & Perfil Funcional</span>
+                  <span>Áreas de Formação & Cursos Aceites</span>
                 </div>
 
                 <div className="form-group-custom">
@@ -7491,42 +7478,6 @@ export default function GestorPortalModule({
                     value={carreiraForm.cursosAceites}
                     onChange={(e) => setCarreiraForm({ ...carreiraForm, cursosAceites: e.target.value })}
                   />
-                </div>
-
-                <div className="form-group-custom" style={{ marginTop: '0.75rem' }}>
-                  <label>Descrição das Atribuições e Competências Oficiais</label>
-                  <textarea
-                    className="definicoes-input"
-                    rows={3}
-                    placeholder="Descreva as responsabilidades operacionais, de instrução ou perícia forense desta carreira..."
-                    value={carreiraForm.descricao}
-                    onChange={(e) => setCarreiraForm({ ...carreiraForm, descricao: e.target.value })}
-                    style={{ resize: 'vertical' }}
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.75rem' }}>
-                  <div className="form-group-custom">
-                    <label>Requisitos Físicos e Médicos</label>
-                    <input
-                      type="text"
-                      className="definicoes-input"
-                      placeholder="Ex: Robustez física atestada; Altura mínima 1.65m (H) / 1.60m (M)"
-                      value={carreiraForm.requisitoFisico}
-                      onChange={(e) => setCarreiraForm({ ...carreiraForm, requisitoFisico: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="form-group-custom">
-                    <label>Escala de Trabalho e Regime</label>
-                    <input
-                      type="text"
-                      className="definicoes-input"
-                      placeholder="Ex: Regime de Permanência e Turnos Operacionais 24/7"
-                      value={carreiraForm.escalaTrabalho}
-                      onChange={(e) => setCarreiraForm({ ...carreiraForm, escalaTrabalho: e.target.value })}
-                    />
-                  </div>
                 </div>
               </div>
 
