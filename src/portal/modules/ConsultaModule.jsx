@@ -1,18 +1,17 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { 
-  Search, 
-  CheckCircle2, 
-  AlertCircle, 
-  Clock, 
-  Download, 
-  Calendar, 
-  XCircle, 
+import {
+  Search,
+  CheckCircle2,
+  AlertCircle,
+  Clock,
+  Download,
+  Calendar,
+  XCircle,
   Printer,
   ShieldAlert,
   FileText,
   Sparkles,
-  ShieldCheck,
   Award,
   FileCheck
 } from 'lucide-react';
