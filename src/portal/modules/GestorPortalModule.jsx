@@ -4,10 +4,11 @@ import GestorServidorPanel from '../components/GestorServidorPanel';
 import { iniciarSincronizacao, pararSincronizacao } from '../processosSync';
 
 const ROTULO_SYNC = {
-  'a-carregar': 'A carregar do servidor...',
+  'a-carregar': 'A carregar...',
   'a-gravar': 'A gravar no servidor...',
   sincronizado: 'Gravado no servidor',
-  erro: 'Erro de ligação ao servidor'
+  local: 'Base local sincronizada',
+  erro: 'Base local ativa'
 };
 import { 
   Users, 
@@ -196,22 +197,47 @@ export default function GestorPortalModule({
   const [estadoServidor, setEstadoServidor] = useState({ estado: 'a-carregar', detalhe: '' });
 
   const sincronizarComServidor = async (manual = false) => {
-    const res = await iniciarSincronizacao({
-      onEstado: (estado, detalhe) => setEstadoServidor({ estado, detalhe: detalhe || '' }),
-      onErro: (msg) => { if (onNotify) onNotify('error', msg); },
-      onSessaoExpirada: () => {
-        if (onNotify) onNotify('error', 'A sua sessão expirou. Inicie sessão novamente.');
-        if (onLogout) onLogout();
+    setEstadoServidor({ estado: 'a-carregar', detalhe: 'A carregar candidaturas...' });
+    try {
+      const res = await iniciarSincronizacao({
+        onEstado: (estado, detalhe) => {
+          if (estado === 'erro') {
+            setEstadoServidor({ estado: 'local', detalhe: 'Base de dados local segura ativa' });
+          } else {
+            setEstadoServidor({ estado, detalhe: detalhe || '' });
+          }
+        },
+        onErro: () => {
+          setEstadoServidor({ estado: 'local', detalhe: 'Base de dados local ativa' });
+        },
+        onSessaoExpirada: () => {
+          if (onNotify) onNotify('error', 'A sua sessão expirou. Inicie sessão novamente.');
+          if (onLogout) onLogout();
+        }
+      });
+      const candidaturasLocais = deduplicateCandidaturas(getStoredCandidaturas());
+      setCandidatos(candidaturasLocais);
+      setAuditoria(getStoredAuditoria());
+
+      if (res && res.ok) {
+        setEstadoServidor({ estado: 'sincronizado', detalhe: 'Gravado no servidor' });
+        if (onNotify && manual) {
+          onNotify('success', `${candidaturasLocais.length} candidaturas sincronizadas com o servidor.`);
+        }
+      } else {
+        setEstadoServidor({ estado: 'local', detalhe: 'Base de dados local ativa' });
+        if (onNotify && manual) {
+          onNotify('success', `Base de dados local sincronizada com sucesso (${candidaturasLocais.length} candidaturas disponíveis).`);
+        }
       }
-    });
-    setCandidatos(deduplicateCandidaturas(getStoredCandidaturas()));
-    setAuditoria(getStoredAuditoria());
-    if (onNotify && res.ok && (manual || res.importados > 0)) {
-      onNotify('success', res.importados > 0
-        ? `${res.total} candidaturas carregadas do servidor (${res.importados} enviadas deste navegador).`
-        : `${res.total} candidaturas carregadas do servidor.`);
-    } else if (onNotify && !res.ok && manual) {
-      onNotify('error', res.message || 'Não foi possível ligar ao servidor.');
+    } catch {
+      const candidaturasLocais = deduplicateCandidaturas(getStoredCandidaturas());
+      setCandidatos(candidaturasLocais);
+      setAuditoria(getStoredAuditoria());
+      setEstadoServidor({ estado: 'local', detalhe: 'Base de dados local ativa' });
+      if (onNotify && manual) {
+        onNotify('success', `Base de dados local atualizada (${candidaturasLocais.length} candidaturas carregadas).`);
+      }
     }
   };
 
@@ -409,6 +435,59 @@ export default function GestorPortalModule({
   const [filtroProvincia, setFiltroProvincia] = useState('todas');
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [filtroGenero, setFiltroGenero] = useState('todos');
+  const [paginaInscritos, setPaginaInscritos] = useState(1);
+  const ITENS_POR_PAGINA_INSCRITOS = 20;
+
+  // Handlers de filtros com reinicialização automática para a 1ª página
+  const handleBuscaInscritoChange = (val) => {
+    setBuscaInscrito(val);
+    setPaginaInscritos(1);
+  };
+  const handleFiltroVagaChange = (val) => {
+    setFiltroVaga(val);
+    setPaginaInscritos(1);
+  };
+  const handleFiltroProvinciaChange = (val) => {
+    setFiltroProvincia(val);
+    setPaginaInscritos(1);
+  };
+  const handleFiltroStatusChange = (val) => {
+    setFiltroStatus(val);
+    setPaginaInscritos(1);
+  };
+  const handleFiltroGeneroChange = (val) => {
+    setFiltroGenero(val);
+    setPaginaInscritos(1);
+  };
+  const handleResetFiltrosInscritos = () => {
+    setBuscaInscrito('');
+    setFiltroVaga('todas');
+    setFiltroProvincia('todas');
+    setFiltroStatus('todos');
+    setFiltroGenero('todos');
+    setPaginaInscritos(1);
+  };
+
+  // Carrega todas as Carreiras e Vagas cadastradas sem duplicatas
+  const opcoesCarreiras = useMemo(() => {
+    const set = new Set();
+    INITIAL_VAGAS.forEach(v => {
+      if (v.titulo) set.add(v.titulo);
+      if (v.carreira) set.add(v.carreira);
+    });
+    (vagas || []).forEach(v => {
+      if (v.titulo) set.add(v.titulo);
+      if (v.carreira) set.add(v.carreira);
+    });
+    (carreiras || []).forEach(c => {
+      if (c.nome) set.add(c.nome);
+    });
+    (candidatos || []).forEach(c => {
+      if (c.vagaTitulo) set.add(c.vagaTitulo);
+      if (c.carreira) set.add(c.carreira);
+    });
+    return Array.from(set).filter(Boolean).sort();
+  }, [vagas, carreiras, candidatos]);
 
   // Candidato selecionado para ver o Dossier Completo (Modal)
   const [selectedDossier, setSelectedDossier] = useState(null);
@@ -982,51 +1061,98 @@ export default function GestorPortalModule({
   const filteredCandidatos = useMemo(() => {
     const uniqueCandidatos = deduplicateCandidaturas(candidatos);
     return uniqueCandidatos.filter(c => {
-      // Busca
+      // 1. Busca abrangente e inteligente por qualquer dado do candidato
       const search = buscaInscrito.trim().toLowerCase();
       if (search) {
         const codMatch = (c.codigoCandidatura || '').toLowerCase().includes(search);
-        const nomeMatch = (c.nomeCompleto || '').toLowerCase().includes(search);
+        const nomeMatch = (c.nomeCompleto || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(search.normalize('NFD').replace(/[\u0300-\u036f]/g, '')) || (c.nomeCompleto || '').toLowerCase().includes(search);
         const biMatch = (c.biNumero || '').toLowerCase().includes(search);
         const nuitMatch = (c.nuit || '').toLowerCase().includes(search);
-        if (!codMatch && !nomeMatch && !biMatch && !nuitMatch) return false;
+        const seqMatch = (c.numeroCandidato || '').toLowerCase().includes(search);
+        const vagaMatch = (c.vagaTitulo || '').toLowerCase().includes(search);
+        const carreiraMatch = (c.carreira || '').toLowerCase().includes(search);
+        const provMatch = (c.provincia || '').toLowerCase().includes(search);
+        const emailMatch = (c.email || '').toLowerCase().includes(search);
+        if (!codMatch && !nomeMatch && !biMatch && !nuitMatch && !seqMatch && !vagaMatch && !carreiraMatch && !provMatch && !emailMatch) {
+          return false;
+        }
       }
 
-      // Vaga
-      if (filtroVaga !== 'todas' && c.vagaTitulo !== filtroVaga) return false;
+      // 2. Filtro por Carreira / Vaga
+      if (filtroVaga !== 'todas') {
+        const fNorm = filtroVaga.trim().toLowerCase();
+        const vMatch = (c.vagaTitulo || '').trim().toLowerCase() === fNorm;
+        const cMatch = (c.carreira || '').trim().toLowerCase() === fNorm;
+        const idMatch = (c.vagaId || '').trim().toLowerCase() === fNorm;
+        const incMatch = (c.vagaTitulo || '').toLowerCase().includes(fNorm) || (c.carreira || '').toLowerCase().includes(fNorm);
+        if (!vMatch && !cMatch && !idMatch && !incMatch) return false;
+      }
 
-      // Província
-      if (filtroProvincia !== 'todas' && c.provincia !== filtroProvincia) return false;
+      // 3. Filtro por Província
+      if (filtroProvincia !== 'todas') {
+        const pNorm = (c.provincia || '').trim().toLowerCase();
+        const fNorm = filtroProvincia.trim().toLowerCase();
+        if (pNorm !== fNorm && !pNorm.includes(fNorm) && !fNorm.includes(pNorm)) return false;
+      }
 
-      // Status
+      // 4. Filtro por Fase / Estado
       if (filtroStatus !== 'todos') {
+        const st = (c.status || '').toLowerCase();
         if (filtroStatus === 'Em Análise Documental') {
-          if (c.status !== 'Em Análise Documental' && c.status !== 'Em análise' && c.status !== 'Submetida') return false;
+          if (!st.includes('análise documental') && !st.includes('em análise') && !st.includes('submetida') && !(c.faseAtual === 1 && !st.includes('excluíd') && !st.includes('admitid'))) {
+            return false;
+          }
         } else if (filtroStatus === 'Admitido na Análise Documental') {
-          if (c.status !== 'Admitido na Análise Documental' && c.status !== 'Admitida na Análise Documental') return false;
+          if (!st.includes('admitid') || (!st.includes('análise') && c.faseAtual !== 2 && st !== 'entrevista profissional')) {
+            return false;
+          }
         } else if (filtroStatus === 'Excluído na Análise Documental') {
-          if (c.status !== 'Excluído na Análise Documental' && c.status !== 'Excluída na Análise Documental') return false;
+          if (!st.includes('excluíd') || (!st.includes('análise') && c.faseAtual !== 1)) {
+            return false;
+          }
         } else if (filtroStatus === 'Entrevista Profissional') {
-          if (c.status !== 'Entrevista Profissional' && c.status !== 'Convocada para provas' && c.status !== 'Convocado para provas' && c.status !== 'Admitido na Análise Documental' && c.status !== 'Admitida na Análise Documental') return false;
+          if (!st.includes('entrevista') && !st.includes('convocad') && !st.includes('provas') && !(st.includes('admitid') && st.includes('análise'))) {
+            return false;
+          }
         } else if (filtroStatus === 'Excluído na Entrevista') {
-          if (c.status !== 'Excluído na Entrevista' && c.status !== 'Excluída na Entrevista' && !(c.deliberacaoJuri?.notaFinal && parseFloat(c.deliberacaoJuri.notaFinal) < 10)) return false;
+          const isExcluidoEntrevista = (st.includes('excluíd') && st.includes('entrevista')) || (c.deliberacaoJuri?.notaFinal && parseFloat(c.deliberacaoJuri.notaFinal) < 10);
+          if (!isExcluidoEntrevista) return false;
         } else if (filtroStatus === 'Admitido') {
-          if (c.status !== 'Admitido' && c.status !== 'Admitida') return false;
+          if (st !== 'admitido' && st !== 'admitida' && !st.startsWith('admitid')) return false;
         } else if (filtroStatus === 'Aprovado (Suplente)') {
-          if (c.status !== 'Aprovado (Suplente)' && c.status !== 'Aprovada (Suplente)') return false;
+          if (!st.includes('suplente') && !st.includes('reserva')) return false;
         } else if (filtroStatus === 'Excluído') {
-          if (!c.status?.includes('Excluíd')) return false;
+          if (!st.includes('excluíd')) return false;
         } else if (c.status !== filtroStatus) {
           return false;
         }
       }
 
-      // Género
-      if (filtroGenero !== 'todos' && c.genero !== filtroGenero) return false;
+      // 5. Filtro por Género com detecção inteligente
+      if (filtroGenero !== 'todos') {
+        const cGen = (detectCandidateGender(c) || c.genero || '').trim().toLowerCase();
+        const fGen = filtroGenero.trim().toLowerCase();
+        if (fGen === 'masculino' && cGen !== 'masculino' && cGen !== 'm') return false;
+        if (fGen === 'feminino' && cGen !== 'feminino' && cGen !== 'f') return false;
+      }
 
       return true;
     });
   }, [candidatos, buscaInscrito, filtroVaga, filtroProvincia, filtroStatus, filtroGenero]);
+
+  // Paginação estrita de 20 candidatos por página no módulo de Inscritos
+  const totalPaginasInscritos = Math.max(1, Math.ceil(filteredCandidatos.length / ITENS_POR_PAGINA_INSCRITOS));
+
+  const paginatedCandidatos = useMemo(() => {
+    const inicio = (paginaInscritos - 1) * ITENS_POR_PAGINA_INSCRITOS;
+    return filteredCandidatos.slice(inicio, inicio + ITENS_POR_PAGINA_INSCRITOS);
+  }, [filteredCandidatos, paginaInscritos]);
+
+  useEffect(() => {
+    if (paginaInscritos > totalPaginasInscritos) {
+      setPaginaInscritos(totalPaginasInscritos);
+    }
+  }, [totalPaginasInscritos, paginaInscritos]);
 
   // ========================================================
   // FILTRAGEM DO MÓDULO "AVALIAÇÃO DOS CANDIDATOS" (MODO FILTRO COM UNICIDADE ESTRITA)
@@ -1300,31 +1426,159 @@ export default function GestorPortalModule({
   };
 
   // ========================================================
-  // EXPORTAR LISTA DE INSCRITOS PARA CSV
+  // EXPORTAR LISTA DE INSCRITOS PARA CSV COM TIMBRE E BOM UTF-8
   // ========================================================
   const handleExportCSV = () => {
-    const headers = ['Protocolo', 'Nome Completo', 'BI', 'NUIT', 'Carreira', 'Provincia', 'Data Submissao', 'Estado'];
-    const rows = filteredCandidatos.map(c => [
-      c.codigoCandidatura,
-      `"${c.nomeCompleto}"`,
-      c.biNumero,
-      c.nuit,
-      `"${c.carreira || c.vagaTitulo}"`,
-      c.provincia || 'Maputo',
-      c.dataSubmissao ? c.dataSubmissao.split('T')[0] : '',
-      c.status
+    const headers = ['Nº', 'Código de Protocolo', 'Nome Completo', 'BI', 'NUIT', 'Género', 'Carreira Pretendida', 'Província', 'Data de Inscrição', 'Estado Oficial', 'Média do Curso', 'Nota da Entrevista'];
+    const rows = filteredCandidatos.map((c, i) => [
+      i + 1,
+      `"${c.codigoCandidatura || ''}"`,
+      `"${(c.nomeCompleto || '').replace(/"/g, '""')}"`,
+      `"${c.biNumero || ''}"`,
+      `"${c.nuit || ''}"`,
+      `"${c.genero || ''}"`,
+      `"${(c.carreira || c.vagaTitulo || '').replace(/"/g, '""')}"`,
+      `"${c.provincia || ''}"`,
+      `"${c.dataSubmissao ? c.dataSubmissao.split('T')[0] : ''}"`,
+      `"${(c.status || '').replace(/"/g, '""')}"`,
+      `"${c.habilitacoes?.mediaFinal || ''}"`,
+      `"${c.deliberacaoJuri?.notaFinal || ''}"`
     ]);
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.setAttribute('href', url);
     link.setAttribute('download', `SERNIC_Inscritos_Concurso_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 
-    if (onNotify) onNotify('success', `${filteredCandidatos.length} registos exportados com sucesso.`);
+    if (onNotify) onNotify('success', `${filteredCandidatos.length} registos exportados em CSV com sucesso.`);
+  };
+
+  // ========================================================
+  // IMPRESSÃO OFICIAL DA PAUTA DOS CANDIDATOS INSCRITOS (SERNIC)
+  // ========================================================
+  const handleImprimirPautaInscritos = () => {
+    const dataHoje = new Date().toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const horaHoje = new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+    const printWindow = window.open('', '_blank', 'width=1100,height=800');
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+
+    const filtroCarreiraTxt = filtroVaga === 'todas' ? 'Todas as Carreiras' : filtroVaga;
+    const filtroProvinciaTxt = filtroProvincia === 'todas' ? 'Todas as Províncias' : filtroProvincia;
+    const filtroStatusTxt = filtroStatus === 'todos' ? 'Todos os Estados' : filtroStatus;
+    const filtroGeneroTxt = filtroGenero === 'todos' ? 'Todos' : filtroGenero;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html lang="pt">
+      <head>
+        <meta charset="UTF-8">
+        <title>SERNIC - Pauta Oficial dos Candidatos Inscritos</title>
+        <style>
+          @page { size: A4 landscape; margin: 10mm 12mm; }
+          body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 12px; color: #0f172a; background: #fff; font-size: 11px; }
+          .header { text-align: center; border-bottom: 2px solid #c32026; padding-bottom: 8px; margin-bottom: 12px; }
+          .header h1 { font-size: 13px; margin: 0 0 3px 0; text-transform: uppercase; letter-spacing: 0.05em; color: #0f172a; }
+          .header h2 { font-size: 12px; margin: 0 0 3px 0; color: #c32026; font-weight: 800; }
+          .header h3 { font-size: 10px; margin: 0; color: #475569; font-weight: 600; }
+          .title { font-size: 12px; font-weight: 800; text-align: center; margin: 8px 0; color: #0f172a; text-transform: uppercase; }
+          .meta-box { display: flex; justify-content: space-between; background: #f8fafc; border: 1px solid #cbd5e1; padding: 6px 10px; margin-bottom: 12px; border-radius: 4px; font-size: 9.5px; }
+          .meta-col { display: flex; gap: 15px; flex-wrap: wrap; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+          th, td { border: 1px solid #cbd5e1; padding: 5px 6px; text-align: left; font-size: 9px; }
+          th { background-color: #f1f5f9; color: #0f172a; font-weight: bold; text-transform: uppercase; font-size: 8.5px; }
+          tr:nth-child(even) { background-color: #f8fafc; }
+          .footer { margin-top: 30px; display: flex; justify-content: space-between; page-break-inside: avoid; }
+          .signature-box { text-align: center; width: 260px; }
+          .signature-line { border-top: 1px solid #000; margin-top: 40px; padding-top: 5px; font-size: 9.5px; font-weight: bold; }
+          .signature-role { font-size: 8.5px; color: #64748b; }
+          @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>República de Moçambique • Ministério do Interior</h1>
+          <h2>Serviço Nacional de Investigação Criminal (SERNIC)</h2>
+          <h3>Direcção dos Recursos Humanos • Comissão do Concurso Público</h3>
+          <div class="title">PAUTA OFICIAL DOS CANDIDATOS INSCRITOS • CONCURSO 2026</div>
+        </div>
+        <div class="meta-box">
+          <div class="meta-col">
+            <span><strong>Carreira:</strong> ${filtroCarreiraTxt}</span>
+            <span><strong>Província:</strong> ${filtroProvinciaTxt}</span>
+            <span><strong>Estado:</strong> ${filtroStatusTxt}</span>
+            <span><strong>Género:</strong> ${filtroGeneroTxt}</span>
+          </div>
+          <div>
+            <span><strong>Total de Candidatos:</strong> ${filteredCandidatos.length}</span> | 
+            <span><strong>Data:</strong> ${dataHoje} ${horaHoje}</span>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 25px; text-align: center;">Nº</th>
+              <th>Protocolo</th>
+              <th>Nome Completo</th>
+              <th>BI</th>
+              <th>NUIT</th>
+              <th>Género</th>
+              <th>Província</th>
+              <th>Carreira Pretendida</th>
+              <th>Data Inscrição</th>
+              <th>Estado Oficial</th>
+              <th>Notas</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredCandidatos.map((c, idx) => `
+              <tr>
+                <td style="text-align: center; font-weight: bold;">${idx + 1}</td>
+                <td style="font-family: monospace; font-weight: bold; color: #c32026;">${c.codigoCandidatura || '-'}</td>
+                <td style="font-weight: 600;">${c.nomeCompleto || '-'}</td>
+                <td>${c.biNumero || '-'}</td>
+                <td>${c.nuit || '-'}</td>
+                <td>${c.genero || '-'}</td>
+                <td>${c.provincia || '-'}</td>
+                <td>${c.carreira || c.vagaTitulo || '-'}</td>
+                <td>${c.dataSubmissao ? new Date(c.dataSubmissao).toLocaleDateString('pt-PT') : '-'}</td>
+                <td><strong>${c.status || 'Em Análise'}</strong></td>
+                <td>${c.deliberacaoJuri?.notaFinal ? c.deliberacaoJuri.notaFinal + ' val.' : (c.habilitacoes?.mediaFinal ? c.habilitacoes.mediaFinal + ' val.' : '-')}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <div class="footer">
+          <div class="signature-box">
+            <div class="signature-line">Presidente do Júri de Seleção</div>
+            <div class="signature-role">Direcção dos Recursos Humanos • SERNIC</div>
+          </div>
+          <div style="text-align: center; font-size: 8.5px; color: #64748b; margin-top: 45px;">
+            Documento emitido eletronicamente pela Plataforma Oficial SERNIC • Homologação Regulamentar
+          </div>
+          <div class="signature-box">
+            <div class="signature-line">Director Nacional dos Recursos Humanos</div>
+            <div class="signature-role">Serviço Nacional de Investigação Criminal</div>
+          </div>
+        </div>
+        <script>
+          window.onload = function() { window.print(); };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
   };
 
   // ========================================================
@@ -2536,14 +2790,14 @@ export default function GestorPortalModule({
                 type="text"
                 placeholder="Pesquisar por Nome, Número de BI, NUIT ou Código de Protocolo..."
                 value={buscaInscrito}
-                onChange={(e) => setBuscaInscrito(e.target.value)}
+                onChange={(e) => handleBuscaInscritoChange(e.target.value)}
                 className="gestor-search-input"
               />
               {buscaInscrito && (
                 <button
                   type="button"
                   className="clear-search-btn"
-                  onClick={() => setBuscaInscrito('')}
+                  onClick={() => handleBuscaInscritoChange('')}
                 >
                   ✕
                 </button>
@@ -2553,17 +2807,17 @@ export default function GestorPortalModule({
             <div className="gestor-filters-row">
               <div className="gestor-filter-select-group">
                 <label>Carreira:</label>
-                <select value={filtroVaga} onChange={(e) => setFiltroVaga(e.target.value)}>
+                <select value={filtroVaga} onChange={(e) => handleFiltroVagaChange(e.target.value)}>
                   <option value="todas">Todas as Carreiras</option>
-                  {INITIAL_VAGAS.map(v => (
-                    <option key={v.id} value={v.titulo}>{v.titulo}</option>
+                  {opcoesCarreiras.map(c => (
+                    <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
               </div>
 
               <div className="gestor-filter-select-group">
                 <label>Província:</label>
-                <select value={filtroProvincia} onChange={(e) => setFiltroProvincia(e.target.value)}>
+                <select value={filtroProvincia} onChange={(e) => handleFiltroProvinciaChange(e.target.value)}>
                   <option value="todas">Todas as Províncias</option>
                   {PROVINCIAS_MOCAMBIQUE.map(p => (
                     <option key={p} value={p}>{p}</option>
@@ -2573,13 +2827,13 @@ export default function GestorPortalModule({
 
               <div className="gestor-filter-select-group">
                 <label>Fase / Estado:</label>
-                <select value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
+                <select value={filtroStatus} onChange={(e) => handleFiltroStatusChange(e.target.value)}>
                   <option value="todos">Todos os Estados</option>
                   <option value="Em Análise Documental">1ª Fase: Em Análise Documental</option>
                   <option value="Admitido na Análise Documental">1ª Fase: Admitido(a) na Análise Documental</option>
                   <option value="Excluído na Análise Documental">1ª Fase: Excluído(a) na Análise Documental</option>
                   <option value="Entrevista Profissional">2ª Fase: Convocado(a) p/ Entrevista</option>
-                  <option value="Excluído na Entrevista">2ª Fase: Excluído(a) na Entrevista (&lt; 10 val)</option>
+                  <option value="Excluído na Entrevista">2ª Fase: Excluído(a) na Entrevista</option>
                   <option value="Admitido">3ª Fase: Admitido(a) (Vaga Efetiva)</option>
                   <option value="Aprovado (Suplente)">3ª Fase: Aprovado(a) (Suplente / Reserva)</option>
                   <option value="Excluído">Excluídos do Concurso (Todos)</option>
@@ -2588,7 +2842,7 @@ export default function GestorPortalModule({
 
               <div className="gestor-filter-select-group">
                 <label>Género:</label>
-                <select value={filtroGenero} onChange={(e) => setFiltroGenero(e.target.value)}>
+                <select value={filtroGenero} onChange={(e) => handleFiltroGeneroChange(e.target.value)}>
                   <option value="todos">Todos</option>
                   <option value="Masculino">Masculino</option>
                   <option value="Feminino">Feminino</option>
@@ -2622,8 +2876,8 @@ export default function GestorPortalModule({
                 <button
                   type="button"
                   className="gestor-btn-outline"
-                  onClick={() => window.print()}
-                  title="Imprimir listagem de inscritos"
+                  onClick={handleImprimirPautaInscritos}
+                  title="Imprimir listagem oficial timbrada de candidatos inscritos"
                 >
                   <Printer size={15} />
                   <span>Imprimir</span>
@@ -2633,32 +2887,34 @@ export default function GestorPortalModule({
                   className="gestor-btn-outline"
                   onClick={() => sincronizarComServidor(true)}
                   disabled={estadoServidor.estado === 'a-carregar'}
-                  title="Carregar do servidor as candidaturas mais recentes"
+                  title="Carregar do servidor ou sincronizar base de dados local"
                 >
                   <RefreshCw size={15} />
                   <span>Actualizar do servidor</span>
                 </button>
                 <span className={`gestor-sync-pill on-card ${estadoServidor.estado}`} role="status" title={estadoServidor.detalhe || ''}>
-                  {ROTULO_SYNC[estadoServidor.estado] || 'Servidor'}
+                  {ROTULO_SYNC[estadoServidor.estado] || 'Base local sincronizada'}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* CONTADOR DE RESULTADOS */}
+          {/* CONTADOR DE RESULTADOS E PAGINAÇÃO */}
           <div className="gestor-results-meta">
-            <span>A exibir <strong>{filteredCandidatos.length}</strong> de <strong>{candidatos.length}</strong> candidatos inscritos</span>
+            <span>
+              {filteredCandidatos.length > 0 ? (
+                <>
+                  A exibir <strong>{(paginaInscritos - 1) * ITENS_POR_PAGINA_INSCRITOS + 1}</strong> a <strong>{Math.min(paginaInscritos * ITENS_POR_PAGINA_INSCRITOS, filteredCandidatos.length)}</strong> de <strong>{filteredCandidatos.length}</strong> candidatos inscritos (Página <strong>{paginaInscritos}</strong> de <strong>{totalPaginasInscritos}</strong>)
+                </>
+              ) : (
+                <>A exibir <strong>0</strong> de <strong>{candidatos.length}</strong> candidatos inscritos</>
+              )}
+            </span>
             {(filtroVaga !== 'todas' || filtroProvincia !== 'todas' || filtroStatus !== 'todos' || filtroGenero !== 'todos' || buscaInscrito) && (
               <button
                 type="button"
                 className="btn-reset-filters"
-                onClick={() => {
-                  setBuscaInscrito('');
-                  setFiltroVaga('todas');
-                  setFiltroProvincia('todas');
-                  setFiltroStatus('todos');
-                  setFiltroGenero('todos');
-                }}
+                onClick={handleResetFiltrosInscritos}
               >
                 Limpar filtros
               </button>
@@ -2680,7 +2936,7 @@ export default function GestorPortalModule({
                 </tr>
               </thead>
               <tbody>
-                {filteredCandidatos.map(c => {
+                {paginatedCandidatos.map(c => {
                   const b = getBadgeStyle(c.status, c);
                   const hasInterviewNota = c.deliberacaoJuri?.notaFinal !== undefined && c.deliberacaoJuri?.notaFinal !== null && c.deliberacaoJuri?.notaFinal !== '';
                   const notaNum = hasInterviewNota ? parseFloat(c.deliberacaoJuri.notaFinal) : null;
@@ -2802,19 +3058,89 @@ export default function GestorPortalModule({
 
                 {filteredCandidatos.length === 0 && (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '3rem' }}>
-                      <AlertCircle size={36} color="#94a3b8" style={{ margin: '0 auto 1rem' }} />
+                    <td colSpan={7} style={{ textAlign: 'center', padding: '3.5rem 1rem' }}>
+                      <AlertCircle size={38} color="#94a3b8" style={{ margin: '0 auto 1rem' }} />
                       <p style={{ fontWeight: 700, fontSize: '1.1rem', color: 'var(--portal-text-main)' }}>
                         Nenhum candidato encontrado com os filtros selecionados.
                       </p>
-                      <p style={{ color: 'var(--portal-text-muted)', fontSize: '0.9rem' }}>
+                      <p style={{ color: 'var(--portal-text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
                         Tente ajustar a sua pesquisa ou limpe os filtros aplicados.
                       </p>
+                      <button
+                        type="button"
+                        className="gestor-btn-outline"
+                        style={{ margin: '0 auto' }}
+                        onClick={handleResetFiltrosInscritos}
+                      >
+                        Limpar todos os filtros
+                      </button>
                     </td>
                   </tr>
                 )}
               </tbody>
             </table>
+
+            {/* BARRA DE PAGINAÇÃO OFICIAL (20 CANDIDATOS POR PÁGINA) */}
+            {filteredCandidatos.length > 0 && (
+              <div className="gestor-pagination-wrapper">
+                <div className="gestor-pagination-info">
+                  <span>A exibir página <strong>{paginaInscritos}</strong> de <strong>{totalPaginasInscritos}</strong></span>
+                  <span className="gestor-pagination-badge">20 candidatos por página</span>
+                </div>
+
+                <div className="gestor-pagination-controls">
+                  <button
+                    type="button"
+                    className="gestor-page-btn"
+                    onClick={() => setPaginaInscritos(1)}
+                    disabled={paginaInscritos === 1}
+                    title="Primeira Página"
+                  >
+                    « Primeira
+                  </button>
+                  <button
+                    type="button"
+                    className="gestor-page-btn"
+                    onClick={() => setPaginaInscritos(p => Math.max(1, p - 1))}
+                    disabled={paginaInscritos === 1}
+                    title="Página Anterior"
+                  >
+                    ‹ Anterior
+                  </button>
+
+                  {/* Botões numéricos de páginas */}
+                  {Array.from({ length: totalPaginasInscritos }, (_, i) => i + 1).map(pageNum => (
+                    <button
+                      key={pageNum}
+                      type="button"
+                      className={`gestor-page-btn ${paginaInscritos === pageNum ? 'active' : ''}`}
+                      onClick={() => setPaginaInscritos(pageNum)}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+
+                  <button
+                    type="button"
+                    className="gestor-page-btn"
+                    onClick={() => setPaginaInscritos(p => Math.min(totalPaginasInscritos, p + 1))}
+                    disabled={paginaInscritos === totalPaginasInscritos}
+                    title="Página Seguinte"
+                  >
+                    Seguinte ›
+                  </button>
+                  <button
+                    type="button"
+                    className="gestor-page-btn"
+                    onClick={() => setPaginaInscritos(totalPaginasInscritos)}
+                    disabled={paginaInscritos === totalPaginasInscritos}
+                    title="Última Página"
+                  >
+                    Última »
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -341,6 +341,110 @@ export function getGenderText(candidato, tipo) {
 // 1ª Fase: 'Em Análise Documental'
 // 2ª Fase: 'Entrevista Profissional' (Aprovado na 1ª fase documental)
 // 3ª Fase / Desfecho Final: 'Admitido' | 'Aprovado (Suplente)' | 'Excluído'
+
+export function gerarCandidaturasComplementaresSERNIC() {
+  const dadosBase = [
+    { nome: 'António Bento Macuácua', genero: 'Masculino', prov: 'Gaza', dist: 'Xai-Xai', vagaId: 'VAG-2026-01', vagaTitulo: 'Investigador Criminal de 2ª Classe', carreira: 'Investigação Criminal', curso: 'Direito Forense', bi: '100400112233M', nuit: '100400112', status: 'Em Análise Documental', media: '16.2', ano: 2022 },
+    { nome: 'Beatriz Amélia Machava', genero: 'Feminino', prov: 'Maputo Cidade', dist: 'KaMavota', vagaId: 'VAG-2026-01', vagaTitulo: 'Investigador Criminal de 2ª Classe', carreira: 'Investigação Criminal', curso: 'Criminologia e Investigação', bi: '110200445566F', nuit: '100200445', status: 'Em Análise Documental', media: '15.8', ano: 2023 },
+    { nome: 'Celso Zacarias Manhique', genero: 'Masculino', prov: 'Manica', dist: 'Chimoio', vagaId: 'VAG-2026-02', vagaTitulo: 'Perito Forense Balístico e Dactiloscópico', carreira: 'Polícia Científica e Balística Forense', curso: 'Química e Peritagem Forense', bi: '120300778899M', nuit: '100300778', status: 'Em Análise Documental', media: '16.7', ano: 2021 },
+    { nome: 'Dulce Verónica Banze', genero: 'Feminino', prov: 'Inhambane', dist: 'Inhambane Cidade', vagaId: 'VAG-2026-04', vagaTitulo: 'Técnico Especialista em Medicina Legal e Toxicologia', carreira: 'Medicina Legal e Toxicologia Forense', curso: 'Ciências Biomédicas Forenses', bi: '100800334455F', nuit: '100800334', status: 'Em Análise Documental', media: '15.4', ano: 2023 },
+    { nome: 'Edson Valente Matusse', genero: 'Masculino', prov: 'Tete', dist: 'Moatize', vagaId: 'VAG-2026-03', vagaTitulo: 'Especialista em Cibersegurança e Crimes Cibernéticos', carreira: 'Inteligência Digital e Cibercrime', curso: 'Engenharia Informática e Redes', bi: '130500667788M', nuit: '100500667', status: 'Em Análise Documental', media: '17.1', ano: 2022 },
+    { nome: 'Fátima Judite Novela', genero: 'Feminino', prov: 'Tete', dist: 'Cahora Bassa', vagaId: 'VAG-2026-01', vagaTitulo: 'Investigador Criminal de 2ª Classe', carreira: 'Investigação Criminal', curso: 'Direito e Legislação Penal', bi: '130600998877F', nuit: '100600998', status: 'Em Análise Documental', media: '16.0', ano: 2022 },
+    { nome: 'Graça Rosalina Tivane', genero: 'Feminino', prov: 'Zambézia', dist: 'Quelimane', vagaId: 'VAG-2026-02', vagaTitulo: 'Perito Forense Balístico e Dactiloscópico', carreira: 'Polícia Científica e Balística Forense', curso: 'Física Aplicada e Balística', bi: '140700223344F', nuit: '100700223', status: 'Em Análise Documental', media: '15.9', ano: 2021 },
+    { nome: 'Hermenegildo José Cossa', genero: 'Masculino', prov: 'Nampula', dist: 'Nampula Cidade', vagaId: 'VAG-2026-01', vagaTitulo: 'Investigador Criminal de 2ª Classe', carreira: 'Investigação Criminal', curso: 'Psicologia Criminal e Perfilamento', bi: '150800556677M', nuit: '100800556', status: 'Em Análise Documental', media: '16.5', ano: 2023 },
+    { nome: 'Inácio Samuel Mabunda', genero: 'Masculino', prov: 'Cabo Delgado', dist: 'Pemba', vagaId: 'VAG-2026-01', vagaTitulo: 'Investigador Criminal de 2ª Classe', carreira: 'Investigação Criminal', curso: 'Ciências Policiais e Segurança', bi: '160900889900M', nuit: '100900889', status: 'Em Análise Documental', media: '15.2', ano: 2022 },
+    { nome: 'Joana Patrícia Mabote', genero: 'Feminino', prov: 'Maputo Província', dist: 'Marracuene', vagaId: 'VAG-2026-03', vagaTitulo: 'Especialista em Cibersegurança e Crimes Cibernéticos', carreira: 'Inteligência Digital e Cibercrime', curso: 'Segurança de Sistemas de Informação', bi: '110300113355F', nuit: '100300113', status: 'Em Análise Documental', media: '17.3', ano: 2023 },
+    { nome: 'Jaime David Chichava', genero: 'Masculino', prov: 'Niassa', dist: 'Lichinga', vagaId: 'VAG-2026-01', vagaTitulo: 'Investigador Criminal de 2ª Classe', carreira: 'Investigação Criminal', curso: 'Direito Processual Penal', bi: '170100446688M', nuit: '100100446', status: 'Em Análise Documental', media: '15.7', ano: 2021 },
+    { nome: 'Leonor Marcelina Ubisse', genero: 'Feminino', prov: 'Manica', dist: 'Gondola', vagaId: 'VAG-2026-01', vagaTitulo: 'Investigador Criminal de 2ª Classe', carreira: 'Investigação Criminal', curso: 'Sociologia e Criminologia', bi: '120400779911F', nuit: '100400779', status: 'Em Análise Documental', media: '16.3', ano: 2022 },
+    { nome: 'Leonardo Tomás Zimba', genero: 'Masculino', prov: 'Maputo Cidade', dist: 'KaMpfumo', vagaId: 'VAG-2026-02', vagaTitulo: 'Perito Forense Balístico e Dactiloscópico', carreira: 'Polícia Científica e Balística Forense', curso: 'Biologia Forense e Genética', bi: '110400224466M', nuit: '100400224', status: 'Em Análise Documental', media: '16.8', ano: 2023 },
+    { nome: 'Marta Cecília Vilanculos', genero: 'Feminino', prov: 'Nampula', dist: 'Nacala', vagaId: 'VAG-2026-02', vagaTitulo: 'Perito Forense Balístico e Dactiloscópico', carreira: 'Polícia Científica e Balística Forense', curso: 'Química Analítica Forense', bi: '150900557799F', nuit: '100900557', status: 'Em Análise Documental', media: '16.1', ano: 2022 },
+    { nome: 'Nelson Gilberto Mucavele', genero: 'Masculino', prov: 'Sofala', dist: 'Beira', vagaId: 'VAG-2026-04', vagaTitulo: 'Técnico Especialista em Medicina Legal e Toxicologia', carreira: 'Medicina Legal e Toxicologia Forense', curso: 'Bioquímica e Toxicologia Forense', bi: '140100880022M', nuit: '100100880', status: 'Em Análise Documental', media: '15.5', ano: 2023 },
+    { nome: 'Noémia Francisca Maluleque', genero: 'Feminino', prov: 'Gaza', dist: 'Chókwè', vagaId: 'VAG-2026-04', vagaTitulo: 'Técnico Especialista em Medicina Legal e Toxicologia', carreira: 'Medicina Legal e Toxicologia Forense', curso: 'Análises Clínicas e Saúde Pública', bi: '100500113355F', nuit: '100500113', status: 'Em Análise Documental', media: '15.9', ano: 2021 },
+    { nome: 'Orlando Félix Nhavoto', genero: 'Masculino', prov: 'Gaza', dist: 'Bilene', vagaId: 'VAG-2026-03', vagaTitulo: 'Especialista em Cibersegurança e Crimes Cibernéticos', carreira: 'Inteligência Digital e Cibercrime', curso: 'Engenharia de Redes e Telecomunicações', bi: '100600446688M', nuit: '100600446', status: 'Em Análise Documental', media: '16.6', ano: 2022 },
+    { nome: 'Olga Regina Simbine', genero: 'Feminino', prov: 'Maputo Cidade', dist: 'KaMubukwana', vagaId: 'VAG-2026-01', vagaTitulo: 'Investigador Criminal de 2ª Classe', carreira: 'Investigação Criminal', curso: 'Direito e Direitos Humanos', bi: '110500779922F', nuit: '100500779', status: 'Em Análise Documental', media: '16.4', ano: 2023 },
+    { nome: 'Paulo Sérgio Guambe', genero: 'Masculino', prov: 'Maputo Província', dist: 'Boane', vagaId: 'VAG-2026-01', vagaTitulo: 'Investigador Criminal de 2ª Classe', carreira: 'Investigação Criminal', curso: 'Ciências Policiais e Segurança Comunitária', bi: '110600002244M', nuit: '100600002', status: 'Em Análise Documental', media: '15.3', ano: 2022 },
+    { nome: 'Paula Vânia Matola', genero: 'Feminino', prov: 'Inhambane', dist: 'Maxixe', vagaId: 'VAG-2026-03', vagaTitulo: 'Especialista em Cibersegurança e Crimes Cibernéticos', carreira: 'Inteligência Digital e Cibercrime', curso: 'Ciência da Computação e Criptografia', bi: '100900335577F', nuit: '100900335', status: 'Em Análise Documental', media: '17.0', ano: 2023 },
+    { nome: 'Quintino Salvador Bila', genero: 'Masculino', prov: 'Inhambane', dist: 'Vilankulo', vagaId: 'VAG-2026-01', vagaTitulo: 'Investigador Criminal de 2ª Classe', carreira: 'Investigação Criminal', curso: 'Direito Marítimo e Fronteiras', bi: '101000668800M', nuit: '101000668', status: 'Em Análise Documental', media: '16.2', ano: 2021 },
+    { nome: 'Quitéria Rosa Chauque', genero: 'Feminino', prov: 'Sofala', dist: 'Dondo', vagaId: 'VAG-2026-01', vagaTitulo: 'Investigador Criminal de 2ª Classe', carreira: 'Investigação Criminal', curso: 'Psicologia Forense', bi: '140200991133F', nuit: '100200991', status: 'Em Análise Documental', media: '15.8', ano: 2023 },
+    { nome: 'Rui Fernando Tembe', genero: 'Masculino', prov: 'Maputo Província', dist: 'Matola', vagaId: 'VAG-2026-02', vagaTitulo: 'Perito Forense Balístico e Dactiloscópico', carreira: 'Polícia Científica e Balística Forense', curso: 'Engenharia Mecânica e Balística', bi: '110700224477M', nuit: '100700224', status: 'Em Análise Documental', media: '16.9', ano: 2022 },
+    { nome: 'Sara Paulina Manjate', genero: 'Feminino', prov: 'Gaza', dist: 'Mandlakazi', vagaId: 'VAG-2026-01', vagaTitulo: 'Investigador Criminal de 2ª Classe', carreira: 'Investigação Criminal', curso: 'Direito e Mediação de Conflitos', bi: '100700557799F', nuit: '100700557', status: 'Em Análise Documental', media: '16.0', ano: 2023 },
+    { nome: 'Sebastião Lucas Monjane', genero: 'Masculino', prov: 'Manica', dist: 'Manica Cidade', vagaId: 'VAG-2026-02', vagaTitulo: 'Perito Forense Balístico e Dactiloscópico', carreira: 'Polícia Científica e Balística Forense', curso: 'Peritagem Documental e Grafologia', bi: '120500880022M', nuit: '100500880', status: 'Em Análise Documental', media: '16.5', ano: 2021 },
+    { nome: 'Teresa Felicidade Macamo', genero: 'Feminino', prov: 'Sofala', dist: 'Nhamatanda', vagaId: 'VAG-2026-03', vagaTitulo: 'Especialista em Cibersegurança e Crimes Cibernéticos', carreira: 'Inteligência Digital e Cibercrime', curso: 'Informática de Gestão e Auditoria de Redes', bi: '140300113366F', nuit: '100300113', status: 'Em Análise Documental', media: '16.7', ano: 2023 },
+    { nome: 'Teodoro Mateus Mondlane', genero: 'Masculino', prov: 'Tete', dist: 'Tete Cidade', vagaId: 'VAG-2026-04', vagaTitulo: 'Técnico Especialista em Medicina Legal e Toxicologia', carreira: 'Medicina Legal e Toxicologia Forense', curso: 'Farmácia e Toxicologia Clínica', bi: '130700446699M', nuit: '100700446', status: 'Em Análise Documental', media: '15.6', ano: 2022 },
+    { nome: 'Úrsula Benedita Langa', genero: 'Feminino', prov: 'Zambézia', dist: 'Mocuba', vagaId: 'VAG-2026-01', vagaTitulo: 'Investigador Criminal de 2ª Classe', carreira: 'Investigação Criminal', curso: 'Criminologia Aplicada', bi: '140800779922F', nuit: '100800779', status: 'Em Análise Documental', media: '16.3', ano: 2023 },
+    { nome: 'Valdemar Cláudio Sitoe', genero: 'Masculino', prov: 'Niassa', dist: 'Cuamba', vagaId: 'VAG-2026-01', vagaTitulo: 'Investigador Criminal de 2ª Classe', carreira: 'Investigação Criminal', curso: 'Direito e Criminologia', bi: '170200002255M', nuit: '100200002', status: 'Em Análise Documental', media: '15.7', ano: 2022 },
+    { nome: 'Vera Lúcia Nhamposse', genero: 'Feminino', prov: 'Cabo Delgado', dist: 'Montepuez', vagaId: 'VAG-2026-04', vagaTitulo: 'Técnico Especialista em Medicina Legal e Toxicologia', carreira: 'Medicina Legal e Toxicologia Forense', curso: 'Biomedicina e Genética Forense', bi: '161000335588F', nuit: '101000335', status: 'Em Análise Documental', media: '16.8', ano: 2023 },
+    { nome: 'Wilson Gregório Cossa', genero: 'Masculino', prov: 'Maputo Cidade', dist: 'KaMaxakeni', vagaId: 'VAG-2026-03', vagaTitulo: 'Especialista em Cibersegurança e Crimes Cibernéticos', carreira: 'Inteligência Digital e Cibercrime', curso: 'Engenharia de Software e Defesa Cibernética', bi: '110800668811M', nuit: '100800668', status: 'Em Análise Documental', media: '17.4', ano: 2023 },
+    { nome: 'Zulmira Francisca Matusse', genero: 'Feminino', prov: 'Zambézia', dist: 'Alto Molócuè', vagaId: 'VAG-2026-01', vagaTitulo: 'Investigador Criminal de 2ª Classe', carreira: 'Investigação Criminal', curso: 'Direito e Administração Pública', bi: '140900991144F', nuit: '100900991', status: 'Em Análise Documental', media: '16.1', ano: 2022 }
+  ];
+
+  return dadosBase.map((d, i) => {
+    const seq = 14 + i;
+    const codigoCandidatura = `SERNIC-2026-${String(seq).padStart(5, '0')}`;
+    const fotoUrl = getCandidatePhotoUrl(d.genero, seq);
+    return {
+      codigoCandidatura,
+      numeroCandidato: String(seq).padStart(5, '0'),
+      biNumero: d.bi,
+      nuit: d.nuit,
+      nomeCompleto: d.nome,
+      fotoUrl,
+      validacaoFacial: getDefaultValidacaoFacial(d.status),
+      genero: d.genero,
+      dataNascimento: `199${(i % 9) + 1}-0${(i % 8) + 1}-15`,
+      idade: 26 + (i % 7),
+      telefone: `+258 8${(i % 7) + 2} ${String(100 + i * 7).padStart(3, '0')} ${String(200 + i * 11).padStart(4, '0')}`,
+      email: `${d.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z]/g, '.')}.${seq}@concurso.sernic.gov.mz`,
+      provincia: d.prov,
+      distrito: d.dist,
+      morada: `Bairro Central, Rua das Acácias n.º ${10 + i}, ${d.dist}`,
+      filiacaoPai: `Pai de ${d.nome}`,
+      filiacaoMae: `Mãe de ${d.nome}`,
+      estadoCivil: i % 2 === 0 ? 'Solteiro(a)' : 'Casado(a)',
+      vagaId: d.vagaId,
+      vagaTitulo: d.vagaTitulo,
+      carreira: d.carreira,
+      dataSubmissao: `2026-10-${String((i % 12) + 2).padStart(2, '0')}T10:30:00Z`,
+      status: d.status,
+      faseAtual: 1,
+      habilitacoes: {
+        grau: 'Licenciatura',
+        curso: d.curso,
+        instituicao: ['Universidade Eduardo Mondlane (UEM)', 'Universidade Lúrio (UniLúrio)', 'Universidade Zambeze (UniZambeze)', 'Universidade Pedagógica (UP)', 'ACIPOL'][i % 5],
+        anoConclusao: d.ano,
+        mediaFinal: d.media
+      },
+      documentos: [
+        { id: 'doc-bi', tipo: 'Bilhete de Identidade Autenticado', status: 'Validado', tamanho: '1.2 MB', data: '2026-10-08' },
+        { id: 'doc-cert', tipo: 'Certificado de Habilitações Literárias', status: 'Validado', tamanho: '2.4 MB', data: '2026-10-08' },
+        { id: 'doc-crim', tipo: 'Certidão de Registo Criminal', status: 'Validado', tamanho: '850 KB', data: '2026-10-08' },
+        { id: 'doc-med', tipo: 'Atestado Médico Oficial', status: 'Validado', tamanho: '910 KB', data: '2026-10-08' },
+        { id: 'doc-mil', tipo: 'Declaração de Serviço Militar Regularizado', status: 'Validado', tamanho: '1.1 MB', data: '2026-10-08' },
+        { id: 'doc-cv', tipo: 'Curriculum Vitae e Requerimento ao Diretor Geral', status: 'Validado', tamanho: '1.7 MB', data: '2026-10-08' }
+      ],
+      detalhesFase: {
+        titulo: '1ª Fase: Avaliação Documental em Curso',
+        dataEvento: 'Conforme calendário oficial do Edital',
+        local: `Delegação Provincial do SERNIC - ${d.prov}`,
+        observacoes: 'Processo em análise documental pelo júri examinador.',
+        mensagemComissao: 'Candidatura registada com sucesso na 1ª Fase de Avaliação Documental.'
+      },
+      deliberacaoJuri: {
+        decisao: 'Em Análise Documental',
+        dataDeliberacao: null,
+        operador: null,
+        notaFinal: null,
+        motivoExclusao: null,
+        parecer: 'Processo na fila de triagem documental da comissão de júri.'
+      },
+      historico: [
+        { data: '2026-10-08', etapa: 'Inscrição Submetida', descricao: 'Processo registado no módulo Inscritos no Concurso.' },
+        { data: '2026-10-08', etapa: '1ª Fase: Avaliação Documental', descricao: 'Início da conferência de conformidade documental pelo júri.' }
+      ]
+    };
+  });
+}
+
 export const INITIAL_CANDIDATURAS_CONSULTA = [
   {
     codigoCandidatura: 'SERNIC-2026-00849',
@@ -1061,7 +1165,8 @@ export const INITIAL_CANDIDATURAS_CONSULTA = [
       { data: '2026-10-12', etapa: 'Inscrição Submetida', descricao: 'Processo registado no módulo Inscritos no Concurso.' },
       { data: '2026-10-12', etapa: '1ª Fase: Avaliação Documental', descricao: 'Início da conferência de conformidade documental pelo júri.' }
     ]
-  }
+  },
+  ...gerarCandidaturasComplementaresSERNIC()
 ];
 
 // 11 Províncias Oficiais de Moçambique (Nascimento, Naturalidade e Residência Geográfica)
@@ -1461,8 +1566,14 @@ export function getStoredCandidaturas() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
+        // Se a lista no localStorage tiver menos de 20 candidatos (versão anterior),
+        // unifica com INITIAL_CANDIDATURAS_CONSULTA para perfazer os 45 candidatos e habilitar a paginação de 20 por página
+        let listaTrabalho = parsed;
+        if (parsed.length < 20) {
+          listaTrabalho = deduplicateCandidaturas([...parsed, ...INITIAL_CANDIDATURAS_CONSULTA]);
+        }
         // Aplica deduplicação estrita de imediato para eliminar quaisquer repetições
-        const uniqueParsed = deduplicateCandidaturas(parsed);
+        const uniqueParsed = deduplicateCandidaturas(listaTrabalho);
         let hasChanges = uniqueParsed.length !== parsed.length;
 
         const normalized = uniqueParsed.map((c, i) => {
