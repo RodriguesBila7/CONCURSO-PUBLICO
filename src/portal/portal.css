@@ -994,10 +994,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1.8rem 2.5rem 3.5rem 2.5rem;
+  padding: 1.6rem 2rem 3.5rem 2rem;
   box-sizing: border-box;
   position: relative;
   z-index: 1;
+  width: 100%;
 }
 
 @media (max-width: 900px) {
@@ -1128,7 +1129,7 @@
 .portal-hero-desc {
   font-size: 1.05rem;
   color: #fce7f3;
-  max-width: 860px;
+  max-width: 1100px;
   line-height: 1.68;
   margin-bottom: 1.8rem;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -1394,11 +1395,11 @@
 }
 
 /* ========================================================
-   ESTILOS GERAIS DE PÁGINAS DE MÓDULOS (LARGURA AJUSTADA + 12CM)
+   ESTILOS GERAIS DE PÁGINAS DE MÓDULOS (LARGURA AMPLA EXPANDIDA)
    ======================================================== */
 .module-page-container {
   width: 100%;
-  max-width: 1200px;
+  max-width: min(1680px, 98%);
   margin: 0 auto;
   background-color: var(--portal-card-bg);
   border-radius: var(--radius-lg);
@@ -1417,13 +1418,16 @@
 
 .portal-home-container {
   width: 100%;
-  max-width: 1200px;
+  max-width: min(1680px, 98%);
   margin: 0 auto;
   box-sizing: border-box;
 }
 
 .gestor-portal-main {
-  max-width: 1200px;
+  width: 100%;
+  max-width: min(1720px, 98%);
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .module-page-header {
