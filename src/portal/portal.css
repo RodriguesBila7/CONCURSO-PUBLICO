@@ -98,10 +98,101 @@
   position: relative;
 }
 
-/* Watermarks hidden */
-.portal-page-watermark-bg,
-.portal-watermark-lateral,
-.portal-sidebar-watermark { display: none; }
+/* ========================================================
+   MARCA DE ÁGUA OFICIAL NO FUNDO DA PÁGINA (SERNIC)
+   ======================================================== */
+.portal-page-watermark-bg {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.portal-page-watermark-img {
+  width: 980px;
+  max-width: 92vw;
+  max-height: 90vh;
+  object-fit: contain;
+  opacity: 0.08;
+  user-select: none;
+  filter: drop-shadow(0 0 50px rgba(195, 32, 38, 0.18));
+  transition: opacity 0.4s ease, filter 0.4s ease;
+}
+
+.portal-theme-preto .portal-page-watermark-img {
+  opacity: 0.105;
+  filter: drop-shadow(0 0 60px rgba(0, 0, 0, 0.85));
+}
+
+/* MARCAS DE ÁGUA OFICIAIS LATERAIS (ESQUERDA E DIREITA - IDÊNTICAS À IMAGEM 2) */
+.portal-watermark-lateral {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 520px;
+  height: 520px;
+  pointer-events: none;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  user-select: none;
+}
+
+.portal-watermark-lateral.left {
+  left: -80px;
+}
+
+.portal-watermark-lateral.right {
+  right: -80px;
+}
+
+.portal-watermark-lateral img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.11;
+  filter: drop-shadow(0 0 45px rgba(195, 32, 38, 0.25));
+  transition: opacity 0.4s ease;
+}
+
+.portal-theme-preto .portal-watermark-lateral img {
+  opacity: 0.14;
+  filter: drop-shadow(0 0 55px rgba(0, 0, 0, 0.9));
+}
+
+/* MARCA DE ÁGUA OFICIAL NO FUNDO DA BARRA LATERAL ESQUERDA */
+.portal-sidebar-watermark {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 280px;
+  height: 280px;
+  pointer-events: none;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  opacity: 0.10;
+  transition: opacity 0.3s ease, width 0.3s ease, height 0.3s ease;
+}
+
+.portal-sidebar-watermark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 
 /* Faixa Superior Institucional Edge-to-Edge */
 .portal-top-strip {
