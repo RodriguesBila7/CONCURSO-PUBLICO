@@ -6924,7 +6924,11 @@ export default function GestorPortalModule({
           ======================================================== */}
       {isCursoModalOpen && typeof document !== 'undefined' && createPortal(
         <div className="gestor-modal-overlay fadeIn" onClick={() => setIsCursoModalOpen(false)}>
-          <DraggableSubAba className="gestor-modal-card definicoes-modal" moveHandleLabel="Mover Especialidade">
+          <DraggableSubAba 
+            className="gestor-modal-card definicoes-modal" 
+            moveHandleLabel="Mover Especialidade"
+            onClose={() => setIsCursoModalOpen(false)}
+          >
             <div className="dossier-modal-header">
               <div className="dossier-header-left">
                 <div className="dossier-modal-avatar">
@@ -6937,13 +6941,6 @@ export default function GestorPortalModule({
                   </span>
                 </div>
               </div>
-              <button
-                type="button"
-                className="dossier-close-btn"
-                onClick={() => setIsCursoModalOpen(false)}
-              >
-                ✕
-              </button>
             </div>
 
             <form onSubmit={handleSaveCurso} className="dossier-modal-body">
@@ -7037,7 +7034,11 @@ export default function GestorPortalModule({
           ======================================================== */}
       {isLocalModalOpen && typeof document !== 'undefined' && createPortal(
         <div className="gestor-modal-overlay fadeIn" onClick={() => setIsLocalModalOpen(false)}>
-          <DraggableSubAba className="gestor-modal-card definicoes-modal" moveHandleLabel="Mover Local de Prova">
+          <DraggableSubAba 
+            className="gestor-modal-card definicoes-modal" 
+            moveHandleLabel="Mover Local de Prova"
+            onClose={() => setIsLocalModalOpen(false)}
+          >
             <div className="dossier-modal-header">
               <div className="dossier-header-left">
                 <div className="dossier-modal-avatar">
@@ -7050,13 +7051,6 @@ export default function GestorPortalModule({
                   </span>
                 </div>
               </div>
-              <button
-                type="button"
-                className="dossier-close-btn"
-                onClick={() => setIsLocalModalOpen(false)}
-              >
-                ✕
-              </button>
             </div>
 
             <form onSubmit={handleSaveLocal} className="dossier-modal-body">
@@ -7173,7 +7167,11 @@ export default function GestorPortalModule({
           ======================================================== */}
       {isPaletaModalOpen && typeof document !== 'undefined' && createPortal(
         <div className="gestor-modal-overlay fadeIn" onClick={() => setIsPaletaModalOpen(false)}>
-          <DraggableSubAba className="gestor-modal-card definicoes-modal" moveHandleLabel="Mover Paleta de Cores">
+          <DraggableSubAba 
+            className="gestor-modal-card definicoes-modal" 
+            moveHandleLabel="Mover Paleta de Cores"
+            onClose={() => setIsPaletaModalOpen(false)}
+          >
             <div className="dossier-modal-header">
               <div className="dossier-header-left">
                 <div className="dossier-modal-avatar">
@@ -7186,13 +7184,6 @@ export default function GestorPortalModule({
                   </span>
                 </div>
               </div>
-              <button
-                type="button"
-                className="dossier-close-btn"
-                onClick={() => setIsPaletaModalOpen(false)}
-              >
-                ✕
-              </button>
             </div>
 
             <form onSubmit={handleSavePaleta} className="dossier-modal-body">
@@ -7346,14 +7337,6 @@ export default function GestorPortalModule({
                   </span>
                 </div>
               </div>
-              <button
-                type="button"
-                className="dossier-close-btn"
-                onClick={() => setIsCarreiraModalOpen(false)}
-                title="Fechar formulário"
-              >
-                ✕
-              </button>
             </div>
 
             <form onSubmit={handleSaveCarreira} className="dossier-modal-body" style={{ maxHeight: '72vh', overflowY: 'auto', padding: '1.5rem' }}>
@@ -7633,14 +7616,6 @@ export default function GestorPortalModule({
                   </span>
                 </div>
               </div>
-              <button
-                type="button"
-                className="dossier-close-btn"
-                onClick={() => setIsPerfilModalOpen(false)}
-                title="Fechar formulário"
-              >
-                ✕
-              </button>
             </div>
 
             <form onSubmit={handleSavePerfil} className="dossier-modal-body">
@@ -7926,14 +7901,6 @@ export default function GestorPortalModule({
                   </span>
                 </div>
               </div>
-              <button
-                type="button"
-                className="dossier-close-btn"
-                onClick={() => setPerfilToDelete(null)}
-                title="Fechar janela"
-              >
-                ✕
-              </button>
             </div>
 
             {/* CORPO DA SUB-ABA COM DESIGN INSTITUCIONAL DO SISTEMA */}
@@ -8078,13 +8045,6 @@ export default function GestorPortalModule({
                   </span>
                 </div>
               </div>
-              <button
-                type="button"
-                className="dossier-close-btn"
-                onClick={() => setGestorVagaModal(null)}
-              >
-                ✕
-              </button>
             </div>
 
             <form onSubmit={handleSaveVagaGestor} className="dossier-modal-body" style={{ padding: '1.5rem 1.8rem' }}>
@@ -8335,17 +8295,6 @@ export default function GestorPortalModule({
                   </span>
                 </div>
               </div>
-              <button
-                type="button"
-                className="dossier-close-btn"
-                onClick={() => {
-                  setIsModalResetGeralOpen(false);
-                  setSenhaResetGeral('');
-                  setErroResetGeral('');
-                }}
-              >
-                ✕
-              </button>
             </div>
 
             <form onSubmit={handleConfirmarResetGeralComSenha} className="dossier-modal-body" style={{ padding: '1.4rem 1.6rem' }}>
@@ -8469,13 +8418,6 @@ export default function GestorPortalModule({
                   </span>
                 </div>
               </div>
-              <button
-                type="button"
-                className="dossier-close-btn"
-                onClick={() => setCandidatoParaReporIndividual(null)}
-              >
-                ✕
-              </button>
             </div>
 
             <div className="dossier-modal-body" style={{ padding: '1.4rem 1.6rem' }}>
@@ -8560,13 +8502,6 @@ export default function GestorPortalModule({
                   </span>
                 </div>
               </div>
-              <button
-                type="button"
-                className="dossier-close-btn"
-                onClick={() => setConfirmHomologacao1aFaseModal(null)}
-              >
-                ✕
-              </button>
             </div>
 
             <div className="dossier-modal-body" style={{ padding: '1.4rem 1.6rem' }}>

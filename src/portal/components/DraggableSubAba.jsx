@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Move } from 'lucide-react';
+import { Move, X } from 'lucide-react';
 
 // O body usa zoom CSS; as coordenadas do rato vêm em píxeis do ecrã
 function getPageZoom() {
@@ -214,9 +214,10 @@ export default function DraggableSubAba({
                   e.stopPropagation();
                   onClose();
                 }}
-                title="Fechar Sub-Aba"
+                title="Fechar janela"
+                aria-label="Fechar janela"
               >
-                ✕
+                <X size={15} strokeWidth={2.5} />
               </button>
             )}
           </div>
