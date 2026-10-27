@@ -1,6 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Move } from 'lucide-react';
 
+// O body usa zoom CSS; as coordenadas do rato vêm em píxeis do ecrã
+function getPageZoom() {
+  const z = parseFloat(getComputedStyle(document.body).zoom);
+  return Number.isFinite(z) && z > 0 ? z : 1;
+}
+
 /**
  * DraggableSubAba
  * Componente que envolve qualquer sub-aba/modal do sistema permitindo:
@@ -59,8 +65,8 @@ export default function DraggableSubAba({
     resizeStartRef.current = {
       mouseX: e.clientX,
       mouseY: e.clientY,
-      startW: rect.width,
-      startH: rect.height,
+      startW: rect.width / getPageZoom(),
+      startH: rect.height / getPageZoom(),
       rectTop: rect.top,
       rectLeft: rect.left
     };
@@ -71,8 +77,9 @@ export default function DraggableSubAba({
     if (!isDragging) return;
 
     const onMouseMove = (e) => {
-      const dx = e.clientX - dragStartRef.current.mouseX;
-      const dy = e.clientY - dragStartRef.current.mouseY;
+      const zoom = getPageZoom();
+      const dx = (e.clientX - dragStartRef.current.mouseX) / zoom;
+      const dy = (e.clientY - dragStartRef.current.mouseY) / zoom;
       const { posX, posY } = dragStartRef.current;
 
       // Movimentação livre sem limitação rígida de tela (conforme solicitado pelo utilizador)
@@ -106,12 +113,15 @@ export default function DraggableSubAba({
     if (!isResizing) return;
 
     const onMouseMove = (e) => {
-      const dw = e.clientX - resizeStartRef.current.mouseX;
-      const dh = e.clientY - resizeStartRef.current.mouseY;
+      const zoom = getPageZoom();
+      const dw = (e.clientX - resizeStartRef.current.mouseX) / zoom;
+      const dh = (e.clientY - resizeStartRef.current.mouseY) / zoom;
 
-      const viewportW = window.innerWidth;
-      const viewportH = window.innerHeight;
-      const { rectTop, rectLeft, startW, startH } = resizeStartRef.current;
+      const viewportW = window.innerWidth / zoom;
+      const viewportH = window.innerHeight / zoom;
+      const { startW, startH } = resizeStartRef.current;
+      const rectTop = resizeStartRef.current.rectTop / zoom;
+      const rectLeft = resizeStartRef.current.rectLeft / zoom;
 
       // Limites ergonómicos mínimos e máximos da tela atual
       const minW = 400;

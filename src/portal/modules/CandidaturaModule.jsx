@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   FileText, 
   User, 
@@ -48,6 +48,40 @@ import sernicLogo from '../../assets/sernic-logo.png';
 import ComprovativoInscricaoDocument from '../components/ComprovativoInscricaoDocument';
 
 const STORAGE_DRAFT_KEY = 'sernic_candidatura_draft_v1';
+
+const MAX_DOC_BYTES = 5 * 1024 * 1024;
+const TIPOS_DOC_PERMITIDOS = ['application/pdf', 'image/jpeg', 'image/png'];
+const EXTENSOES_DOC_PERMITIDAS = /\.(pdf|jpe?g|png)$/i;
+
+const DOCUMENTOS_OBRIGATORIOS = [
+  { key: 'biDoc', label: 'Bilhete de Identidade (BI)', erro: 'O documento de identificação (BI/Passaporte) é obrigatório.' },
+  { key: 'certificadoDoc', label: 'Certificado de Habilitações', erro: 'O certificado de habilitações é obrigatório.' },
+  { key: 'cvDoc', label: 'Curriculum Vitae (CV)', erro: 'O Curriculum Vitae é obrigatório.' },
+  { key: 'registoCriminalDoc', label: 'Certificado de Registo Criminal', erro: 'O certificado de registo criminal é obrigatório.' },
+  { key: 'fotoDoc', label: 'Fotografia tipo passe', erro: 'A fotografia tipo passe é estritamente obrigatória para validação biométrica e reconhecimento facial.' }
+];
+
+function validarFicheiroDocumento(file) {
+  if (!TIPOS_DOC_PERMITIDOS.includes(file.type) || !EXTENSOES_DOC_PERMITIDAS.test(file.name)) {
+    return 'Formato não permitido. Envie apenas ficheiros PDF, JPG ou PNG.';
+  }
+  if (file.size === 0) return 'O ficheiro seleccionado está vazio.';
+  if (file.size > MAX_DOC_BYTES) return 'O ficheiro excede o tamanho máximo de 5 MB.';
+  return null;
+}
+
+function sanitizarNomeFicheiro(nome) {
+  return String(nome).replace(/[^\w.\- ]+/g, '_').slice(0, 120);
+}
+
+function formatarTamanhoFicheiro(bytes) {
+  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function getDocumentosEmFalta(docs) {
+  return DOCUMENTOS_OBRIGATORIOS.filter(d => !docs || !docs[d.key]);
+}
 
 export default function CandidaturaModule({ 
   navigate, 
@@ -203,8 +237,10 @@ export default function CandidaturaModule({
     }
   };
 
-  // Simular upload de arquivo com bloqueio de prazo
-  const handleFileUpload = (docKey, fileName) => {
+  const fileInputRef = useRef(null);
+  const pendingDocKeyRef = useRef(null);
+
+  const handleFileUpload = (docKey) => {
     if (isPrazoExpirado) {
       const msg = `Submissão Bloqueada: O prazo legal para envio de documentos para "${vagaAtiva?.titulo}" expirou em ${formatarDataLimiteExtenso(vagaAtiva?.dataLimite)}.`;
       if (onNotify) {
@@ -214,21 +250,39 @@ export default function CandidaturaModule({
       }
       return;
     }
+    pendingDocKeyRef.current = docKey;
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileSelected = (e) => {
+    const file = e.target.files && e.target.files[0];
+    const docKey = pendingDocKeyRef.current;
+    pendingDocKeyRef.current = null;
+    if (!file || !docKey) return;
+
+    const erro = validarFicheiroDocumento(file);
+    if (erro) {
+      setErrors(prev => ({ ...prev, [docKey]: erro }));
+      if (onNotify) onNotify('error', erro);
+      return;
+    }
 
     setFormData(prev => ({
       ...prev,
       docsAnexados: {
         ...prev.docsAnexados,
         [docKey]: {
-          name: fileName,
-          size: '1.4 MB',
-          date: '10:30'
+          name: sanitizarNomeFicheiro(file.name),
+          size: formatarTamanhoFicheiro(file.size),
+          type: file.type,
+          date: new Date().toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
         }
       }
     }));
-    if (errors[docKey]) {
-      setErrors(prev => ({ ...prev, [docKey]: null }));
-    }
+    setErrors(prev => ({ ...prev, [docKey]: null }));
   };
 
   // Salvar Rascunho no LocalStorage
@@ -327,13 +381,16 @@ export default function CandidaturaModule({
       if (isPrazoExpirado) {
         newErrors.biDoc = `Submissão de documentos bloqueada: O prazo regulamentar expirou a ${formatarDataLimiteExtenso(vagaAtiva?.dataLimite)}.`;
       }
-      if (!formData.docsAnexados.biDoc) newErrors.biDoc = 'O documento de identificação (BI/Passaporte) é obrigatório.';
-      if (!formData.docsAnexados.certificadoDoc) newErrors.certificadoDoc = 'O certificado de habilitações é obrigatório.';
-      if (!formData.docsAnexados.cvDoc) newErrors.cvDoc = 'O Curriculum Vitae em formato PDF é obrigatório.';
-      if (!formData.docsAnexados.fotoDoc) newErrors.fotoDoc = 'A fotografia tipo passe é estritamente obrigatória para validação biométrica e reconhecimento facial.';
+      getDocumentosEmFalta(formData.docsAnexados).forEach(d => {
+        if (!newErrors[d.key]) newErrors[d.key] = d.erro;
+      });
     }
 
     if (step === 5) {
+      const emFalta = getDocumentosEmFalta(formData.docsAnexados);
+      if (emFalta.length > 0) {
+        newErrors.declaracaoVeracidade = `Documentos obrigatórios em falta: ${emFalta.map(d => d.label).join(', ')}. Volte à Etapa 4 para os anexar.`;
+      }
       if (isPrazoExpirado) {
         newErrors.declaracaoVeracidade = `Submissão bloqueada pelo sistema: O prazo legal deste concurso expirou a ${formatarDataLimiteExtenso(vagaAtiva?.dataLimite)}.`;
       }
@@ -454,12 +511,14 @@ export default function CandidaturaModule({
         anoConclusao: formData.anoConclusao,
         mediaFinal: formData.mediaFinal || '14.5'
       },
-      documentos: [
-        { id: 'doc-bi', tipo: 'Bilhete de Identidade Autenticado', status: 'Sob Análise', tamanho: '1.2 MB', data: new Date().toISOString().split('T')[0] },
-        { id: 'doc-cert', tipo: 'Certificado de Habilitações', status: 'Sob Análise', tamanho: '2.1 MB', data: new Date().toISOString().split('T')[0] },
-        { id: 'doc-crim', tipo: 'Certidão de Registo Criminal', status: 'Sob Análise', tamanho: '850 KB', data: new Date().toISOString().split('T')[0] },
-        { id: 'doc-cv', tipo: 'Curriculum Vitae', status: 'Sob Análise', tamanho: '1.5 MB', data: new Date().toISOString().split('T')[0] }
-      ],
+      documentos: DOCUMENTOS_OBRIGATORIOS.filter(d => d.key !== 'fotoDoc').map(d => ({
+        id: `doc-${d.key}`,
+        tipo: d.label,
+        ficheiro: formData.docsAnexados[d.key].name,
+        status: 'Sob Análise',
+        tamanho: formData.docsAnexados[d.key].size,
+        data: new Date().toISOString().split('T')[0]
+      })),
       detalhesFase: {
         titulo: '1ª Fase: Avaliação Documental em Curso',
         dataEvento: 'Conforme calendário oficial do Edital',
@@ -1009,85 +1068,51 @@ export default function CandidaturaModule({
               </div>
             )}
 
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+              onChange={handleFileSelected}
+              style={{ display: 'none' }}
+            />
+
+            {(() => {
+              const total = DOCUMENTOS_OBRIGATORIOS.length;
+              const emFalta = getDocumentosEmFalta(formData.docsAnexados).length;
+              return (
+                <div className={`docs-progress ${emFalta === 0 ? 'complete' : ''}`} role="status">
+                  <strong>{total - emFalta} de {total} documentos obrigatórios anexados</strong>
+                  <span>{emFalta === 0 ? 'Pode avançar para a revisão.' : 'Todos os documentos assinalados com * são obrigatórios para submeter a candidatura.'}</span>
+                </div>
+              );
+            })()}
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.2rem' }}>
-              {/* Doc 1: BI */}
-              <div 
-                className={`doc-upload-box ${formData.docsAnexados.biDoc ? 'uploaded' : ''} ${isPrazoExpirado ? 'disabled-expired' : ''}`}
-                onClick={() => handleFileUpload('biDoc', 'Bilhete_Identidade_Digitalizado.pdf')}
-                title={isPrazoExpirado ? 'Submissão de documentos bloqueada: Prazo expirado' : 'Clique para carregar'}
-              >
-                {formData.docsAnexados.biDoc ? (
-                  <>
-                    <FileCheck size={32} color="#15803d" />
-                    <strong style={{ fontSize: '0.9rem', color: '#15803d' }}>BI / Passaporte Anexado</strong>
-                    <span style={{ fontSize: '0.78rem', color: '#475569' }}>{formData.docsAnexados.biDoc.name}</span>
-                    <span style={{ fontSize: '0.72rem', color: '#15803d', fontWeight: 700 }}>Clique para substituir</span>
-                  </>
-                ) : (
-                  <>
-                    <UploadCloud size={32} color="#c59b27" />
-                    <strong style={{ fontSize: '0.9rem' }}>Bilhete de Identidade (BI) <span style={{ color: '#c32026' }}>*</span></strong>
-                    <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Cópia autenticada e legível</span>
-                    <span style={{ fontSize: '0.75rem', color: isPrazoExpirado ? '#dc2626' : '#c59b27', fontWeight: 700 }}>
-                      {isPrazoExpirado ? 'Prazo Expirado' : 'Carregar Ficheiro'}
+              {DOCUMENTOS_OBRIGATORIOS.filter(d => d.key !== 'fotoDoc').map(doc => {
+                const anexo = formData.docsAnexados[doc.key];
+                return (
+                  <button
+                    type="button"
+                    key={doc.key}
+                    className={`doc-upload-box ${anexo ? 'uploaded' : ''} ${isPrazoExpirado ? 'disabled-expired' : ''} ${errors[doc.key] ? 'has-error' : ''}`}
+                    onClick={() => handleFileUpload(doc.key)}
+                    disabled={isPrazoExpirado}
+                    aria-label={`${doc.label}: ${anexo ? 'substituir ficheiro' : 'carregar ficheiro'}`}
+                  >
+                    {anexo ? <FileCheck size={30} className="doc-upload-icon ok" /> : <UploadCloud size={30} className="doc-upload-icon" />}
+                    <strong className="doc-upload-title">{doc.label} <span className="doc-required">*</span></strong>
+                    {anexo ? (
+                      <span className="doc-upload-meta">{anexo.name} · {anexo.size}</span>
+                    ) : (
+                      <span className="doc-upload-meta">PDF, JPG ou PNG · até 5 MB</span>
+                    )}
+                    <span className="doc-upload-action">
+                      {isPrazoExpirado ? 'Prazo expirado' : anexo ? 'Substituir ficheiro' : 'Carregar ficheiro'}
                     </span>
-                  </>
-                )}
-                {errors.biDoc && <span className="form-error-msg">{errors.biDoc}</span>}
-              </div>
-
-              {/* Doc 2: Certificado */}
-              <div 
-                className={`doc-upload-box ${formData.docsAnexados.certificadoDoc ? 'uploaded' : ''} ${isPrazoExpirado ? 'disabled-expired' : ''}`}
-                onClick={() => handleFileUpload('certificadoDoc', 'Certificado_Habilitacoes_Homologado.pdf')}
-                title={isPrazoExpirado ? 'Submissão de documentos bloqueada: Prazo expirado' : 'Clique para carregar'}
-              >
-                {formData.docsAnexados.certificadoDoc ? (
-                  <>
-                    <FileCheck size={32} color="#15803d" />
-                    <strong style={{ fontSize: '0.9rem', color: '#15803d' }}>Certificado Anexado</strong>
-                    <span style={{ fontSize: '0.78rem', color: '#475569' }}>{formData.docsAnexados.certificadoDoc.name}</span>
-                    <span style={{ fontSize: '0.72rem', color: '#15803d', fontWeight: 700 }}>Clique para substituir</span>
-                  </>
-                ) : (
-                  <>
-                    <UploadCloud size={32} color="#c59b27" />
-                    <strong style={{ fontSize: '0.9rem' }}>Certificado de Habilitações <span style={{ color: '#c32026' }}>*</span></strong>
-                    <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Certificado ou Diploma de Curso</span>
-                    <span style={{ fontSize: '0.75rem', color: isPrazoExpirado ? '#dc2626' : '#c59b27', fontWeight: 700 }}>
-                      {isPrazoExpirado ? 'Prazo Expirado' : 'Carregar Ficheiro'}
-                    </span>
-                  </>
-                )}
-                {errors.certificadoDoc && <span className="form-error-msg">{errors.certificadoDoc}</span>}
-              </div>
-
-              {/* Doc 3: CV */}
-              <div 
-                className={`doc-upload-box ${formData.docsAnexados.cvDoc ? 'uploaded' : ''} ${isPrazoExpirado ? 'disabled-expired' : ''}`}
-                onClick={() => handleFileUpload('cvDoc', 'Curriculum_Vitae_SERNIC.pdf')}
-                title={isPrazoExpirado ? 'Submissão de documentos bloqueada: Prazo expirado' : 'Clique para carregar'}
-              >
-                {formData.docsAnexados.cvDoc ? (
-                  <>
-                    <FileCheck size={32} color="#15803d" />
-                    <strong style={{ fontSize: '0.9rem', color: '#15803d' }}>Curriculum Vitae Anexado</strong>
-                    <span style={{ fontSize: '0.78rem', color: '#475569' }}>{formData.docsAnexados.cvDoc.name}</span>
-                    <span style={{ fontSize: '0.72rem', color: '#15803d', fontWeight: 700 }}>Clique para substituir</span>
-                  </>
-                ) : (
-                  <>
-                    <UploadCloud size={32} color="#c59b27" />
-                    <strong style={{ fontSize: '0.9rem' }}>Curriculum Vitae (CV) <span style={{ color: '#c32026' }}>*</span></strong>
-                    <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Actualizado e assinado</span>
-                    <span style={{ fontSize: '0.75rem', color: isPrazoExpirado ? '#dc2626' : '#c59b27', fontWeight: 700 }}>
-                      {isPrazoExpirado ? 'Prazo Expirado' : 'Carregar Ficheiro'}
-                    </span>
-                  </>
-                )}
-                {errors.cvDoc && <span className="form-error-msg">{errors.cvDoc}</span>}
-              </div>
-
+                    {errors[doc.key] && <span className="form-error-msg">{errors[doc.key]}</span>}
+                  </button>
+                );
+              })}
               {/* Doc 4: Fotografia Obrigatória com Biometria e Análise Facial */}
               <div 
                 className={`doc-upload-box biometric-upload-card ${formData.docsAnexados.fotoDoc ? 'uploaded' : ''} ${isPrazoExpirado ? 'disabled-expired' : ''}`}
@@ -1177,26 +1202,6 @@ export default function CandidaturaModule({
                 </div>
               </div>
 
-              {/* Doc 5: Registo Criminal */}
-              <div 
-                className={`doc-upload-box ${formData.docsAnexados.registoCriminalDoc ? 'uploaded' : ''}`}
-                onClick={() => handleFileUpload('registoCriminalDoc', 'Certificado_Registo_Criminal.pdf')}
-              >
-                {formData.docsAnexados.registoCriminalDoc ? (
-                  <>
-                    <FileCheck size={32} color="#15803d" />
-                    <strong style={{ fontSize: '0.9rem', color: '#15803d' }}>Registo Criminal Anexado</strong>
-                    <span style={{ fontSize: '0.78rem', color: '#475569' }}>{formData.docsAnexados.registoCriminalDoc.name}</span>
-                  </>
-                ) : (
-                  <>
-                    <UploadCloud size={32} color="#c59b27" />
-                    <strong style={{ fontSize: '0.9rem' }}>Certificado de Registo Criminal</strong>
-                    <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Emissão válida nos últimos 90 dias</span>
-                    <span style={{ fontSize: '0.75rem', color: '#c59b27', fontWeight: 700 }}>Carregar Ficheiro</span>
-                  </>
-                )}
-              </div>
             </div>
           </div>
         )}
@@ -1219,23 +1224,23 @@ export default function CandidaturaModule({
                   <p style={{ fontWeight: 800, color: 'var(--portal-text-main)', fontSize: '1rem' }}>{vagaEscolhida.titulo}</p>
                 </div>
                 <div>
-                  <span style={{ fontSize: '0.74rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>Edital de Abertura</span>
-                  <p style={{ fontWeight: 800, color: '#b0891e' }}>{vagaEscolhida.codigoEdital}</p>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--portal-text-muted)', textTransform: 'uppercase', fontWeight: 800 }}>Edital de Abertura</span>
+                  <p style={{ fontWeight: 800, color: 'var(--portal-gold)' }}>{vagaEscolhida.codigoEdital}</p>
                 </div>
                 <div>
-                  <span style={{ fontSize: '0.74rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>Candidato</span>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--portal-text-muted)', textTransform: 'uppercase', fontWeight: 800 }}>Candidato</span>
                   <p style={{ fontWeight: 700 }}>{formData.nomeCompleto}</p>
                 </div>
                 <div>
-                  <span style={{ fontSize: '0.74rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>BI / NUIT</span>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--portal-text-muted)', textTransform: 'uppercase', fontWeight: 800 }}>BI / NUIT</span>
                   <p style={{ fontWeight: 700 }}>{formData.biNumero} • NUIT: {formData.nuit}</p>
                 </div>
                 <div>
-                  <span style={{ fontSize: '0.74rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>Contacto Telefónico / E-mail</span>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--portal-text-muted)', textTransform: 'uppercase', fontWeight: 800 }}>Contacto Telefónico / E-mail</span>
                   <p style={{ fontWeight: 700 }}>{formData.telefonePrincipal} • {formData.email}</p>
                 </div>
                 <div>
-                  <span style={{ fontSize: '0.74rem', color: '#64748b', textTransform: 'uppercase', fontWeight: 800 }}>Habilitações Literárias</span>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--portal-text-muted)', textTransform: 'uppercase', fontWeight: 800 }}>Habilitações Literárias</span>
                   <p style={{ fontWeight: 700 }}>{formData.nivelAcademico} em {formData.cursoNome || 'Não especificado'}</p>
                 </div>
               </div>

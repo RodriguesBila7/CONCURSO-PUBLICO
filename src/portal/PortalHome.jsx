@@ -300,7 +300,7 @@ export default function PortalHome({ navigate, vagasCount = 4, publishedListsCou
             height: '46px',
             borderRadius: '10px',
             backgroundColor: 'rgba(197, 155, 39, 0.15)',
-            color: '#b0891e',
+            color: 'var(--portal-gold)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

@@ -97,6 +97,8 @@ export default function App() {
   // Toast feedback
   const [toast, setToast] = useState(null);
 
+  const isGestorUser = (u) => Boolean(u && (u.role === 'admin' || u.role === 'gestor'));
+
   const showToast = (type, message) => {
     setToast({ type, message });
     setTimeout(() => {
@@ -238,21 +240,12 @@ export default function App() {
       // REDIRECIONA PARA O NOVO PORTAL DE RECRUTAMENTO
       navigate('/portal-recrutamento');
       showToast('info', 'A aceder ao Portal de Recrutamento do SERNIC...');
-    } else {
-      // REDIRECIONA DIRETAMENTE PARA O PAINEL DE GESTÃO E JÚRI DO CONCURSO
-      const gestorSession = {
-        id: 'gestor-sernic-01',
-        name: 'Direcção de Recursos Humanos - SERNIC',
-        nuit: 'gestor',
-        email: 'drh@sernic.gov.mz',
-        role: 'admin',
-        cargo: 'Presidente do Júri',
-        departamento: 'Comissão Central do Júri - SERNIC Sede'
-      };
-      setCurrentUser(gestorSession);
+    } else if (isGestorUser(currentUser)) {
       setGestorTab('dashboard');
       navigate('/portal-gestor');
-      showToast('success', 'Painel Geral de Gestão do Concurso acedido com sucesso!');
+    } else {
+      navigate('/portal-recrutamento/login');
+      showToast('info', 'Autentique-se com as credenciais de gestor para aceder ao Painel de Gestão.');
     }
   };
 
@@ -346,20 +339,29 @@ export default function App() {
                                  cleanPath === '/gestor' ||
                                  currentPath.includes('role=gestor');
 
-    if (isGestorModuleActive) {
-      const activeGestorUser = currentUser || {
-        id: 'gestor-sernic-01',
-        name: 'Direcção de Recursos Humanos - SERNIC',
-        nuit: 'gestor',
-        email: 'drh@sernic.gov.mz',
-        role: 'admin',
-        cargo: 'Presidente do Júri',
-        departamento: 'Comissão Central do Júri - SERNIC Sede'
-      };
-
+    if (isGestorModuleActive && !isGestorUser(currentUser)) {
+      portalContent = (
+        <LoginModule
+          currentUser={null}
+          gestorAccessRequired
+          onLoginSuccess={(u) => {
+            setCurrentUser(u);
+            if (isGestorUser(u)) {
+              setGestorTab('dashboard');
+              navigate('/portal-gestor');
+            } else {
+              navigate('/portal-recrutamento/login');
+            }
+          }}
+          onLogout={handleLogout}
+          navigate={navigate}
+          onNotify={showToast}
+        />
+      );
+    } else if (isGestorModuleActive) {
       portalContent = (
         <GestorPortalModule
-          currentUser={activeGestorUser}
+          currentUser={currentUser}
           navigate={navigate}
           onNotify={showToast}
           onLogout={handleLogout}

@@ -5066,7 +5066,7 @@ export default function GestorPortalModule({
                   <tbody>
                     {filteredCursos.length === 0 ? (
                       <tr>
-                        <td colSpan="7" style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>
+                        <td colSpan="7" style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--portal-text-muted)' }}>
                           Nenhum curso encontrado com os filtros aplicados.
                         </td>
                       </tr>
@@ -5855,13 +5855,13 @@ export default function GestorPortalModule({
 
                   return (
                     <>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 700, padding: '0.25rem 0.55rem', borderRadius: '6px', background: '#f1f5f9', color: '#475569' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 700, padding: '0.25rem 0.55rem', borderRadius: '6px', background: '#f1f5f9', color: 'var(--portal-text-sub)' }}>
                         Resultado Final: {selectedDossier.status}
                       </span>
                       <button
                         type="button"
                         className="sub-aba-btn-action"
-                        style={{ color: '#475569', borderColor: '#cbd5e1' }}
+                        style={{ color: 'var(--portal-text-sub)', borderColor: 'var(--portal-border)' }}
                         onClick={() => handleInlineDeliberacao(selectedDossier, 'Em Análise Documental')}
                         title="Reabrir processo de avaliação do candidato"
                       >
@@ -7244,7 +7244,7 @@ export default function GestorPortalModule({
             <form onSubmit={handleSavePerfil} className="dossier-modal-body">
               {/* ATALHO DE FUNÇÃO RÁPIDA: SELECT NATIVO LIMPO */}
               <div className="form-group-custom" style={{ background: 'var(--portal-bg-hover)', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid var(--portal-border)', marginBottom: '1rem' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: 700, color: '#c59b27' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: 700, color: 'var(--portal-gold)' }}>
                   <Sparkles size={15} />
                   <span>Atribuição Rápida de Papel no Júri (Define as permissões ideais)</span>
                 </label>
@@ -7760,7 +7760,7 @@ export default function GestorPortalModule({
                 </div>
                 <div>
                   <h3 style={{ color: '#c32026', fontSize: '1.15rem' }}>Autorização de Segurança do Gestor</h3>
-                  <span className="dossier-protocolo" style={{ color: '#64748b' }}>
+                  <span className="dossier-protocolo" style={{ color: 'var(--portal-text-muted)' }}>
                     Reposição Geral de Candidaturas • Teste Inicial SERNIC
                   </span>
                 </div>
@@ -7825,7 +7825,7 @@ export default function GestorPortalModule({
                       background: 'none',
                       border: 'none',
                       cursor: 'pointer',
-                      color: '#64748b'
+                      color: 'var(--portal-text-muted)'
                     }}
                     title={mostrarSenhaResetGeral ? 'Ocultar senha' : 'Ver senha'}
                   >
@@ -7894,7 +7894,7 @@ export default function GestorPortalModule({
                 </div>
                 <div>
                   <h3 style={{ color: '#b45309', fontSize: '1.15rem' }}>Repor Candidatura Individual</h3>
-                  <span className="dossier-protocolo" style={{ color: '#64748b' }}>
+                  <span className="dossier-protocolo" style={{ color: 'var(--portal-text-muted)' }}>
                     {candidatoParaReporIndividual.codigoCandidatura}
                   </span>
                 </div>
@@ -7985,7 +7985,7 @@ export default function GestorPortalModule({
                 </div>
                 <div>
                   <h3 style={{ color: '#166534', fontSize: '1.15rem' }}>Homologação da 1ª Fase Documental</h3>
-                  <span className="dossier-protocolo" style={{ color: '#64748b' }}>
+                  <span className="dossier-protocolo" style={{ color: 'var(--portal-text-muted)' }}>
                     Convocação Formal para a Fase de Entrevista • SERNIC
                   </span>
                 </div>

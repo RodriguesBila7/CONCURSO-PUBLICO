@@ -125,6 +125,19 @@ if (countUsers.count === 0) {
   console.log('[SQLite] Contas predefinidas criadas com sucesso no banco de dados!');
 }
 
+// Migrar senhas legadas guardadas em texto simples para bcrypt (mantém a mesma senha)
+{
+  const legacy = db.prepare(`SELECT id, password FROM users WHERE password IS NOT NULL AND password NOT LIKE '$2%'`).all()
+    .filter(u => u.password !== 'google_oauth_verified');
+  if (legacy.length > 0) {
+    const update = db.prepare('UPDATE users SET password = ? WHERE id = ?');
+    db.transaction(() => {
+      for (const u of legacy) update.run(bcrypt.hashSync(u.password, 10), u.id);
+    })();
+    console.log(`[SQLite] ${legacy.length} senha(s) legada(s) convertida(s) para hash bcrypt.`);
+  }
+}
+
 // Pre-seed a sample application if empty
 const countCandidaturas = db.prepare('SELECT COUNT(*) as count FROM candidaturas').get();
 if (countCandidaturas.count === 0) {

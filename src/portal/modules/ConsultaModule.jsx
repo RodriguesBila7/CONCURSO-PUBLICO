@@ -337,7 +337,7 @@ export default function ConsultaModule() {
                         {getStatusBadge(searchResult.status, searchResult).icon}
                         {getStatusBadge(searchResult.status, searchResult).label}
                       </span>
-                      <span style={{ fontSize: '0.84rem', color: '#64748b' }}>
+                      <span style={{ fontSize: '0.84rem', color: 'var(--portal-text-muted)' }}>
                         Protocolo: <strong>{searchResult.codigoCandidatura}</strong>
                       </span>
                       <span className="biometric-chip-verified">
@@ -676,7 +676,7 @@ export default function ConsultaModule() {
               <div 
                 key={lista.id}
                 style={{
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid var(--portal-border)',
                   borderRadius: '12px',
                   padding: '1.4rem 1.6rem',
                   backgroundColor: '#ffffff',
@@ -702,7 +702,7 @@ export default function ConsultaModule() {
                     >
                       {lista.tipo}
                     </span>
-                    <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--portal-text-muted)' }}>
                       {lista.edital} • Publicado a {new Date(lista.dataPublicacao).toLocaleDateString('pt-MZ')}
                     </span>
                   </div>
@@ -711,11 +711,11 @@ export default function ConsultaModule() {
                     {lista.tituloLista}
                   </h4>
 
-                  <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.4rem' }}>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--portal-text-muted)', marginBottom: '0.4rem' }}>
                     {lista.observacoes}
                   </p>
 
-                  <span style={{ fontSize: '0.78rem', color: '#b0891e', fontWeight: 700 }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--portal-gold)', fontWeight: 700 }}>
                     Total abrangido: {lista.totalCandidatos} candidatos
                   </span>
                 </div>
@@ -755,12 +755,12 @@ export default function ConsultaModule() {
               <h3 style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--portal-text-main)', margin: '0.4rem 0' }}>
                 {viewListaModal.tituloLista}
               </h3>
-              <p style={{ fontSize: '0.82rem', color: '#b0891e', fontWeight: 700 }}>
+              <p style={{ fontSize: '0.82rem', color: 'var(--portal-gold)', fontWeight: 700 }}>
                 {viewListaModal.arquivoNome} ({viewListaModal.arquivoTamanho})
               </p>
             </div>
 
-            <p style={{ fontSize: '0.88rem', color: '#475569', lineHeight: 1.6, marginBottom: '1.5rem' }}>
+            <p style={{ fontSize: '0.88rem', color: 'var(--portal-text-sub)', lineHeight: 1.6, marginBottom: '1.5rem' }}>
               O ficheiro contém a relação nominal completa dos {viewListaModal.totalCandidatos} candidatos homologados pela Comissão do Concurso SERNIC, indicando os números de protocolo, salas de prova e horários de comparência.
             </p>
 

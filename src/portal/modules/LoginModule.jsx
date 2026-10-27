@@ -95,9 +95,10 @@ const GOOGLE_PRESET_ACCOUNTS = [
 export default function LoginModule({ 
   currentUser, 
   onLoginSuccess, 
-  onLogout, 
-  navigate, 
-  onNotify 
+  onLogout,
+  navigate,
+  onNotify,
+  gestorAccessRequired = false
 }) {
   // Abas quando deslogado: 'login' | 'register' | 'forgot'
   const [authTab, setAuthTab] = useState('login');
@@ -163,7 +164,8 @@ export default function LoginModule({
     setIsSubmitting(true);
     try {
       const cleanIdent = loginIdentifier.trim();
-      const isTryingGestor = cleanIdent.toLowerCase() === 'admin' || 
+      const isTryingGestor = gestorAccessRequired ||
+                             cleanIdent.toLowerCase() === 'admin' ||
                              cleanIdent.toLowerCase() === 'gestor' || 
                              cleanIdent.toLowerCase().includes('drh') || 
                              cleanIdent.toLowerCase().includes('sernic.gov.mz');
@@ -193,26 +195,6 @@ export default function LoginModule({
         setLoginError(data.message || 'Credenciais incorrectas. Verifique os seus dados.');
       }
     } catch {
-      // Fallback offline caso o servidor local esteja temporariamente inacessível
-      const cleanIdent = loginIdentifier.trim().toLowerCase();
-      if (
-        (cleanIdent === 'admin' || cleanIdent === 'gestor' || cleanIdent.includes('sernic.gov.mz')) &&
-        (loginPassword === 'admin123' || loginPassword === 'admin' || loginPassword === 'sernic2026')
-      ) {
-        const gestorUser = {
-          id: 'gestor-sernic-01',
-          name: 'Direcção de Recursos Humanos - SERNIC',
-          nuit: 'gestor',
-          email: 'drh@sernic.gov.mz',
-          role: 'admin',
-          cargo: 'Presidente do Júri',
-          departamento: 'Comissão Central do Júri - SERNIC Sede'
-        };
-        onLoginSuccess(gestorUser);
-        navigate('/portal-gestor');
-        if (onNotify) onNotify('success', 'Painel de Gestor activo: Bem-vindo(a)!');
-        return;
-      }
       setLoginError('Falha de ligação ao servidor. Verifique a sua conexão.');
     } finally {
       setIsSubmitting(false);
@@ -588,7 +570,7 @@ export default function LoginModule({
                           })()}
                         </div>
 
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: '0.8rem', marginTop: '0.6rem', fontSize: '0.82rem', color: '#64748b' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--portal-border-subtle)', paddingTop: '0.8rem', marginTop: '0.6rem', fontSize: '0.82rem', color: 'var(--portal-text-muted)' }}>
                           <span>Submetida em: {new Date(c.dataSubmissao).toLocaleDateString('pt-MZ')}</span>
                           <div style={{ display: 'flex', gap: '0.6rem' }}>
                             <button
@@ -736,14 +718,16 @@ export default function LoginModule({
           <form onSubmit={handleLogin}>
             <div className="auth-header-block">
               <span className="auth-header-badge">Autenticação Oficial</span>
-              <h3 className="auth-header-title">Área do Candidato</h3>
+              <h3 className="auth-header-title">{gestorAccessRequired ? 'Painel de Gestão' : 'Área do Candidato'}</h3>
               <p className="auth-header-sub">
-                Aceda com as suas credenciais para gerir os seus processos no SERNIC.
+                {gestorAccessRequired
+                  ? 'Acesso restrito à Direcção de Recursos Humanos e ao Júri. Introduza as credenciais de gestor.'
+                  : 'Aceda com as suas credenciais para gerir os seus processos no SERNIC.'}
               </p>
             </div>
 
             {/* OPÇÃO DE LOGIN COM GOOGLE */}
-            <div className="auth-social-section">
+            {!gestorAccessRequired && <div className="auth-social-section">
               <button
                 type="button"
                 className="btn-google-auth"
@@ -760,7 +744,7 @@ export default function LoginModule({
               <div className="auth-or-divider">
                 <span>ou utilize a sua conta SERNIC / NUIT</span>
               </div>
-            </div>
+            </div>}
 
             <div className="form-group" style={{ marginBottom: '1.1rem' }}>
               <label>NUIT ou Correio Eletrónico</label>
@@ -828,23 +812,10 @@ export default function LoginModule({
               <span>{isSubmitting ? 'A Autenticar...' : 'Entrar no Sistema'}</span>
             </button>
 
-            <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px dashed #e2e8f0', textAlign: 'center' }}>
+            {!gestorAccessRequired && <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px dashed var(--portal-border)', textAlign: 'center' }}>
               <button
                 type="button"
-                onClick={() => {
-                  const gestorUser = {
-                    id: 'gestor-sernic-01',
-                    name: 'Direcção de Recursos Humanos - SERNIC',
-                    nuit: 'gestor',
-                    email: 'drh@sernic.gov.mz',
-                    role: 'admin',
-                    cargo: 'Presidente do Júri',
-                    departamento: 'Comissão Central do Júri - SERNIC Sede'
-                  };
-                  onLoginSuccess(gestorUser);
-                  navigate('/portal-gestor');
-                  if (onNotify) onNotify('success', 'Acesso autorizado ao Painel do Gestor e Júri.');
-                }}
+                onClick={() => navigate('/portal-gestor')}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -860,7 +831,7 @@ export default function LoginModule({
                 <ShieldCheck size={16} />
                 <span>Área Restrita: Aceder ao Painel de Gestão & Júri do Concurso</span>
               </button>
-            </div>
+            </div>}
 
           </form>
         )}
@@ -1252,13 +1223,13 @@ export default function LoginModule({
                   <button
                     type="button"
                     className="google-account-btn"
-                    style={{ borderStyle: 'dashed', borderColor: '#cbd5e1', marginTop: '0.4rem' }}
+                    style={{ borderStyle: 'dashed', borderColor: 'var(--portal-border)', marginTop: '0.4rem' }}
                     onClick={() => {
                       setShowCustomGoogle(true);
                       setCustomGoogleError('');
                     }}
                   >
-                    <div className="google-account-avatar" style={{ backgroundColor: '#f1f5f9', color: '#475569' }}>
+                    <div className="google-account-avatar" style={{ backgroundColor: '#f1f5f9', color: 'var(--portal-text-sub)' }}>
                       <UserPlus size={18} />
                     </div>
                     <div className="google-account-info">

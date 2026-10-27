@@ -408,7 +408,7 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
 
         {/* Input de Pesquisa */}
         <div style={{ position: 'relative', width: '320px' }}>
-          <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+          <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--portal-text-muted)' }} />
           <input
             type="text"
             className="form-input"
@@ -423,7 +423,7 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
       {/* 3. LISTA DE VAGAS */}
       <div className="vagas-list">
         {filteredVagas.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '3.5rem 1rem', color: '#64748b', background: 'var(--portal-card-bg)', borderRadius: '16px', border: '1px solid var(--portal-border)' }}>
+          <div style={{ textAlign: 'center', padding: '3.5rem 1rem', color: 'var(--portal-text-muted)', background: 'var(--portal-card-bg)', borderRadius: '16px', border: '1px solid var(--portal-border)' }}>
             <AlertCircle size={44} color="#94a3b8" style={{ margin: '0 auto 1rem auto' }} />
             <h4 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>Nenhum concurso encontrado</h4>
             <p style={{ marginBottom: '1.2rem' }}>Tente ajustar os termos de pesquisa ou clique abaixo para criar um novo concurso.</p>
@@ -692,7 +692,7 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
                       <button
                         type="button"
                         onClick={() => setIsDeletingConfirm(false)}
-                        style={{ background: '#ffffff', color: '#475569', border: '1px solid #cbd5e1', padding: '0.45rem 0.9rem', borderRadius: '7px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}
+                        style={{ background: '#ffffff', color: 'var(--portal-text-sub)', border: '1px solid var(--portal-border)', padding: '0.45rem 0.9rem', borderRadius: '7px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}
                       >
                         Cancelar
                       </button>
@@ -717,7 +717,7 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
                     <h3 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--portal-text-main)', margin: '0.2rem 0' }}>
                       {selectedVagaModal.titulo}
                     </h3>
-                    <p style={{ fontSize: '0.9rem', color: '#b0891e', fontWeight: 700, margin: 0 }}>
+                    <p style={{ fontSize: '0.9rem', color: 'var(--portal-gold)', fontWeight: 700, margin: 0 }}>
                       {selectedVagaModal.carreira} • {selectedVagaModal.regime}
                     </p>
                   </div>
@@ -774,7 +774,7 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
                 {/* Remuneração */}
                 {selectedVagaModal.remuneracao && (
                   <div style={{ background: 'rgba(197, 155, 39, 0.08)', border: '1px solid rgba(197, 155, 39, 0.25)', borderRadius: '10px', padding: '0.8rem 1rem', marginBottom: '1.4rem' }}>
-                    <span style={{ fontSize: '0.76rem', color: '#b0891e', fontWeight: 800, textTransform: 'uppercase', display: 'block' }}>Enquadramento Salarial</span>
+                    <span style={{ fontSize: '0.76rem', color: 'var(--portal-gold)', fontWeight: 800, textTransform: 'uppercase', display: 'block' }}>Enquadramento Salarial</span>
                     <strong style={{ fontSize: '0.9rem', color: 'var(--portal-text-main)' }}>{selectedVagaModal.remuneracao}</strong>
                   </div>
                 )}

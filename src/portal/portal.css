@@ -86,7 +86,7 @@
    ESTRUTURA GERAL (PREENCHE TODO O ESPAÇO - FULL WIDTH COM ZOOM 80%)
    ======================================================== */
 .portal-container {
-  min-height: 100vh;
+  min-height: var(--vh-full);
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -456,7 +456,7 @@
   display: flex;
   flex: 1;
   width: 100%;
-  min-height: calc(100vh / 0.8 - 108px);
+  min-height: calc(var(--vh-full) - 108px);
   position: relative;
   box-sizing: border-box;
   align-items: stretch;
@@ -466,8 +466,8 @@
 .portal-sidebar-wrapper {
   position: sticky;
   top: 73px;
-  height: calc(100vh / 0.8 - 73px);
-  min-height: calc(100vh / 0.8 - 73px);
+  height: calc(var(--vh-full) - 73px);
+  min-height: calc(var(--vh-full) - 73px);
   z-index: 25;
   display: flex;
   flex-direction: column;
@@ -1716,25 +1716,71 @@
 /* Upload de Documentos */
 .doc-upload-box {
   border: 2px dashed var(--portal-border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 1.6rem;
   text-align: center;
   background-color: var(--portal-card-inner);
+  color: var(--portal-text-main);
+  font: inherit;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: border-color 0.2s, background-color 0.2s;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
+  width: 100%;
 }
 
-.doc-upload-box:hover {
+.doc-upload-box:hover,
+.doc-upload-box:focus-visible {
   border-color: var(--portal-gold);
+  outline: none;
 }
 
 .doc-upload-box.uploaded {
-  border-color: #15803d;
+  border-style: solid;
+  border-color: #16a34a;
   background-color: rgba(22, 163, 74, 0.08);
+}
+
+.doc-upload-box.has-error {
+  border-color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.05);
+}
+
+.doc-upload-icon { color: var(--portal-gold); }
+.doc-upload-icon.ok { color: #16a34a; }
+.doc-upload-title { font-size: 0.9rem; }
+.doc-required { color: var(--sernic-red); }
+.doc-upload-meta {
+  font-size: 0.78rem;
+  color: var(--portal-text-muted);
+  word-break: break-all;
+}
+.doc-upload-action {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--portal-gold);
+}
+.doc-upload-box.uploaded .doc-upload-action { color: #16a34a; }
+.doc-upload-box.disabled-expired .doc-upload-action { color: #dc2626; }
+
+.docs-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1.2rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--portal-gold-border);
+  background: var(--portal-gold-light);
+  font-size: 0.82rem;
+  color: var(--portal-text-sub);
+}
+.docs-progress strong { color: var(--portal-text-main); }
+.docs-progress.complete {
+  border-color: rgba(22, 163, 74, 0.4);
+  background: rgba(22, 163, 74, 0.08);
 }
 
 /* Ações do Rodapé do Formulário */
@@ -10200,4 +10246,42 @@ html.portal-modo-simplificado * {
   animation-duration: 0.01ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.05s !important;
+}
+
+/* ========================================================
+   ESTADOS DE FOCO E INTERACÇÃO UNIFORMES (TODOS OS MÓDULOS)
+   ======================================================== */
+.portal-container ::selection {
+  background: rgba(195, 32, 38, 0.18);
+}
+
+.portal-container :is(button, a, [role="button"], summary):focus-visible {
+  outline: 2px solid var(--portal-gold);
+  outline-offset: 2px;
+}
+
+.portal-container :is(input, select, textarea):focus-visible {
+  outline: none;
+  border-color: var(--portal-gold) !important;
+  box-shadow: 0 0 0 3px var(--portal-gold-light);
+}
+
+.portal-container :is(input, select, textarea)::placeholder {
+  color: var(--portal-text-muted);
+  opacity: 0.8;
+}
+
+.portal-container :is(button, [role="button"]):disabled {
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-container *,
+  .portal-container *::before,
+  .portal-container *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

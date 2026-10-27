@@ -2,12 +2,49 @@ import express from 'express';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import db from './db.js';
+import {
+  corsOptions,
+  securityHeaders,
+  createRateLimiter,
+  asTrimmedString,
+  validatePasswordPolicy,
+  EMAIL_REGEX,
+  NUIT_REGEX,
+  BI_REGEX,
+  HEX_COLOR_REGEX
+} from './security.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
-app.use(cors());
-app.use(express.json());
+// Hash fictício para igualar o tempo de resposta quando o utilizador não existe
+const DUMMY_HASH = bcrypt.hashSync('sernic-timing-equaliser', 10);
+
+app.disable('x-powered-by');
+app.set('trust proxy', 'loopback');
+app.use(securityHeaders);
+app.use(cors(corsOptions()));
+app.use(express.json({ limit: '100kb' }));
+
+app.use('/api', createRateLimiter({
+  windowMs: 60 * 1000,
+  max: 300,
+  message: 'Demasiados pedidos. Aguarde um momento e tente novamente.'
+}));
+
+const loginLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  keyFn: req => `${req.ip}|${asTrimmedString(req.body?.identifier, 120).toLowerCase()}`,
+  message: 'Demasiadas tentativas de autenticação. Aguarde 15 minutos antes de tentar novamente.'
+});
+
+const sensitiveLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: 'Demasiados pedidos para esta operação. Aguarde alguns minutos.'
+});
 
 // Log access helper
 function logAudit(nuit, acao, detalhes) {
@@ -21,19 +58,17 @@ function logAudit(nuit, acao, detalhes) {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  const sqliteVersion = db.prepare('SELECT sqlite_version() as ver').get();
   res.json({
     status: 'online',
     system: 'SERNIC - Plataforma de Candidaturas',
-    nodeVersion: process.version,
-    sqliteVersion: sqliteVersion.ver,
     timestamp: new Date().toISOString()
   });
 });
 
 // User login endpoint
-app.post('/api/auth/login', (req, res) => {
-  const { identifier, password } = req.body;
+app.post('/api/auth/login', loginLimiter, (req, res) => {
+  const identifier = asTrimmedString(req.body?.identifier, 120);
+  const password = typeof req.body?.password === 'string' ? req.body.password.slice(0, 128) : '';
 
   if (!identifier || !password) {
     return res.status(400).json({
@@ -44,24 +79,18 @@ app.post('/api/auth/login', (req, res) => {
 
   try {
     const user = db.prepare(`
-      SELECT id, nuit, name, email, role, password, created_at 
-      FROM users 
-      WHERE nuit = ? OR email = ? OR name = ?
-    `).get(identifier.trim(), identifier.trim(), identifier.trim());
+      SELECT id, nuit, name, email, role, password, created_at
+      FROM users
+      WHERE nuit = ? OR lower(email) = lower(?) OR name = ?
+    `).get(identifier, identifier, identifier);
 
-    if (!user) {
-      logAudit(identifier, 'LOGIN_FALHOU', 'Utilizador não encontrado');
+    const passwordOk = bcrypt.compareSync(password, user ? user.password : DUMMY_HASH);
+
+    if (!user || !passwordOk) {
+      logAudit(identifier, 'LOGIN_FALHOU', user ? 'Senha incorrecta' : 'Utilizador não encontrado');
       return res.status(401).json({
         success: false,
-        message: 'NUIT / Perfil ou senha incorrectos. Verifique os seus dados.'
-      });
-    }
-
-    if (!bcrypt.compareSync(password, user.password)) {
-      logAudit(identifier, 'LOGIN_FALHOU', 'Senha incorrecta');
-      return res.status(401).json({
-        success: false,
-        message: 'Senha incorrecta. Tente novamente ou recupere a sua senha.'
+        message: 'Credenciais inválidas. Verifique o NUIT / E-mail e a senha.'
       });
     }
 
@@ -105,10 +134,12 @@ app.post('/api/auth/login', (req, res) => {
 });
 
 // Google OAuth Login / Registo
-app.post('/api/auth/google', (req, res) => {
-  const { email, name, nuit } = req.body;
+app.post('/api/auth/google', loginLimiter, (req, res) => {
+  const cleanEmail = asTrimmedString(req.body?.email, 120).toLowerCase();
+  const name = asTrimmedString(req.body?.name, 120);
+  const nuit = asTrimmedString(req.body?.nuit, 9);
 
-  if (!email) {
+  if (!cleanEmail || !EMAIL_REGEX.test(cleanEmail)) {
     return res.status(400).json({
       success: false,
       message: 'O endereço de correio eletrónico Google é obrigatório.'
@@ -116,13 +147,21 @@ app.post('/api/auth/google', (req, res) => {
   }
 
   try {
-    const cleanEmail = email.trim().toLowerCase();
-    let user = db.prepare('SELECT id, nuit, name, email, role, created_at FROM users WHERE email = ?').get(cleanEmail);
+    let user = db.prepare('SELECT id, nuit, name, email, role, created_at FROM users WHERE lower(email) = ?').get(cleanEmail);
+
+    // Contas de gestão só podem autenticar-se com senha
+    if (user && user.role !== 'candidate') {
+      logAudit(user.nuit, 'LOGIN_GOOGLE_BLOQUEADO', 'Tentativa de acesso a conta de gestão via Google');
+      return res.status(403).json({
+        success: false,
+        message: 'Esta conta só pode ser acedida com NUIT / E-mail e senha.'
+      });
+    }
 
     if (!user) {
       // Registo automático com conta Google
-      const generatedNuit = nuit || ('10' + Math.floor(1000000 + Math.random() * 9000000));
-      const userName = name ? name.trim() : cleanEmail.split('@')[0];
+      const generatedNuit = NUIT_REGEX.test(nuit) ? nuit : ('10' + Math.floor(1000000 + Math.random() * 9000000));
+      const userName = name || cleanEmail.split('@')[0];
 
       const insert = db.prepare(`
         INSERT INTO users (nuit, name, password, email, role)
@@ -161,14 +200,22 @@ app.post('/api/auth/google', (req, res) => {
     console.error('Erro na autenticação Google:', err);
     return res.status(500).json({
       success: false,
-      message: 'Erro ao autenticar com a Google: ' + err.message
+      message: 'Erro ao autenticar com a Google.'
     });
   }
 });
 
 // Solicitar Acesso / Nova Candidatura
-app.post('/api/candidaturas/solicitar', (req, res) => {
-  const { nuit, nomeCompleto, email, telefone, bi, carreira, nivelAcademico, password } = req.body;
+app.post('/api/candidaturas/solicitar', sensitiveLimiter, (req, res) => {
+  const body = req.body || {};
+  const nuit = asTrimmedString(body.nuit, 9);
+  const nomeCompleto = asTrimmedString(body.nomeCompleto, 150);
+  const email = asTrimmedString(body.email, 120).toLowerCase();
+  const telefone = asTrimmedString(body.telefone, 20);
+  const bi = asTrimmedString(body.bi, 13).toUpperCase();
+  const carreira = asTrimmedString(body.carreira, 150);
+  const nivelAcademico = asTrimmedString(body.nivelAcademico, 80);
+  const password = typeof body.password === 'string' ? body.password : '';
 
   if (!nuit || !nomeCompleto || !email || !telefone || !carreira) {
     return res.status(400).json({
@@ -176,17 +223,23 @@ app.post('/api/candidaturas/solicitar', (req, res) => {
       message: 'Todos os campos obrigatórios devem ser preenchidos.'
     });
   }
+  if (!NUIT_REGEX.test(nuit)) {
+    return res.status(400).json({ success: false, message: 'NUIT inválido: deve conter 9 dígitos.' });
+  }
+  if (!EMAIL_REGEX.test(email)) {
+    return res.status(400).json({ success: false, message: 'Endereço de e-mail inválido.' });
+  }
+  if (bi && !BI_REGEX.test(bi)) {
+    return res.status(400).json({ success: false, message: 'BI inválido: 12 dígitos seguidos de 1 letra.' });
+  }
+  const passwordError = validatePasswordPolicy(password);
+  if (passwordError) {
+    return res.status(400).json({ success: false, message: passwordError });
+  }
 
   try {
-    // Generate unique candidature protocol code
     const randomNum = Math.floor(10000 + Math.random() * 90000);
     const codigoCandidatura = `SERNIC-2026-${randomNum}`;
-    if (!password || password.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: 'A senha é obrigatória e deve ter no mínimo 6 caracteres.'
-      });
-    }
 
     // Regra estrita: cada candidato é único, sem repetições
     const existingCandidatura = db.prepare(`
@@ -252,8 +305,8 @@ app.post('/api/candidaturas/solicitar', (req, res) => {
 });
 
 // Recuperar senha
-app.post('/api/auth/recuperar-senha', (req, res) => {
-  const { identifier } = req.body;
+app.post('/api/auth/recuperar-senha', sensitiveLimiter, (req, res) => {
+  const identifier = asTrimmedString(req.body?.identifier, 120);
 
   if (!identifier) {
     return res.status(400).json({
@@ -264,23 +317,25 @@ app.post('/api/auth/recuperar-senha', (req, res) => {
 
   try {
     const user = db.prepare(`
-      SELECT nuit, name, email FROM users WHERE nuit = ? OR email = ?
-    `).get(identifier.trim(), identifier.trim());
+      SELECT nuit, name, email FROM users WHERE nuit = ? OR lower(email) = lower(?)
+    `).get(identifier, identifier);
 
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'Nenhum registo encontrado com o NUIT ou E-mail fornecido.'
-      });
+    // Resposta idêntica exista ou não a conta, para não revelar utilizadores registados
+    const response = {
+      success: true,
+      message: 'Se existir uma conta associada a estes dados, as instruções de redefinição foram enviadas para o contacto registado.'
+    };
+
+    if (user) {
+      logAudit(user.nuit, 'RECUPERACAO_SENHA', 'Código de recuperação gerado');
+      if (!IS_PRODUCTION) {
+        response.codigoVerificacaoDemo = 'SRNC-' + Math.floor(1000 + Math.random() * 9000);
+      }
+    } else {
+      logAudit(identifier, 'RECUPERACAO_SENHA_DESCONHECIDO', 'Pedido para identificador inexistente');
     }
 
-    logAudit(user.nuit, 'RECUPERACAO_SENHA', 'Código de recuperação gerado');
-
-    return res.json({
-      success: true,
-      message: `As instruções de redefinição e o código seguro foram enviados para o contacto associado: ${user.email}.`,
-      codigoVerificacaoDemo: 'SRNC-' + Math.floor(1000 + Math.random() * 9000)
-    });
+    return res.json(response);
   } catch (err) {
     console.error('Erro na recuperação:', err);
     return res.status(500).json({
@@ -309,7 +364,17 @@ app.get('/api/settings', (req, res) => {
 });
 
 app.post('/api/settings', (req, res) => {
-  const { theme, customColor, language, randomColors } = req.body;
+  const { theme, customColor, language, randomColors } = req.body || {};
+
+  if (
+    (theme !== undefined && !['default_red', 'dark', 'light'].includes(theme)) ||
+    (customColor !== undefined && !(typeof customColor === 'string' && HEX_COLOR_REGEX.test(customColor))) ||
+    (language !== undefined && !['pt', 'en'].includes(language)) ||
+    (randomColors !== undefined && typeof randomColors !== 'boolean')
+  ) {
+    return res.status(400).json({ success: false, message: 'Configuração inválida.' });
+  }
+
   try {
     const stmt = db.prepare(`
       INSERT INTO configuracoes (chave, valor, atualizado_em)
@@ -347,7 +412,8 @@ app.get('/api/vagas', (req, res) => {
     }));
     res.json({ success: true, vagas });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Erro ao consultar vagas.', error: err.message });
+    console.error('Erro ao consultar vagas:', err);
+    res.status(500).json({ success: false, message: 'Erro ao consultar vagas.' });
   }
 });
 
@@ -369,13 +435,15 @@ app.get('/api/listas-publicadas', (req, res) => {
     }));
     res.json({ success: true, listas });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Erro ao consultar listas publicadas.', error: err.message });
+    console.error('Erro ao consultar listas publicadas:', err);
+    res.status(500).json({ success: false, message: 'Erro ao consultar listas publicadas.' });
   }
 });
 
 // Consultar Candidatura por Código ou BI
-app.get('/api/candidaturas/consulta', (req, res) => {
-  const { codigo, bi } = req.query;
+app.get('/api/candidaturas/consulta', sensitiveLimiter, (req, res) => {
+  const codigo = asTrimmedString(req.query.codigo, 40);
+  const bi = asTrimmedString(req.query.bi, 13);
   if (!codigo && !bi) {
     return res.status(400).json({ success: false, message: 'Informe o código da candidatura ou o número do BI.' });
   }
@@ -398,8 +466,24 @@ app.get('/api/candidaturas/consulta', (req, res) => {
     }
     res.json({ success: true, candidatura });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Erro ao consultar candidatura.', error: err.message });
+    console.error('Erro ao consultar candidatura:', err);
+    res.status(500).json({ success: false, message: 'Erro ao consultar candidatura.' });
   }
+});
+
+app.use('/api', (req, res) => {
+  res.status(404).json({ success: false, message: 'Recurso não encontrado.' });
+});
+
+app.use((err, req, res, next) => {
+  if (err?.type === 'entity.too.large') {
+    return res.status(413).json({ success: false, message: 'Pedido demasiado grande.' });
+  }
+  if (err?.type === 'entity.parse.failed') {
+    return res.status(400).json({ success: false, message: 'Pedido mal formatado.' });
+  }
+  console.error('Erro não tratado:', err);
+  res.status(500).json({ success: false, message: 'Erro interno do servidor.' });
 });
 
 app.listen(PORT, () => {

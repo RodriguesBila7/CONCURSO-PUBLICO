@@ -76,11 +76,12 @@ export default function PortalLayout({
 
   const cleanPath = (currentPath || '').split('?')[0].split('#')[0];
   const isGestorUser = currentUser?.role === 'admin' || currentUser?.role === 'gestor';
-  const isGestorRoute = cleanPath === '/portal-gestor' || 
-                        cleanPath === '/portal-recrutamento/gestor' || 
-                        cleanPath === '/gestor' || 
+  const isGestorRoute = isGestorUser && (
+                        cleanPath === '/portal-gestor' ||
+                        cleanPath === '/portal-recrutamento/gestor' ||
+                        cleanPath === '/gestor' ||
                         cleanPath.includes('gestor') ||
-                        (isGestorUser && !['/portal-recrutamento/recrutamento', '/portal-recrutamento/candidatura', '/portal-recrutamento/consulta'].includes(cleanPath));
+                        !['/portal-recrutamento/recrutamento', '/portal-recrutamento/candidatura', '/portal-recrutamento/consulta'].includes(cleanPath));
 
   const isNavActive = (path) => {
     if (path === '/portal-recrutamento' && (cleanPath === '/portal-recrutamento' || cleanPath === '/portal-recrutamento/')) {
