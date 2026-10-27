@@ -2466,4 +2466,301 @@ export function deleteStoredCarreira(id, operador = 'Direcção de Recursos Huma
   return true;
 }
 
+// ========================================================
+// GESTÃO HUMANIZADA DE PERFIS DE ACESSO & ACESSIBILIDADE
+// ========================================================
+
+export const INITIAL_PERFIS_EQUIPA = [
+  {
+    id: 'PRF-01',
+    nome: 'Dr. Alberto Chissano',
+    cargo: 'Presidente do Júri de Seleção',
+    departamento: 'Comissão Central do Concurso - DRH',
+    email: 'alberto.chissano@sernic.gov.mz',
+    telefone: '+258 84 310 9980',
+    tipoPerfil: 'Administrador Geral',
+    descricaoPerfil: 'Coordenação executiva, homologações de atas e gestão plena do concurso.',
+    estado: 'Activo',
+    avatarCor: '#c32026',
+    permissoes: {
+      visualizarCandidatos: true,
+      deliberarFase1: true,
+      homologarFinal: true,
+      gerirVagasCarreiras: true,
+      publicarPautas: true,
+      consultarAuditoria: true,
+      gerirPerfisAcessos: true,
+      reiniciarConcurso: true
+    },
+    notaHumanizada: 'Membro responsável pela condução e assinatura dos editais oficiais.'
+  },
+  {
+    id: 'PRF-02',
+    nome: 'Dra. Maria Helena Tembe',
+    cargo: 'Vogal do Júri & Gestora de Recursos Humanos',
+    departamento: 'Divisão de Recursos Humanos - Maputo',
+    email: 'maria.tembe@sernic.gov.mz',
+    telefone: '+258 82 455 1200',
+    tipoPerfil: 'Gestora de Triagem Documental',
+    descricaoPerfil: 'Conferência detalhada de BI, NUIT, certificados e despiste de inconformidades.',
+    estado: 'Activo',
+    avatarCor: '#0f2042',
+    permissoes: {
+      visualizarCandidatos: true,
+      deliberarFase1: true,
+      homologarFinal: false,
+      gerirVagasCarreiras: false,
+      publicarPautas: true,
+      consultarAuditoria: true,
+      gerirPerfisAcessos: false,
+      reiniciarConcurso: false
+    },
+    notaHumanizada: 'Foco na humanização do atendimento e análise rigorosa da elegibilidade dos candidatos.'
+  },
+  {
+    id: 'PRF-03',
+    nome: 'Inspetor Chefe Carlos Manhique',
+    cargo: 'Chefe da Brigada de Avaliação Técnica',
+    departamento: 'Laboratório Central de Criminalística',
+    email: 'carlos.manhique@sernic.gov.mz',
+    telefone: '+258 87 912 3344',
+    tipoPerfil: 'Examinador Técnico & Psicotécnico',
+    descricaoPerfil: 'Avaliação dos exames teóricos, perícias laboratoriais e testes de aptidão técnica.',
+    estado: 'Activo',
+    avatarCor: '#1e3a8a',
+    permissoes: {
+      visualizarCandidatos: true,
+      deliberarFase1: true,
+      homologarFinal: false,
+      gerirVagasCarreiras: false,
+      publicarPautas: false,
+      consultarAuditoria: true,
+      gerirPerfisAcessos: false,
+      reiniciarConcurso: false
+    },
+    notaHumanizada: 'Apoio técnico e supervisão das provas de especialidade policial forense.'
+  },
+  {
+    id: 'PRF-04',
+    nome: 'Dra. Sofia Mucavele',
+    cargo: 'Perita Médica da Junta de Saúde',
+    departamento: 'Serviço Médico-Legal & Inspecções',
+    email: 'sofia.mucavele@sernic.gov.mz',
+    telefone: '+258 84 889 0011',
+    tipoPerfil: 'Avaliadora Médica & Saúde',
+    descricaoPerfil: 'Conferência de atestados médicos, junta médica e robustez física exigida.',
+    estado: 'Activo',
+    avatarCor: '#15803d',
+    permissoes: {
+      visualizarCandidatos: true,
+      deliberarFase1: false,
+      homologarFinal: false,
+      gerirVagasCarreiras: false,
+      publicarPautas: false,
+      consultarAuditoria: true,
+      gerirPerfisAcessos: false,
+      reiniciarConcurso: false
+    },
+    notaHumanizada: 'Garante o acolhimento digno e seguro nas inspecções médicas aos candidatos.'
+  },
+  {
+    id: 'PRF-05',
+    nome: 'Dr. Paulo Zandamela',
+    cargo: 'Auditor da Inspecção Geral',
+    departamento: 'Inspecção do Ministério do Interior',
+    email: 'paulo.zandamela@mint.gov.mz',
+    telefone: '+258 84 100 7766',
+    tipoPerfil: 'Auditor de Conformidade',
+    descricaoPerfil: 'Fiscalização de conformidade regulamentar, integridade do processo e livro de atas.',
+    estado: 'Activo',
+    avatarCor: '#c59b27',
+    permissoes: {
+      visualizarCandidatos: true,
+      deliberarFase1: false,
+      homologarFinal: false,
+      gerirVagasCarreiras: false,
+      publicarPautas: false,
+      consultarAuditoria: true,
+      gerirPerfisAcessos: false,
+      reiniciarConcurso: false
+    },
+    notaHumanizada: 'Acompanhamento independente para assegurar lisura e equidade institucional.'
+  }
+];
+
+export const INITIAL_ACESSIBILIDADE = {
+  tamanhoTexto: 'normal', // 'normal' | 'confortavel' | 'amplo'
+  altoContraste: false,
+  modoSimplificado: false, // Linguagem visual sem poluição, passos simplificados
+  sonsFeedback: true, // Alertas e confirmações em áudio
+  animacoesReduzidas: false,
+  leituraFacilitada: true,
+  focoTecladoDestacado: true
+};
+
+const STORAGE_KEY_PERFIS = 'sernic_concurso_perfis_v1';
+const STORAGE_KEY_ACESSIBILIDADE = 'sernic_concurso_acessibilidade_v1';
+
+export function getStoredPerfis() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_PERFIS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.warn('Erro ao ler perfis do localStorage', e);
+  }
+  try {
+    localStorage.setItem(STORAGE_KEY_PERFIS, JSON.stringify(INITIAL_PERFIS_EQUIPA));
+  } catch {}
+  return INITIAL_PERFIS_EQUIPA;
+}
+
+export function saveStoredPerfis(list) {
+  try {
+    localStorage.setItem(STORAGE_KEY_PERFIS, JSON.stringify(list));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sernic-perfis-updated', { detail: list }));
+    }
+  } catch (e) {
+    console.warn('Erro ao salvar perfis no localStorage', e);
+  }
+  return list;
+}
+
+export function createStoredPerfil(data, operador = 'Dr. Alberto Chissano') {
+  const current = getStoredPerfis();
+  const nextNum = current.length + 1;
+  const newId = data.id || `PRF-${String(nextNum).padStart(2, '0')}`;
+
+  const novoPerfil = {
+    id: newId,
+    nome: data.nome || 'Novo Membro da Equipa',
+    cargo: data.cargo || 'Técnico de Apoio ao Concurso',
+    departamento: data.departamento || 'Comissão de Seleção SERNIC',
+    email: data.email || 'utilizador@sernic.gov.mz',
+    telefone: data.telefone || '+258 84 000 0000',
+    tipoPerfil: data.tipoPerfil || 'Gestor de Triagem Documental',
+    descricaoPerfil: data.descricaoPerfil || 'Responsável designado para tarefas do concurso.',
+    estado: data.estado || 'Activo',
+    avatarCor: data.avatarCor || '#0f2042',
+    permissoes: data.permissoes || {
+      visualizarCandidatos: true,
+      deliberarFase1: true,
+      homologarFinal: false,
+      gerirVagasCarreiras: false,
+      publicarPautas: false,
+      consultarAuditoria: true,
+      gerirPerfisAcessos: false,
+      reiniciarConcurso: false
+    },
+    notaHumanizada: data.notaHumanizada || 'Colaborador integrante da equipa de recrutamento.'
+  };
+
+  const updated = [...current, novoPerfil];
+  saveStoredPerfis(updated);
+
+  addStoredAuditoria({
+    acao: 'Criação de Perfil de Utilizador',
+    candidato: `${novoPerfil.nome} (${novoPerfil.cargo})`,
+    estadoAnterior: 'Inexistente',
+    novoEstado: novoPerfil.estado,
+    motivo: `Atribuição do perfil "${novoPerfil.tipoPerfil}" com permissões personalizadas`,
+    operador: operador
+  });
+
+  return novoPerfil;
+}
+
+export function updateStoredPerfil(id, updates, operador = 'Dr. Alberto Chissano') {
+  const current = getStoredPerfis();
+  const index = current.findIndex(p => p.id === id);
+  if (index === -1) return null;
+
+  const anterior = current[index];
+  const updatedPerfil = {
+    ...anterior,
+    ...updates,
+    permissoes: {
+      ...anterior.permissoes,
+      ...(updates.permissoes || {})
+    }
+  };
+
+  current[index] = updatedPerfil;
+  saveStoredPerfis(current);
+
+  addStoredAuditoria({
+    acao: 'Atualização de Perfil / Permissões',
+    candidato: `${updatedPerfil.nome} (${updatedPerfil.cargo})`,
+    estadoAnterior: anterior.estado,
+    novoEstado: updatedPerfil.estado,
+    motivo: updates.motivoAudit || `Atualização de permissões e dados de acesso (${updatedPerfil.tipoPerfil})`,
+    operador: operador
+  });
+
+  return updatedPerfil;
+}
+
+export function deleteStoredPerfil(id, operador = 'Dr. Alberto Chissano') {
+  const current = getStoredPerfis();
+  const target = current.find(p => p.id === id);
+  if (!target) return false;
+
+  const filtered = current.filter(p => p.id !== id);
+  saveStoredPerfis(filtered);
+
+  addStoredAuditoria({
+    acao: 'Remoção de Perfil de Utilizador',
+    candidato: `${target.nome} (${target.cargo})`,
+    estadoAnterior: target.estado,
+    novoEstado: 'Removido',
+    motivo: `Revogação de acesso ao portal do gestor`,
+    operador: operador
+  });
+
+  return true;
+}
+
+export function getStoredAcessibilidade() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_ACESSIBILIDADE);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object') return { ...INITIAL_ACESSIBILIDADE, ...parsed };
+    }
+  } catch (e) {}
+  try {
+    localStorage.setItem(STORAGE_KEY_ACESSIBILIDADE, JSON.stringify(INITIAL_ACESSIBILIDADE));
+  } catch {}
+  return INITIAL_ACESSIBILIDADE;
+}
+
+export function saveStoredAcessibilidade(settings) {
+  try {
+    localStorage.setItem(STORAGE_KEY_ACESSIBILIDADE, JSON.stringify(settings));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sernic-acessibilidade-updated', { detail: settings }));
+      
+      // Aplicar classes no documentElement e body para efeito imediato
+      if (document.documentElement) {
+        document.documentElement.setAttribute('data-tamanho-texto', settings.tamanhoTexto || 'normal');
+        if (settings.altoContraste) {
+          document.documentElement.classList.add('portal-alto-contraste');
+        } else {
+          document.documentElement.classList.remove('portal-alto-contraste');
+        }
+        if (settings.modoSimplificado) {
+          document.documentElement.classList.add('portal-modo-simplificado');
+        } else {
+          document.documentElement.classList.remove('portal-modo-simplificado');
+        }
+      }
+    }
+  } catch (e) {}
+  return settings;
+}
+
+
 

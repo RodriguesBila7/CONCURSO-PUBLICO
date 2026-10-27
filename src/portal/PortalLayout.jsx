@@ -497,6 +497,20 @@ export default function PortalLayout({
 
                   <button
                     type="button"
+                    className={`portal-sidebar-sub-btn ${definicoesSubTab === 'perfis' ? 'active' : ''}`}
+                    onClick={() => {
+                      handleSelectGestorTab('definicoes');
+                      if (onDefinicoesSubTabChange) onDefinicoesSubTabChange('perfis');
+                    }}
+                    aria-label="Gestão de Perfis & Acessibilidade"
+                  >
+                    <UserCheck size={16} />
+                    <span>Perfis & Acessibilidade</span>
+                    <span className="portal-sidebar-sub-badge">5</span>
+                  </button>
+
+                  <button
+                    type="button"
                     className={`portal-sidebar-sub-btn ${definicoesSubTab === 'cursos' ? 'active' : ''}`}
                     onClick={() => {
                       handleSelectGestorTab('definicoes');

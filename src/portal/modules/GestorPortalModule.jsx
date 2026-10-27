@@ -103,7 +103,16 @@ import {
   saveStoredCarreiras,
   createStoredCarreira,
   updateStoredCarreira,
-  deleteStoredCarreira
+  deleteStoredCarreira,
+  INITIAL_PERFIS_EQUIPA,
+  INITIAL_ACESSIBILIDADE,
+  getStoredPerfis,
+  saveStoredPerfis,
+  createStoredPerfil,
+  updateStoredPerfil,
+  deleteStoredPerfil,
+  getStoredAcessibilidade,
+  saveStoredAcessibilidade
 } from '../mockData';
 import sernicLogo from '../../assets/sernic-logo.png';
 import DraggableSubAba from '../components/DraggableSubAba';
@@ -147,6 +156,8 @@ export default function GestorPortalModule({
   const [auditoria, setAuditoria] = useState(() => getStoredAuditoria());
   const [vagas, setVagas] = useState(() => getStoredVagas());
   const [carreiras, setCarreiras] = useState(() => getStoredCarreiras());
+  const [perfis, setPerfis] = useState(() => getStoredPerfis());
+  const [acessibilidade, setAcessibilidade] = useState(() => getStoredAcessibilidade());
 
   // Dados do Módulo de Definições
   const [cursos, setCursos] = useState(() => getStoredCursos());
@@ -161,6 +172,8 @@ export default function GestorPortalModule({
     setAuditoria(getStoredAuditoria());
     setVagas(getStoredVagas());
     setCarreiras(getStoredCarreiras());
+    setPerfis(getStoredPerfis());
+    setAcessibilidade(getStoredAcessibilidade());
     setCursos(getStoredCursos());
     setLocais(getStoredLocais());
     setDefinicoes(getStoredDefinicoes());
@@ -175,6 +188,8 @@ export default function GestorPortalModule({
     const handleSync = () => {
       setVagas(getStoredVagas());
       setCarreiras(getStoredCarreiras());
+      setPerfis(getStoredPerfis());
+      setAcessibilidade(getStoredAcessibilidade());
       setCandidatos(deduplicateCandidaturas(getStoredCandidaturas()));
       setListas(getStoredListasPublicadas());
       setAuditoria(getStoredAuditoria());
@@ -182,19 +197,40 @@ export default function GestorPortalModule({
     };
     window.addEventListener('sernic-vagas-updated', handleSync);
     window.addEventListener('sernic-carreiras-updated', handleSync);
+    window.addEventListener('sernic-perfis-updated', handleSync);
+    window.addEventListener('sernic-acessibilidade-updated', handleSync);
     window.addEventListener('storage', handleSync);
     return () => {
       window.removeEventListener('sernic-vagas-updated', handleSync);
       window.removeEventListener('sernic-carreiras-updated', handleSync);
+      window.removeEventListener('sernic-perfis-updated', handleSync);
+      window.removeEventListener('sernic-acessibilidade-updated', handleSync);
       window.removeEventListener('storage', handleSync);
     };
   }, []);
 
+  // Efeito de aplicação imediata de acessibilidade e humanização visual
+  useEffect(() => {
+    if (typeof document !== 'undefined' && document.documentElement) {
+      document.documentElement.setAttribute('data-tamanho-texto', acessibilidade.tamanhoTexto || 'normal');
+      if (acessibilidade.altoContraste) {
+        document.documentElement.classList.add('portal-alto-contraste');
+      } else {
+        document.documentElement.classList.remove('portal-alto-contraste');
+      }
+      if (acessibilidade.modoSimplificado) {
+        document.documentElement.classList.add('portal-modo-simplificado');
+      } else {
+        document.documentElement.classList.remove('portal-modo-simplificado');
+      }
+    }
+  }, [acessibilidade]);
+
   // ========================================================
   // ESTADOS DO MÓDULO "DEFINIÇÕES DO SISTEMA"
   // ========================================================
-  // Sub-abas geridas a partir da Barra Lateral: 'carreiras' | 'cursos' | 'locais' | 'temas' | 'idioma' | 'geral'
-  const [internalDefinicoesSubTab, setInternalDefinicoesSubTab] = useState('carreiras');
+  // Sub-abas geridas a partir da Barra Lateral: 'carreiras' | 'perfis' | 'cursos' | 'locais' | 'temas' | 'idioma' | 'geral'
+  const [internalDefinicoesSubTab, setInternalDefinicoesSubTab] = useState('perfis');
   const definicoesSubTab = propDefinicoesSubTab || internalDefinicoesSubTab;
   const setDefinicoesSubTab = (tab) => {
     if (onDefinicoesSubTabChange) {
@@ -202,6 +238,37 @@ export default function GestorPortalModule({
     }
     setInternalDefinicoesSubTab(tab);
   };
+
+  // ========================================================
+  // ESTADOS DO MÓDULO "GESTÃO DE PERFIS & ACESSIBILIDADE"
+  // ========================================================
+  const [buscaPerfil, setBuscaPerfil] = useState('');
+  const [filtroTipoPerfil, setFiltroTipoPerfil] = useState('todos');
+  const [perfisViewMode, setPerfisViewMode] = useState('membros'); // 'membros' | 'acessibilidade'
+  const [isPerfilModalOpen, setIsPerfilModalOpen] = useState(false);
+  const [editingPerfil, setEditingPerfil] = useState(null);
+  const [perfilForm, setPerfilForm] = useState({
+    nome: '',
+    cargo: 'Técnico de Recursos Humanos',
+    departamento: 'Divisão de Recursos Humanos - SERNIC',
+    email: '',
+    telefone: '+258 84 000 0000',
+    tipoPerfil: 'Gestora de Triagem Documental',
+    descricaoPerfil: 'Conferência de documentos, validação de pré-requisitos e pareceres iniciais.',
+    estado: 'Activo',
+    avatarCor: '#0f2042',
+    permissoes: {
+      visualizarCandidatos: true,
+      deliberarFase1: true,
+      homologarFinal: false,
+      gerirVagasCarreiras: false,
+      publicarPautas: false,
+      consultarAuditoria: true,
+      gerirPerfisAcessos: false,
+      reiniciarConcurso: false
+    },
+    notaHumanizada: 'Membro designado para apoiar a triagem documental e atendimento aos candidatos.'
+  });
 
   // ========================================================
   // ESTADOS DO MÓDULO "CARREIRAS OFICIAIS DO SERNIC"
@@ -1225,6 +1292,219 @@ export default function GestorPortalModule({
   // ========================================================
   // HANDLERS DO MÓDULO DE DEFINIÇÕES
   // ========================================================
+  // GESTÃO DE PERFIS & ACESSIBILIDADE
+  const filteredPerfis = useMemo(() => {
+    return perfis.filter(p => {
+      const q = buscaPerfil.toLowerCase().trim();
+      const matchBusca = !q || 
+        p.nome.toLowerCase().includes(q) || 
+        p.cargo.toLowerCase().includes(q) || 
+        p.email.toLowerCase().includes(q) ||
+        p.tipoPerfil.toLowerCase().includes(q) ||
+        (p.departamento && p.departamento.toLowerCase().includes(q));
+      
+      const matchTipo = filtroTipoPerfil === 'todos' || p.tipoPerfil === filtroTipoPerfil;
+      return matchBusca && matchTipo;
+    });
+  }, [perfis, buscaPerfil, filtroTipoPerfil]);
+
+  const handleOpenNovoPerfil = () => {
+    setEditingPerfil(null);
+    setPerfilForm({
+      nome: '',
+      cargo: 'Técnico de Recursos Humanos',
+      departamento: 'Divisão de Recursos Humanos - SERNIC',
+      email: '',
+      telefone: '+258 84 000 0000',
+      tipoPerfil: 'Gestora de Triagem Documental',
+      descricaoPerfil: 'Conferência de documentos, validação de pré-requisitos e pareceres iniciais.',
+      estado: 'Activo',
+      avatarCor: '#0f2042',
+      permissoes: {
+        visualizarCandidatos: true,
+        deliberarFase1: true,
+        homologarFinal: false,
+        gerirVagasCarreiras: false,
+        publicarPautas: false,
+        consultarAuditoria: true,
+        gerirPerfisAcessos: false,
+        reiniciarConcurso: false
+      },
+      notaHumanizada: 'Membro designado para apoiar a triagem documental e atendimento aos candidatos.'
+    });
+    setIsPerfilModalOpen(true);
+  };
+
+  const handleOpenEditPerfil = (p) => {
+    setEditingPerfil(p);
+    setPerfilForm({
+      nome: p.nome || '',
+      cargo: p.cargo || '',
+      departamento: p.departamento || '',
+      email: p.email || '',
+      telefone: p.telefone || '+258 84 000 0000',
+      tipoPerfil: p.tipoPerfil || 'Gestora de Triagem Documental',
+      descricaoPerfil: p.descricaoPerfil || '',
+      estado: p.estado || 'Activo',
+      avatarCor: p.avatarCor || '#0f2042',
+      permissoes: {
+        visualizarCandidatos: true,
+        deliberarFase1: false,
+        homologarFinal: false,
+        gerirVagasCarreiras: false,
+        publicarPautas: false,
+        consultarAuditoria: true,
+        gerirPerfisAcessos: false,
+        reiniciarConcurso: false,
+        ...(p.permissoes || {})
+      },
+      notaHumanizada: p.notaHumanizada || ''
+    });
+    setIsPerfilModalOpen(true);
+  };
+
+  const handleApplyRoleTemplate = (roleType) => {
+    const templates = {
+      'Administrador Geral': {
+        tipoPerfil: 'Administrador Geral',
+        descricaoPerfil: 'Acesso pleno para coordenar, deliberar, publicar listas e homologar o concurso.',
+        permissoes: {
+          visualizarCandidatos: true,
+          deliberarFase1: true,
+          homologarFinal: true,
+          gerirVagasCarreiras: true,
+          publicarPautas: true,
+          consultarAuditoria: true,
+          gerirPerfisAcessos: true,
+          reiniciarConcurso: true
+        }
+      },
+      'Gestora de Triagem Documental': {
+        tipoPerfil: 'Gestora de Triagem Documental',
+        descricaoPerfil: 'Foco na verificação de certificados, BI, NUIT e admissão documental da 1ª fase.',
+        permissoes: {
+          visualizarCandidatos: true,
+          deliberarFase1: true,
+          homologarFinal: false,
+          gerirVagasCarreiras: false,
+          publicarPautas: true,
+          consultarAuditoria: true,
+          gerirPerfisAcessos: false,
+          reiniciarConcurso: false
+        }
+      },
+      'Examinador Técnico & Psicotécnico': {
+        tipoPerfil: 'Examinador Técnico & Psicotécnico',
+        descricaoPerfil: 'Lançamento de notas de provas escritas, exames práticos e aptidão técnica.',
+        permissoes: {
+          visualizarCandidatos: true,
+          deliberarFase1: true,
+          homologarFinal: false,
+          gerirVagasCarreiras: false,
+          publicarPautas: false,
+          consultarAuditoria: true,
+          gerirPerfisAcessos: false,
+          reiniciarConcurso: false
+        }
+      },
+      'Avaliadora Médica & Saúde': {
+        tipoPerfil: 'Avaliadora Médica & Saúde',
+        descricaoPerfil: 'Registo e conferência de atestados médicos, junta de saúde e aptidão física.',
+        permissoes: {
+          visualizarCandidatos: true,
+          deliberarFase1: false,
+          homologarFinal: false,
+          gerirVagasCarreiras: false,
+          publicarPautas: false,
+          consultarAuditoria: true,
+          gerirPerfisAcessos: false,
+          reiniciarConcurso: false
+        }
+      },
+      'Auditor de Conformidade': {
+        tipoPerfil: 'Auditor de Conformidade',
+        descricaoPerfil: 'Fiscalização e consulta aos registos de auditoria, estatísticas e atas oficiais.',
+        permissoes: {
+          visualizarCandidatos: true,
+          deliberarFase1: false,
+          homologarFinal: false,
+          gerirVagasCarreiras: false,
+          publicarPautas: false,
+          consultarAuditoria: true,
+          gerirPerfisAcessos: false,
+          reiniciarConcurso: false
+        }
+      }
+    };
+
+    if (templates[roleType]) {
+      setPerfilForm(prev => ({
+        ...prev,
+        ...templates[roleType],
+        permissoes: { ...templates[roleType].permissoes }
+      }));
+    }
+  };
+
+  const handleSavePerfil = (e) => {
+    if (e) e.preventDefault();
+    if (!perfilForm.nome.trim()) {
+      if (onNotify) onNotify('warning', 'Por favor indique o nome completo do membro da equipa.');
+      return;
+    }
+
+    const operador = currentUser?.name ? `${currentUser.name} (${currentUser.cargo || 'Gestor'})` : 'Dr. Alberto Chissano';
+
+    if (editingPerfil) {
+      updateStoredPerfil(editingPerfil.id, perfilForm, operador);
+      setPerfis(getStoredPerfis());
+      if (onNotify) onNotify('success', `Perfil de "${perfilForm.nome}" atualizado com sucesso!`);
+    } else {
+      createStoredPerfil(perfilForm, operador);
+      setPerfis(getStoredPerfis());
+      if (onNotify) onNotify('success', `Novo membro "${perfilForm.nome}" cadastrado com sucesso!`);
+    }
+
+    setIsPerfilModalOpen(false);
+    setEditingPerfil(null);
+  };
+
+  const handleTogglePerfilStatus = (id) => {
+    const target = perfis.find(p => p.id === id);
+    if (!target) return;
+    const novoEstado = target.estado === 'Activo' ? 'Em Pausa' : 'Activo';
+    const operador = currentUser?.name || 'Dr. Alberto Chissano';
+
+    updateStoredPerfil(id, { estado: novoEstado }, operador);
+    setPerfis(getStoredPerfis());
+    if (onNotify) onNotify('info', `Estado de ${target.nome} alterado para "${novoEstado}".`);
+  };
+
+  const handleDeletePerfil = (id) => {
+    const target = perfis.find(p => p.id === id);
+    if (!target) return;
+
+    if (window.confirm(`Tem a certeza de que deseja revogar o acesso de "${target.nome}" (${target.cargo})?`)) {
+      const operador = currentUser?.name || 'Dr. Alberto Chissano';
+      deleteStoredPerfil(id, operador);
+      setPerfis(getStoredPerfis());
+      if (onNotify) onNotify('success', `Acesso de "${target.nome}" revogado com sucesso.`);
+    }
+  };
+
+  const handleUpdateAcessibilidade = (updates) => {
+    const updated = { ...acessibilidade, ...updates };
+    setAcessibilidade(updated);
+    saveStoredAcessibilidade(updated);
+    if (onNotify) onNotify('info', 'Definição de acessibilidade aplicada com sucesso!');
+  };
+
+  const handleResetAcessibilidade = () => {
+    setAcessibilidade(INITIAL_ACESSIBILIDADE);
+    saveStoredAcessibilidade(INITIAL_ACESSIBILIDADE);
+    if (onNotify) onNotify('success', 'Preferências de acessibilidade restauradas para o padrão.');
+  };
+
   // 0. Carreiras Oficiais do SERNIC
   const filteredCarreiras = useMemo(() => {
     return carreiras.filter(c => {
@@ -4267,6 +4547,459 @@ export default function GestorPortalModule({
           )}
 
           {/* ========================================================
+              SUB-ABA: GESTÃO DE PERFIS & ACESSIBILIDADE DO SISTEMA
+              ======================================================== */}
+          {definicoesSubTab === 'perfis' && (
+            <div className="definicoes-panel-body fadeIn">
+              {/* TOPO HUMANIZADO E INSTITUCIONAL */}
+              <div className="definicoes-panel-top">
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
+                    <span className="carreira-badge-regime" style={{ borderColor: 'rgba(15, 32, 66, 0.25)', color: '#0f2042', background: 'rgba(15, 32, 66, 0.08)' }}>
+                      <UserCheck size={14} />
+                      <span>Governança Humanizada & Inclusão</span>
+                    </span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--portal-text-muted)' }}>
+                      Transparência • Acessibilidade Plena • SERNIC
+                    </span>
+                  </div>
+                  <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1.25rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>
+                    Gestão de Perfis de Acesso & Acessibilidade
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '0.86rem', color: 'var(--portal-text-muted)' }}>
+                    Administre os membros da equipa com clareza, atribua permissões de forma intuitiva e ajuste o sistema para ser acessível e simples para todos.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="gestor-btn-outline"
+                    onClick={reloadData}
+                    title="Recarregar perfis e definições"
+                  >
+                    <RefreshCw size={15} />
+                    <span>Actualizar</span>
+                  </button>
+                  {perfisViewMode === 'membros' && (
+                    <button
+                      type="button"
+                      className="gestor-btn-primary-red"
+                      onClick={handleOpenNovoPerfil}
+                    >
+                      <Plus size={16} />
+                      <span>Adicionar Membro da Equipa</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* ALTERNADOR DE MODO: MEMBROS & PERMISSÕES vs ACESSIBILIDADE */}
+              <div className="vagas-mode-switcher-bar" style={{ margin: '0.5rem 0 1rem 0' }}>
+                <button
+                  type="button"
+                  className={`vagas-mode-pill ${perfisViewMode === 'membros' ? 'active' : ''}`}
+                  onClick={() => setPerfisViewMode('membros')}
+                >
+                  <Users size={16} />
+                  <span>Membros da Equipa & Permissões ({perfis.length})</span>
+                </button>
+                <button
+                  type="button"
+                  className={`vagas-mode-pill ${perfisViewMode === 'acessibilidade' ? 'active' : ''}`}
+                  onClick={() => setPerfisViewMode('acessibilidade')}
+                >
+                  <Palette size={16} />
+                  <span>Acessibilidade, Conforto Visual & Modo Simplificado</span>
+                </button>
+              </div>
+
+              {/* MODO 1: GESTÃO DE MEMBROS E PERMISSÕES */}
+              {perfisViewMode === 'membros' && (
+                <div className="fadeIn">
+                  {/* FAIXA DE INDICADORES DA EQUIPA */}
+                  <div className="carreira-kpi-ribbon">
+                    <div className="carreira-kpi-pill">
+                      <span className="carreira-kpi-num">{perfis.length}</span>
+                      <span className="carreira-kpi-label">Membros na Equipa</span>
+                    </div>
+                    <div className="carreira-kpi-pill">
+                      <span className="carreira-kpi-num green">{perfis.filter(p => p.estado === 'Activo').length}</span>
+                      <span className="carreira-kpi-label">Acessos Activos</span>
+                    </div>
+                    <div className="carreira-kpi-pill">
+                      <span className="carreira-kpi-num red">{perfis.filter(p => p.permissoes?.homologarFinal).length}</span>
+                      <span className="carreira-kpi-label">Homologadores Plenos</span>
+                    </div>
+                    <div className="carreira-kpi-pill">
+                      <span className="carreira-kpi-num gold">{perfis.filter(p => p.permissoes?.deliberarFase1).length}</span>
+                      <span className="carreira-kpi-label">Avaliadores de Documentos</span>
+                    </div>
+                  </div>
+
+                  {/* PESQUISA E FILTROS */}
+                  <div className="definicoes-filters-group" style={{ marginBottom: '1.25rem' }}>
+                    <div className="definicoes-search-box">
+                      <Search size={16} />
+                      <input
+                        type="text"
+                        placeholder="Pesquisar por nome, cargo, e-mail ou departamento..."
+                        value={buscaPerfil}
+                        onChange={(e) => setBuscaPerfil(e.target.value)}
+                      />
+                      {buscaPerfil && (
+                        <button type="button" onClick={() => setBuscaPerfil('')} className="btn-clear-search">
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+
+                    <select
+                      className="definicoes-select"
+                      value={filtroTipoPerfil}
+                      onChange={(e) => setFiltroTipoPerfil(e.target.value)}
+                    >
+                      <option value="todos">Todos os Papéis da Equipa</option>
+                      <option value="Administrador Geral">Administrador Geral</option>
+                      <option value="Gestora de Triagem Documental">Gestora de Triagem Documental</option>
+                      <option value="Examinador Técnico & Psicotécnico">Examinador Técnico & Psicotécnico</option>
+                      <option value="Avaliadora Médica & Saúde">Avaliadora Médica & Saúde</option>
+                      <option value="Auditor de Conformidade">Auditor de Conformidade</option>
+                    </select>
+                  </div>
+
+                  {/* GRELHA DE CARTÕES DE MEMBROS */}
+                  {filteredPerfis.length === 0 ? (
+                    <div className="empty-state-card" style={{ padding: '3rem 2rem', textAlign: 'center' }}>
+                      <Users size={42} color="var(--portal-text-muted)" style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
+                      <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--portal-text-main)' }}>Nenhum membro encontrado</h4>
+                      <p style={{ margin: 0, color: 'var(--portal-text-muted)', fontSize: '0.88rem' }}>
+                        Verifique o termo de pesquisa ou adicione um novo colaborador ao júri.
+                      </p>
+                      <button
+                        type="button"
+                        className="gestor-btn-primary-red"
+                        onClick={handleOpenNovoPerfil}
+                        style={{ marginTop: '1.25rem' }}
+                      >
+                        <Plus size={15} />
+                        <span>Adicionar Membro Agora</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="perfis-team-grid">
+                      {filteredPerfis.map(p => {
+                        const countPermissoes = Object.values(p.permissoes || {}).filter(Boolean).length;
+                        return (
+                          <div key={p.id} className="perfil-member-card">
+                            {/* Topo do Cartão com Avatar */}
+                            <div className="perfil-card-top">
+                              <div className="perfil-avatar-wrap">
+                                <div 
+                                  className="perfil-avatar-circle"
+                                  style={{ backgroundColor: p.avatarCor || '#0f2042' }}
+                                >
+                                  {p.nome ? p.nome.split(' ').map(n => n[0]).slice(0, 2).join('') : 'U'}
+                                </div>
+                                <span className={`perfil-status-indicator ${p.estado === 'Activo' ? 'ativo' : 'pausado'}`} />
+                              </div>
+
+                              <div className="perfil-card-header-info">
+                                <div className="perfil-top-badges">
+                                  <span className="perfil-id-badge">{p.id}</span>
+                                  <span 
+                                    className={`perfil-state-chip ${p.estado === 'Activo' ? 'ativo' : 'pausado'}`}
+                                    onClick={() => handleTogglePerfilStatus(p.id)}
+                                    title="Clique para alternar Activo / Em Pausa"
+                                  >
+                                    {p.estado}
+                                  </span>
+                                </div>
+                                <h4 className="perfil-member-name">{p.nome}</h4>
+                                <span className="perfil-member-role">{p.cargo}</span>
+                              </div>
+                            </div>
+
+                            {/* Informações Institucionais & Contactos */}
+                            <div className="perfil-card-info-body">
+                              <div className="perfil-dept-line">
+                                <Building size={14} color="#64748b" />
+                                <span>{p.departamento}</span>
+                              </div>
+
+                              <div className="perfil-contacts-row">
+                                <div className="perfil-contact-pill">
+                                  <Mail size={13} color="#64748b" />
+                                  <span>{p.email}</span>
+                                </div>
+                                <div className="perfil-contact-pill">
+                                  <Phone size={13} color="#64748b" />
+                                  <span>{p.telefone}</span>
+                                </div>
+                              </div>
+
+                              {/* Tipo de Perfil e Nota Humanizada */}
+                              <div className="perfil-type-box">
+                                <div className="perfil-type-title">
+                                  <KeyRound size={14} color="#c32026" />
+                                  <strong>{p.tipoPerfil}</strong>
+                                </div>
+                                <p className="perfil-human-note">
+                                  "{p.notaHumanizada || p.descricaoPerfil}"
+                                </p>
+                              </div>
+
+                              {/* Lista de Permissões Visuais */}
+                              <div className="perfil-permissions-summary">
+                                <div className="perm-summary-header">
+                                  <span>Permissões Concedidas ({countPermissoes}):</span>
+                                </div>
+                                <div className="perm-chips-cloud">
+                                  {p.permissoes?.visualizarCandidatos && (
+                                    <span className="perm-chip active">
+                                      <CheckCircle2 size={12} /> Ver Inscritos
+                                    </span>
+                                  )}
+                                  {p.permissoes?.deliberarFase1 && (
+                                    <span className="perm-chip active gold">
+                                      <FileSignature size={12} /> Triagem 1ª Fase
+                                    </span>
+                                  )}
+                                  {p.permissoes?.homologarFinal && (
+                                    <span className="perm-chip active red">
+                                      <ShieldCheck size={12} /> Homologação Final
+                                    </span>
+                                  )}
+                                  {p.permissoes?.publicarPautas && (
+                                    <span className="perm-chip active">
+                                      <FileText size={12} /> Publicar Pautas
+                                    </span>
+                                  )}
+                                  {p.permissoes?.gerirVagasCarreiras && (
+                                    <span className="perm-chip active">
+                                      <Briefcase size={12} /> Vagas & Carreiras
+                                    </span>
+                                  )}
+                                  {p.permissoes?.consultarAuditoria && (
+                                    <span className="perm-chip active">
+                                      <History size={12} /> Livro de Atas
+                                    </span>
+                                  )}
+                                  {p.permissoes?.gerirPerfisAcessos && (
+                                    <span className="perm-chip active blue">
+                                      <Users size={12} /> Gerir Acessos
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Rodapé com Ações */}
+                            <div className="perfil-card-footer">
+                              <button
+                                type="button"
+                                className="perfil-btn-action edit"
+                                onClick={() => handleOpenEditPerfil(p)}
+                              >
+                                <Edit3 size={14} />
+                                <span>Editar Permissões</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                className={`perfil-btn-action toggle ${p.estado === 'Activo' ? 'pausar' : 'ativar'}`}
+                                onClick={() => handleTogglePerfilStatus(p.id)}
+                                title={p.estado === 'Activo' ? 'Suspender temporariamente o acesso' : 'Reativar o acesso'}
+                              >
+                                <SlidersHorizontal size={14} />
+                                <span>{p.estado === 'Activo' ? 'Pausar' : 'Activar'}</span>
+                              </button>
+
+                              {p.id !== 'PRF-01' && (
+                                <button
+                                  type="button"
+                                  className="perfil-btn-action delete"
+                                  onClick={() => handleDeletePerfil(p.id)}
+                                  title="Remover este perfil da comissão"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* MODO 2: ACESSIBILIDADE, CONFORTO VISUAL & HUMANIZAÇÃO */}
+              {perfisViewMode === 'acessibilidade' && (
+                <div className="acessibilidade-panel fadeIn">
+                  {/* BANNER INFORMATIVO AMIGÁVEL */}
+                  <div className="acessibilidade-hero-box">
+                    <div className="hero-icon-bubble">
+                      <Sun size={26} color="#c32026" />
+                    </div>
+                    <div>
+                      <h4 style={{ margin: '0 0 0.35rem 0', fontSize: '1.2rem', fontWeight: 800 }}>
+                        Ambiente Inclusivo, Confortável e Descomplicado
+                      </h4>
+                      <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--portal-text-muted)', lineHeight: 1.5 }}>
+                        O sistema do concurso público do SERNIC foi arquitetado para ser intuitivo e acolhedor para todos.
+                        Personalize aqui a sua experiência de leitura, contraste visual e simplicidade de navegação.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="acessibilidade-settings-grid">
+                    {/* CARTÃO 1: TAMANHO DO TEXTO */}
+                    <div className="acessibilidade-card">
+                      <div className="acess-card-header">
+                        <div className="acess-icon-box">
+                          <Eye size={20} color="#c32026" />
+                        </div>
+                        <div>
+                          <h5>Tamanho da Tipografia & Legibilidade</h5>
+                          <p>Escolha a escala de texto ideal para diminuir o cansaço visual.</p>
+                        </div>
+                      </div>
+
+                      <div className="tamanho-texto-options">
+                        <button
+                          type="button"
+                          className={`btn-tamanho-choice ${acessibilidade.tamanhoTexto === 'normal' ? 'active' : ''}`}
+                          onClick={() => handleUpdateAcessibilidade({ tamanhoTexto: 'normal' })}
+                        >
+                          <span className="choice-title">Normal (100%)</span>
+                          <span className="choice-sub">Padrão SERNIC</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`btn-tamanho-choice ${acessibilidade.tamanhoTexto === 'confortavel' ? 'active' : ''}`}
+                          onClick={() => handleUpdateAcessibilidade({ tamanhoTexto: 'confortavel' })}
+                        >
+                          <span className="choice-title" style={{ fontSize: '1.05rem' }}>Confortável (+15%)</span>
+                          <span className="choice-sub">Leitura relaxada</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`btn-tamanho-choice ${acessibilidade.tamanhoTexto === 'amplo' ? 'active' : ''}`}
+                          onClick={() => handleUpdateAcessibilidade({ tamanhoTexto: 'amplo' })}
+                        >
+                          <span className="choice-title" style={{ fontSize: '1.18rem', fontWeight: 800 }}>Amplo (+30%)</span>
+                          <span className="choice-sub">Máxima visibilidade</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* CARTÃO 2: MODO SIMPLIFICADO */}
+                    <div className="acessibilidade-card">
+                      <div className="acess-card-header">
+                        <div className="acess-icon-box">
+                          <CheckCircle2 size={20} color="#15803d" />
+                        </div>
+                        <div>
+                          <h5>Modo Simplificado & Navegação Direta</h5>
+                          <p>Linguagem humanizada, reduzindo jargões técnicos para facilitar a tomada de decisão.</p>
+                        </div>
+                      </div>
+
+                      <div className="acess-toggle-row">
+                        <div className="acess-toggle-text">
+                          <strong>Ativar Interface Simplificada</strong>
+                          <span>Oculta dados secundários não essenciais, destacando botões principais e resumos claros.</span>
+                        </div>
+                        <label className="switch-custom">
+                          <input
+                            type="checkbox"
+                            checked={acessibilidade.modoSimplificado}
+                            onChange={(e) => handleUpdateAcessibilidade({ modoSimplificado: e.target.checked })}
+                          />
+                          <span className="slider-custom round" />
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* CARTÃO 3: ALTO CONTRASTE */}
+                    <div className="acessibilidade-card">
+                      <div className="acess-card-header">
+                        <div className="acess-icon-box">
+                          <ShieldCheck size={20} color="#0f2042" />
+                        </div>
+                        <div>
+                          <h5>Alto Contraste & Destaque de Bordas</h5>
+                          <p>Excelente para ambientes com muita luz solar ou pessoas com baixa acuidade visual.</p>
+                        </div>
+                      </div>
+
+                      <div className="acess-toggle-row">
+                        <div className="acess-toggle-text">
+                          <strong>Reforçar Contraste Visual</strong>
+                          <span>Aumenta a separação entre caixas, tabelas e botões com bordas e cores de alto contraste.</span>
+                        </div>
+                        <label className="switch-custom">
+                          <input
+                            type="checkbox"
+                            checked={acessibilidade.altoContraste}
+                            onChange={(e) => handleUpdateAcessibilidade({ altoContraste: e.target.checked })}
+                          />
+                          <span className="slider-custom round" />
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* CARTÃO 4: FEEDBACK SONORO */}
+                    <div className="acessibilidade-card">
+                      <div className="acess-card-header">
+                        <div className="acess-icon-box">
+                          <Clock size={20} color="#c59b27" />
+                        </div>
+                        <div>
+                          <h5>Sons de Confirmação & Alertas Humanizados</h5>
+                          <p>Receba sons suaves ao validar deliberações ou quando uma ação for concluída.</p>
+                        </div>
+                      </div>
+
+                      <div className="acess-toggle-row">
+                        <div className="acess-toggle-text">
+                          <strong>Sons e Efeitos Sonoros</strong>
+                          <span>Confirmação auditiva ao homologar documentos e salvar pareceres oficiais.</span>
+                        </div>
+                        <label className="switch-custom">
+                          <input
+                            type="checkbox"
+                            checked={acessibilidade.sonsFeedback}
+                            onChange={(e) => handleUpdateAcessibilidade({ sonsFeedback: e.target.checked })}
+                          />
+                          <span className="slider-custom round" />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* RODAPÉ DE RESTAURAÇÃO DE ACESSIBILIDADE */}
+                  <div className="acessibilidade-footer-box">
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--portal-text-muted)' }}>
+                      As preferências ficam guardadas no seu navegador e acompanham todas as abas do sistema.
+                    </p>
+                    <button
+                      type="button"
+                      className="gestor-btn-outline"
+                      onClick={handleResetAcessibilidade}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}
+                    >
+                      <RotateCcw size={14} />
+                      <span>Restaurar Preferências Originais</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ========================================================
               SUB-ABA 1: GESTÃO DE CURSOS HOMOLOGADOS
               ======================================================== */}
           {definicoesSubTab === 'cursos' && (
@@ -6471,6 +7204,397 @@ export default function GestorPortalModule({
                   <button type="submit" className="gestor-btn-primary-red">
                     <Save size={15} />
                     <span>{editingCarreira ? 'Salvar Alterações da Carreira' : 'Homologar & Cadastrar Carreira'}</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </DraggableSubAba>
+        </div>,
+        document.body
+      )}
+
+      {/* ========================================================
+          MODAL DE GESTÃO DE PERFIL & PERMISSÕES HUMANIZADAS
+          ======================================================== */}
+      {isPerfilModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="gestor-modal-overlay fadeIn" onClick={(e) => {
+          if (e.target === e.currentTarget) setIsPerfilModalOpen(false);
+        }}>
+          <DraggableSubAba
+            className="gestor-modal-card definicoes-modal perfil-modal-dialog"
+            style={{ width: 'min(880px, 95vw)', maxWidth: 'min(880px, 95vw)' }}
+            moveHandleLabel="Mover Ficha de Perfil & Permissões"
+            onClose={() => setIsPerfilModalOpen(false)}
+          >
+            <div className="dossier-modal-header" style={{ borderBottom: '2px solid #0f2042' }}>
+              <div className="dossier-header-left">
+                <div 
+                  className="dossier-modal-avatar" 
+                  style={{ 
+                    background: perfilForm.avatarColor || '#0f2042', 
+                    color: '#ffffff',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.18)' 
+                  }}
+                >
+                  <UserCheck size={26} />
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.15rem' }}>
+                    <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800, color: '#c59b27' }}>
+                      SERNIC • COMISSÃO DO JÚRI & OPERAÇÕES
+                    </span>
+                    <span className={`carreira-badge-status ${perfilForm.status === 'Activo' ? 'activa' : 'inactiva'}`}>
+                      {perfilForm.status}
+                    </span>
+                  </div>
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>
+                    {editingPerfil ? `Editar Perfil de Membro: ${editingPerfil.nome}` : 'Credenciar Novo Membro no Júri / Equipa'}
+                  </h3>
+                  <span className="dossier-protocolo" style={{ fontSize: '0.8rem', color: 'var(--portal-text-muted)' }}>
+                    Gestão humanizada e simplificada de atribuições e privilégios operacionais
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="dossier-close-btn"
+                onClick={() => setIsPerfilModalOpen(false)}
+                title="Fechar formulário"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePerfil} className="dossier-modal-body">
+              {/* ATALHO HUMANIZADO: MODELOS DE PERFIL RÁPIDO */}
+              <div className="perfil-quick-templates-box">
+                <div className="perfil-quick-header">
+                  <Sparkles size={16} color="#c59b27" />
+                  <strong>Atribuição Rápida de Funções em 1 Clique</strong>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--portal-text-muted)' }}>
+                    (Preenche as permissões ideais recomendadas para cada especialidade)
+                  </span>
+                </div>
+                <div className="perfil-templates-row">
+                  <button
+                    type="button"
+                    className="btn-perfil-template"
+                    onClick={() => handleApplyRoleTemplate('admin')}
+                  >
+                    <ShieldCheck size={14} color="#0f2042" />
+                    <span>Administrador Geral</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-perfil-template"
+                    onClick={() => handleApplyRoleTemplate('triagem')}
+                  >
+                    <FileCheck size={14} color="#059669" />
+                    <span>Gestor de Triagem</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-perfil-template"
+                    onClick={() => handleApplyRoleTemplate('examinador')}
+                  >
+                    <FileText size={14} color="#2563eb" />
+                    <span>Examinador Técnico</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-perfil-template"
+                    onClick={() => handleApplyRoleTemplate('medico')}
+                  >
+                    <Award size={14} color="#7c3aed" />
+                    <span>Júri / Avaliador Médico</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-perfil-template"
+                    onClick={() => handleApplyRoleTemplate('auditor')}
+                  >
+                    <History size={14} color="#d97706" />
+                    <span>Auditor Institucional</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* DADOS HUMANOS DE IDENTIFICAÇÃO */}
+              <div className="perfil-form-section">
+                <h4 className="perfil-section-title">
+                  <Users size={16} color="#0f2042" />
+                  <span>Identificação do Membro</span>
+                </h4>
+                <div className="definicoes-form-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))' }}>
+                  <div className="definicoes-form-group">
+                    <label>Nome Completo do Membro *</label>
+                    <input
+                      type="text"
+                      className="definicoes-input"
+                      required
+                      placeholder="Ex: Dr. Armando Guebuza"
+                      value={perfilForm.nome}
+                      onChange={(e) => setPerfilForm(prev => ({ ...prev, nome: e.target.value }))}
+                    />
+                  </div>
+
+                  <div className="definicoes-form-group">
+                    <label>Cargo / Função no Concurso *</label>
+                    <input
+                      type="text"
+                      className="definicoes-input"
+                      required
+                      placeholder="Ex: Vogal de Triagem Documental"
+                      value={perfilForm.cargo}
+                      onChange={(e) => setPerfilForm(prev => ({ ...prev, cargo: e.target.value }))}
+                    />
+                  </div>
+
+                  <div className="definicoes-form-group">
+                    <label>Departamento / Direcção</label>
+                    <input
+                      type="text"
+                      className="definicoes-input"
+                      placeholder="Ex: Direcção Nacional de Recursos Humanos"
+                      value={perfilForm.departamento}
+                      onChange={(e) => setPerfilForm(prev => ({ ...prev, departamento: e.target.value }))}
+                    />
+                  </div>
+
+                  <div className="definicoes-form-group">
+                    <label>Email Institucional</label>
+                    <input
+                      type="email"
+                      className="definicoes-input"
+                      placeholder="Ex: membro.juri@sernic.gov.mz"
+                      value={perfilForm.email}
+                      onChange={(e) => setPerfilForm(prev => ({ ...prev, email: e.target.value }))}
+                    />
+                  </div>
+
+                  <div className="definicoes-form-group">
+                    <label>Contacto Telefónico</label>
+                    <input
+                      type="text"
+                      className="definicoes-input"
+                      placeholder="Ex: +258 84 123 4567"
+                      value={perfilForm.telefone}
+                      onChange={(e) => setPerfilForm(prev => ({ ...prev, telefone: e.target.value }))}
+                    />
+                  </div>
+
+                  <div className="definicoes-form-group">
+                    <label>Estado do Acesso</label>
+                    <select
+                      className="definicoes-input"
+                      value={perfilForm.status}
+                      onChange={(e) => setPerfilForm(prev => ({ ...prev, status: e.target.value }))}
+                    >
+                      <option value="Activo">Activo (Credenciado)</option>
+                      <option value="Inactivo">Inactivo (Suspenso Temporariamente)</option>
+                    </select>
+                  </div>
+
+                  <div className="definicoes-form-group">
+                    <label>Cor Identificadora do Avatar</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginTop: '0.25rem' }}>
+                      {['#0f2042', '#c32026', '#059669', '#2563eb', '#7c3aed', '#d97706', '#0891b2'].map(color => (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => setPerfilForm(prev => ({ ...prev, avatarColor: color }))}
+                          style={{
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '50%',
+                            background: color,
+                            border: perfilForm.avatarColor === color ? '3px solid #c59b27' : '2px solid rgba(0,0,0,0.1)',
+                            cursor: 'pointer',
+                            outline: 'none',
+                            transform: perfilForm.avatarColor === color ? 'scale(1.15)' : 'scale(1)',
+                            transition: 'all 0.15s ease'
+                          }}
+                          title={`Selecionar cor ${color}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* PERMISSÕES HUMANIZADAS E DESCRITIVAS */}
+              <div className="perfil-form-section" style={{ marginTop: '1.25rem' }}>
+                <h4 className="perfil-section-title">
+                  <KeyRound size={16} color="#0f2042" />
+                  <span>Permissões e Níveis de Acesso Humanizados</span>
+                </h4>
+                <p style={{ margin: '0 0 1rem 0', fontSize: '0.82rem', color: 'var(--portal-text-muted)' }}>
+                  Active ou desactive as responsabilidades deste membro. Cada privilégio é expresso de forma simples, sem códigos indecifráveis.
+                </p>
+
+                <div className="perfil-permissoes-edit-grid">
+                  <label className={`perfil-perm-switch-box ${perfilForm.permissoes.triagem ? 'active' : ''}`}>
+                    <div className="perm-switch-top">
+                      <div className="perm-switch-title">
+                        <FileCheck size={17} color={perfilForm.permissoes.triagem ? '#059669' : '#64748b'} />
+                        <strong>Triagem de Documentos (1ª Fase)</strong>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={perfilForm.permissoes.triagem}
+                        onChange={(e) => setPerfilForm(prev => ({
+                          ...prev,
+                          permissoes: { ...prev.permissoes, triagem: e.target.checked }
+                        }))}
+                      />
+                    </div>
+                    <span className="perm-switch-desc">
+                      Permite validar BI, Certificados, NUIT e assinalar conformidade de candidaturas.
+                    </span>
+                  </label>
+
+                  <label className={`perfil-perm-switch-box ${perfilForm.permissoes.homologacao ? 'active' : ''}`}>
+                    <div className="perm-switch-top">
+                      <div className="perm-switch-title">
+                        <CheckCircle2 size={17} color={perfilForm.permissoes.homologacao ? '#059669' : '#64748b'} />
+                        <strong>Homologação Final de Resultados</strong>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={perfilForm.permissoes.homologacao}
+                        onChange={(e) => setPerfilForm(prev => ({
+                          ...prev,
+                          permissoes: { ...prev.permissoes, homologacao: e.target.checked }
+                        }))}
+                      />
+                    </div>
+                    <span className="perm-switch-desc">
+                      Aprovar actas de júri, validar admitidos finais e despachos superiores do SERNIC.
+                    </span>
+                  </label>
+
+                  <label className={`perfil-perm-switch-box ${perfilForm.permissoes.pautas ? 'active' : ''}`}>
+                    <div className="perm-switch-top">
+                      <div className="perm-switch-title">
+                        <FileText size={17} color={perfilForm.permissoes.pautas ? '#2563eb' : '#64748b'} />
+                        <strong>Publicação de Pautas Oficiais</strong>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={perfilForm.permissoes.pautas}
+                        onChange={(e) => setPerfilForm(prev => ({
+                          ...prev,
+                          permissoes: { ...prev.permissoes, pautas: e.target.checked }
+                        }))}
+                      />
+                    </div>
+                    <span className="perm-switch-desc">
+                      Emitir pautas de admitidos, excluídos e calendários de exames no Portal Público.
+                    </span>
+                  </label>
+
+                  <label className={`perfil-perm-switch-box ${perfilForm.permissoes.concursos ? 'active' : ''}`}>
+                    <div className="perm-switch-top">
+                      <div className="perm-switch-title">
+                        <Briefcase size={17} color={perfilForm.permissoes.concursos ? '#d97706' : '#64748b'} />
+                        <strong>Gestão de Concursos & Vagas</strong>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={perfilForm.permissoes.concursos}
+                        onChange={(e) => setPerfilForm(prev => ({
+                          ...prev,
+                          permissoes: { ...prev.permissoes, concursos: e.target.checked }
+                        }))}
+                      />
+                    </div>
+                    <span className="perm-switch-desc">
+                      Criar editais, definir prazos limites de submissão e editar vagas institucionais.
+                    </span>
+                  </label>
+
+                  <label className={`perfil-perm-switch-box ${perfilForm.permissoes.auditoria ? 'active' : ''}`}>
+                    <div className="perm-switch-top">
+                      <div className="perm-switch-title">
+                        <History size={17} color={perfilForm.permissoes.auditoria ? '#7c3aed' : '#64748b'} />
+                        <strong>Auditoria & Registo de Actas</strong>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={perfilForm.permissoes.auditoria}
+                        onChange={(e) => setPerfilForm(prev => ({
+                          ...prev,
+                          permissoes: { ...prev.permissoes, auditoria: e.target.checked }
+                        }))}
+                      />
+                    </div>
+                    <span className="perm-switch-desc">
+                      Consultar livro de registo forense, rastreabilidade de decisões e exportar actas.
+                    </span>
+                  </label>
+
+                  <label className={`perfil-perm-switch-box ${perfilForm.permissoes.acessos ? 'active' : ''}`}>
+                    <div className="perm-switch-top">
+                      <div className="perm-switch-title">
+                        <ShieldCheck size={17} color={perfilForm.permissoes.acessos ? '#c32026' : '#64748b'} />
+                        <strong>Administração Geral & Acessos</strong>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={perfilForm.permissoes.acessos}
+                        onChange={(e) => setPerfilForm(prev => ({
+                          ...prev,
+                          permissoes: { ...prev.permissoes, acessos: e.target.checked }
+                        }))}
+                      />
+                    </div>
+                    <span className="perm-switch-desc">
+                      Gerir perfis da comissão, conceder novas credenciais e alterar definições estruturais.
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* NOTA INSTITUCIONAL HUMANIZADA */}
+              <div className="definicoes-form-group" style={{ marginTop: '1.25rem' }}>
+                <label>Termo de Compromisso / Nota Humanizada do Membro</label>
+                <textarea
+                  className="definicoes-input"
+                  rows={2}
+                  placeholder="Ex: Designado por Despacho da Direcção-Geral para coordenação do júri de 2026."
+                  value={perfilForm.nota}
+                  onChange={(e) => setPerfilForm(prev => ({ ...prev, nota: e.target.value }))}
+                />
+              </div>
+
+              {/* RODAPÉ DO MODAL */}
+              <div className="dossier-modal-footer" style={{ marginTop: '1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className="gestor-btn-secondary"
+                  onClick={() => setIsPerfilModalOpen(false)}
+                >
+                  Cancelar
+                </button>
+
+                <div style={{ display: 'flex', gap: '0.6rem' }}>
+                  {editingPerfil && (
+                    <button
+                      type="button"
+                      className="gestor-btn-outline danger"
+                      onClick={() => {
+                        handleDeletePerfil(editingPerfil.id);
+                        setIsPerfilModalOpen(false);
+                      }}
+                      style={{ color: '#c32026', borderColor: '#fca5a5' }}
+                    >
+                      <Trash2 size={15} />
+                      <span>Remover Membro</span>
+                    </button>
+                  )}
+                  <button type="submit" className="gestor-btn-primary-blue" style={{ background: '#0f2042', color: '#ffffff' }}>
+                    <Save size={15} />
+                    <span>{editingPerfil ? 'Salvar Credenciamento' : 'Gravar e Credenciar Membro'}</span>
                   </button>
                 </div>
               </div>
