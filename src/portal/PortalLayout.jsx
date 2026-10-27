@@ -455,6 +455,16 @@ export default function PortalLayout({
 
               <div className="portal-sidebar-group-title" style={{ marginTop: '0.8rem' }}>CONFIGURAÇÃO DO SISTEMA</div>
 
+              <button
+                type="button"
+                className={`portal-sidebar-btn ${gestorTab === 'servidor' ? 'active' : ''}`}
+                onClick={() => handleSelectGestorTab('servidor')}
+                title="Candidaturas do servidor, registo de acessos e segurança da conta"
+              >
+                <ShieldCheck size={18} className="sidebar-btn-icon" />
+                <span className="sidebar-btn-text">Controlo & Segurança</span>
+              </button>
+
               {/* MÓDULO CENTRAL DE DEFINIÇÕES NA BARRA LATERAL */}
               <button
                 type="button"

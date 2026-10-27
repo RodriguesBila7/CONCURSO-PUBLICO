@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import GestorServidorPanel from '../components/GestorServidorPanel';
 import { 
   Users, 
   CheckCircle2, 
@@ -4288,6 +4289,17 @@ export default function GestorPortalModule({
       {/* ========================================================
           ABA 7: MÓDULO DE DEFINIÇÕES DO CONCURSO (SOLICITADO)
           ======================================================== */}
+      {gestorTab === 'servidor' && (
+        <GestorServidorPanel
+          currentUser={currentUser}
+          onNotify={onNotify}
+          onSessaoExpirada={() => {
+            if (onNotify) onNotify('error', 'A sua sessão expirou. Inicie sessão novamente.');
+            if (onLogout) onLogout();
+          }}
+        />
+      )}
+
       {gestorTab === 'definicoes' && (
         <div className="gestor-tab-content fadeIn definicoes-tab-container">
           {/* ========================================================

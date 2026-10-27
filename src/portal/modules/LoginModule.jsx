@@ -35,6 +35,7 @@ import {
   detectCandidateGender 
 } from '../mockData';
 import ComprovativoInscricaoDocument from '../components/ComprovativoInscricaoDocument';
+import { setSessionToken } from '../api';
 
 // Componente Ícone Oficial Google (SVG Multicolor)
 const GoogleIcon = ({ size = 20 }) => (
@@ -97,8 +98,7 @@ export default function LoginModule({
   onLoginSuccess, 
   onLogout,
   navigate,
-  onNotify,
-  gestorAccessRequired = false
+  onNotify
 }) {
   // Abas quando deslogado: 'login' | 'register' | 'forgot'
   const [authTab, setAuthTab] = useState('login');
@@ -163,34 +163,22 @@ export default function LoginModule({
 
     setIsSubmitting(true);
     try {
-      const cleanIdent = loginIdentifier.trim();
-      const isTryingGestor = gestorAccessRequired ||
-                             cleanIdent.toLowerCase() === 'admin' ||
-                             cleanIdent.toLowerCase() === 'gestor' || 
-                             cleanIdent.toLowerCase().includes('drh') || 
-                             cleanIdent.toLowerCase().includes('sernic.gov.mz');
-
-      // Tentar autenticar contra o backend Express / SQLite
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          identifier: cleanIdent,
+          identifier: loginIdentifier.trim(),
           password: loginPassword,
-          expectedRole: isTryingGestor ? 'gestor' : 'candidate'
+          expectedRole: 'candidate'
         })
       });
       const data = await res.json();
 
       if (data.success && data.user) {
+        setSessionToken(data.token);
         onLoginSuccess(data.user);
-        if (data.user.role === 'admin' || data.user.role === 'gestor') {
-          navigate('/portal-gestor');
-          if (onNotify) onNotify('success', `Painel de Gestor activo: Bem-vindo(a), ${data.user.name}!`);
-        } else {
-          setUserCandidaturas(data.candidaturas && data.candidaturas.length > 0 ? data.candidaturas : INITIAL_CANDIDATURAS_CONSULTA);
-          if (onNotify) onNotify('success', `Bem-vindo(a), ${data.user.name}!`);
-        }
+        setUserCandidaturas(data.candidaturas && data.candidaturas.length > 0 ? data.candidaturas : INITIAL_CANDIDATURAS_CONSULTA);
+        if (onNotify) onNotify('success', `Bem-vindo(a), ${data.user.name}!`);
       } else {
         setLoginError(data.message || 'Credenciais incorrectas. Verifique os seus dados.');
       }
@@ -718,16 +706,14 @@ export default function LoginModule({
           <form onSubmit={handleLogin}>
             <div className="auth-header-block">
               <span className="auth-header-badge">Autenticação Oficial</span>
-              <h3 className="auth-header-title">{gestorAccessRequired ? 'Painel de Gestão' : 'Área do Candidato'}</h3>
+              <h3 className="auth-header-title">Área do Candidato</h3>
               <p className="auth-header-sub">
-                {gestorAccessRequired
-                  ? 'Acesso restrito à Direcção de Recursos Humanos e ao Júri. Introduza as credenciais de gestor.'
-                  : 'Aceda com as suas credenciais para gerir os seus processos no SERNIC.'}
+                Aceda com as suas credenciais para gerir os seus processos no SERNIC.
               </p>
             </div>
 
             {/* OPÇÃO DE LOGIN COM GOOGLE */}
-            {!gestorAccessRequired && <div className="auth-social-section">
+            <div className="auth-social-section">
               <button
                 type="button"
                 className="btn-google-auth"
@@ -744,7 +730,7 @@ export default function LoginModule({
               <div className="auth-or-divider">
                 <span>ou utilize a sua conta SERNIC / NUIT</span>
               </div>
-            </div>}
+            </div>
 
             <div className="form-group" style={{ marginBottom: '1.1rem' }}>
               <label>NUIT ou Correio Eletrónico</label>
@@ -811,27 +797,6 @@ export default function LoginModule({
               <LogIn size={18} />
               <span>{isSubmitting ? 'A Autenticar...' : 'Entrar no Sistema'}</span>
             </button>
-
-            {!gestorAccessRequired && <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px dashed var(--portal-border)', textAlign: 'center' }}>
-              <button
-                type="button"
-                onClick={() => navigate('/portal-gestor')}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#c32026',
-                  fontSize: '0.84rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.45rem'
-                }}
-              >
-                <ShieldCheck size={16} />
-                <span>Área Restrita: Aceder ao Painel de Gestão & Júri do Concurso</span>
-              </button>
-            </div>}
 
           </form>
         )}

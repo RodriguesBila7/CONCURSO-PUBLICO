@@ -19,7 +19,7 @@ export function corsOptions() {
       return callback(null, false);
     },
     methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     maxAge: 600
   };
 }

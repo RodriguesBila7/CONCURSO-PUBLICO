@@ -13,6 +13,16 @@ import {
   BI_REGEX,
   HEX_COLOR_REGEX
 } from './security.js';
+import {
+  createSession,
+  destroySession,
+  destroyUserSessions,
+  requireAuth,
+  requireGestor,
+  isGestorRole,
+  resolveSession,
+  purgeExpiredSessions
+} from './sessions.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -94,34 +104,37 @@ app.post('/api/auth/login', loginLimiter, (req, res) => {
       });
     }
 
-    const { expectedRole } = req.body;
-    if (expectedRole === 'gestor' && user.role !== 'admin') {
-      logAudit(identifier, 'LOGIN_FALHOU', 'Tentativa de acesso de gestor com perfil de candidato');
+    // Modos separados: gestores só entram pela Área de Gestão e candidatos pelo Portal
+    const modo = req.body?.expectedRole === 'gestor' ? 'gestor' : 'candidate';
+    const eGestor = isGestorRole(user.role);
+    if (modo === 'gestor' && !eGestor) {
+      logAudit(user.nuit, 'LOGIN_FALHOU', 'Candidato tentou entrar na Área de Gestão');
       return res.status(403).json({
         success: false,
-        message: 'Acesso restrito: Estas credenciais pertencem a um Candidato. Por favor, utilize a opção "ENTRAR COMO CANDIDATO".'
+        message: 'Estas credenciais pertencem a um candidato. Utilize o Portal de Recrutamento.'
+      });
+    }
+    if (modo === 'candidate' && eGestor) {
+      logAudit(user.nuit, 'LOGIN_FALHOU', 'Gestor tentou entrar pelo Portal do Candidato');
+      return res.status(403).json({
+        success: false,
+        message: 'Contas de gestão devem entrar pela Área de Gestão e Júri.'
       });
     }
 
-    // Fetch candidaturas (all if admin/gestor, or user-specific if candidate)
-    let candidaturas = [];
-    if (user.role === 'admin') {
-      candidaturas = db.prepare(`
-        SELECT * FROM candidaturas ORDER BY data_submissao DESC
-      `).all();
-    } else {
-      candidaturas = db.prepare(`
-        SELECT * FROM candidaturas WHERE nuit = ? ORDER BY data_submissao DESC
-      `).all(user.nuit);
-    }
+    const candidaturas = eGestor ? [] : db.prepare(`
+      SELECT * FROM candidaturas WHERE nuit = ? ORDER BY data_submissao DESC
+    `).all(user.nuit);
 
-    logAudit(user.nuit, 'LOGIN_SUCESSO', `Acesso efectuado com perfil ${user.role}`);
+    const token = createSession(user.id);
+    logAudit(user.nuit, eGestor ? 'LOGIN_GESTOR' : 'LOGIN_SUCESSO', `Acesso efectuado com perfil ${user.role}`);
 
     const { password: _, ...userSafe } = user;
     return res.json({
       success: true,
-      message: user.role === 'admin' ? `Painel de Gestor activo: Bem-vindo(a), ${user.name}!` : `Bem-vindo(a), ${user.name}!`,
+      message: eGestor ? `Painel de Gestão activo: Bem-vindo(a), ${user.name}!` : `Bem-vindo(a), ${user.name}!`,
       user: userSafe,
+      token,
       candidaturas
     });
   } catch (err) {
@@ -205,6 +218,131 @@ app.post('/api/auth/google', loginLimiter, (req, res) => {
   }
 });
 
+// Sessão actual (restaurar após recarregar a página)
+app.get('/api/auth/sessao', requireAuth, (req, res) => {
+  res.json({ success: true, user: req.session.user });
+});
+
+app.post('/api/auth/logout', (req, res) => {
+  const session = resolveSession(req);
+  if (session) {
+    destroySession(session.token);
+    logAudit(session.user.nuit, 'LOGOUT', 'Sessão terminada pelo utilizador');
+  }
+  res.json({ success: true });
+});
+
+app.post('/api/auth/alterar-senha', requireAuth, loginLimiter, (req, res) => {
+  const senhaActual = typeof req.body?.senhaActual === 'string' ? req.body.senhaActual : '';
+  const novaSenha = typeof req.body?.novaSenha === 'string' ? req.body.novaSenha : '';
+  const { user, token } = req.session;
+
+  const row = db.prepare('SELECT password FROM users WHERE id = ?').get(user.id);
+  if (!row || !bcrypt.compareSync(senhaActual, row.password)) {
+    logAudit(user.nuit, 'ALTERAR_SENHA_FALHOU', 'Senha actual incorrecta');
+    return res.status(400).json({ success: false, message: 'A senha actual está incorrecta.' });
+  }
+  const erro = validatePasswordPolicy(novaSenha);
+  if (erro) return res.status(400).json({ success: false, message: erro });
+  if (bcrypt.compareSync(novaSenha, row.password)) {
+    return res.status(400).json({ success: false, message: 'A nova senha deve ser diferente da actual.' });
+  }
+
+  db.prepare('UPDATE users SET password = ? WHERE id = ?').run(bcrypt.hashSync(novaSenha, 10), user.id);
+  destroyUserSessions(user.id, token);
+  logAudit(user.nuit, 'ALTERAR_SENHA', 'Senha alterada; outras sessões terminadas');
+  res.json({ success: true, message: 'Senha alterada com sucesso. As outras sessões abertas foram terminadas.' });
+});
+
+// ====================== ÁREA DE GESTÃO (apenas gestores) ======================
+app.get('/api/gestor/resumo', requireGestor, (req, res) => {
+  const total = db.prepare('SELECT COUNT(*) AS n FROM candidaturas').get().n;
+  const porEstado = db.prepare('SELECT status, COUNT(*) AS n FROM candidaturas GROUP BY status ORDER BY n DESC').all();
+  const porCarreira = db.prepare('SELECT carreira, COUNT(*) AS n FROM candidaturas GROUP BY carreira ORDER BY n DESC').all();
+  const falhasLogin24h = db.prepare(`
+    SELECT COUNT(*) AS n FROM logs_acesso
+    WHERE acao LIKE '%FALHOU%' AND data_hora >= datetime('now', '-1 day')
+  `).get().n;
+  res.json({ success: true, resumo: { total, porEstado, porCarreira, falhasLogin24h } });
+});
+
+app.get('/api/gestor/candidaturas', requireGestor, (req, res) => {
+  const busca = asTrimmedString(req.query.busca, 80);
+  const estado = asTrimmedString(req.query.estado, 80);
+  const where = [];
+  const params = [];
+  if (busca) {
+    where.push('(nome_completo LIKE ? OR nuit LIKE ? OR codigo_candidatura LIKE ? OR bi_numero LIKE ? OR email LIKE ?)');
+    const like = `%${busca}%`;
+    params.push(like, like, like, like, like);
+  }
+  if (estado) {
+    where.push('status = ?');
+    params.push(estado);
+  }
+  const rows = db.prepare(`
+    SELECT id, codigo_candidatura, nuit, nome_completo, email, telefone, carreira, nivel_academico, bi_numero, status, data_submissao
+    FROM candidaturas ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+    ORDER BY data_submissao DESC LIMIT 500
+  `).all(...params);
+  res.json({ success: true, candidaturas: rows });
+});
+
+const ESTADOS_CANDIDATURA = [
+  'Submetida com Sucesso',
+  'Em Análise Documental',
+  'Admitida à Entrevista',
+  'Admitida',
+  'Suplente',
+  'Excluída'
+];
+
+app.post('/api/gestor/candidaturas/:id/estado', requireGestor, (req, res) => {
+  const id = Number.parseInt(req.params.id, 10);
+  const estado = asTrimmedString(req.body?.estado, 80);
+  const motivo = asTrimmedString(req.body?.motivo, 500);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ success: false, message: 'Candidatura inválida.' });
+  }
+  if (!ESTADOS_CANDIDATURA.includes(estado)) {
+    return res.status(400).json({ success: false, message: 'Estado de candidatura inválido.' });
+  }
+  if (estado === 'Excluída' && motivo.length < 5) {
+    return res.status(400).json({ success: false, message: 'Indique o fundamento da exclusão.' });
+  }
+
+  const cand = db.prepare('SELECT codigo_candidatura, status FROM candidaturas WHERE id = ?').get(id);
+  if (!cand) return res.status(404).json({ success: false, message: 'Candidatura não encontrada.' });
+
+  db.prepare('UPDATE candidaturas SET status = ? WHERE id = ?').run(estado, id);
+  logAudit(
+    req.session.user.nuit,
+    'ALTERAR_ESTADO_CANDIDATURA',
+    `${cand.codigo_candidatura}: "${cand.status}" → "${estado}"${motivo ? ` (Fundamento: ${motivo})` : ''}`
+  );
+  res.json({ success: true, message: `Estado da candidatura ${cand.codigo_candidatura} actualizado para "${estado}".` });
+});
+
+app.get('/api/gestor/estados', requireGestor, (req, res) => {
+  res.json({ success: true, estados: ESTADOS_CANDIDATURA });
+});
+
+app.get('/api/gestor/acessos', requireGestor, (req, res) => {
+  const filtro = asTrimmedString(req.query.filtro, 40);
+  const params = [];
+  let where = '';
+  if (filtro === 'falhas') where = "WHERE acao LIKE '%FALHOU%' OR acao LIKE '%BLOQUEADO%'";
+  else if (filtro === 'gestao') {
+    where = "WHERE acao IN ('LOGIN_GESTOR', 'ALTERAR_ESTADO_CANDIDATURA', 'ALTERAR_SENHA', 'LOGOUT')";
+  }
+  const logs = db.prepare(`
+    SELECT id, nuit, acao, detalhes, data_hora FROM logs_acesso ${where}
+    ORDER BY id DESC LIMIT 300
+  `).all(...params);
+  res.json({ success: true, logs });
+});
+
 // Solicitar Acesso / Nova Candidatura
 app.post('/api/candidaturas/solicitar', sensitiveLimiter, (req, res) => {
   const body = req.body || {};
@@ -232,14 +370,20 @@ app.post('/api/candidaturas/solicitar', sensitiveLimiter, (req, res) => {
   if (bi && !BI_REGEX.test(bi)) {
     return res.status(400).json({ success: false, message: 'BI inválido: 12 dígitos seguidos de 1 letra.' });
   }
-  const passwordError = validatePasswordPolicy(password);
-  if (passwordError) {
-    return res.status(400).json({ success: false, message: passwordError });
+  // A senha só é exigida quando o pedido também cria a conta de acesso do candidato
+  if (password) {
+    const passwordError = validatePasswordPolicy(password);
+    if (passwordError) {
+      return res.status(400).json({ success: false, message: passwordError });
+    }
   }
 
   try {
-    const randomNum = Math.floor(10000 + Math.random() * 90000);
-    const codigoCandidatura = `SERNIC-2026-${randomNum}`;
+    const codigoCliente = asTrimmedString(body.codigoCandidatura, 40);
+    const codigoCandidatura = /^SERNIC-2026-(REC-)?\d{5}$/.test(codigoCliente) &&
+      !db.prepare('SELECT 1 FROM candidaturas WHERE codigo_candidatura = ?').get(codigoCliente)
+      ? codigoCliente
+      : `SERNIC-2026-${Math.floor(10000 + Math.random() * 90000)}`;
 
     // Regra estrita: cada candidato é único, sem repetições
     const existingCandidatura = db.prepare(`
@@ -255,14 +399,12 @@ app.post('/api/candidaturas/solicitar', sensitiveLimiter, (req, res) => {
       });
     }
 
-    const hashedPass = bcrypt.hashSync(password, 10);
-
     const existingUser = db.prepare('SELECT id FROM users WHERE nuit = ?').get(nuit);
-    if (!existingUser) {
+    if (!existingUser && password) {
       db.prepare(`
         INSERT INTO users (nuit, name, password, email, role)
         VALUES (?, ?, ?, ?, ?)
-      `).run(nuit, nomeCompleto, hashedPass, email, 'candidate');
+      `).run(nuit, nomeCompleto, bcrypt.hashSync(password, 10), email, 'candidate');
     }
 
     // Insert candidature
@@ -485,6 +627,9 @@ app.use((err, req, res, next) => {
   console.error('Erro não tratado:', err);
   res.status(500).json({ success: false, message: 'Erro interno do servidor.' });
 });
+
+purgeExpiredSessions();
+setInterval(purgeExpiredSessions, 15 * 60 * 1000).unref();
 
 app.listen(PORT, () => {
   console.log(`[SERNIC Backend] Servidor activo na porta ${PORT} com base de dados SQLite.`);

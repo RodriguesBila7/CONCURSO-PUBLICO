@@ -10285,3 +10285,449 @@ html.portal-modo-simplificado * {
     scroll-behavior: auto !important;
   }
 }
+
+/* ========================================================
+   ÁREA DE GESTÃO — ECRÃ DE ENTRADA PRÓPRIO DO GESTOR
+   ======================================================== */
+.gestor-login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: var(--portal-bg);
+}
+
+.gestor-login-shell {
+  width: 100%;
+  max-width: 1000px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--portal-border);
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.12);
+  background: var(--portal-card-bg);
+}
+
+.gestor-login-brand {
+  background: #0f2042;
+  color: #e2e8f0;
+  padding: 2.75rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  border-right: 4px solid var(--sernic-red);
+}
+
+.gestor-login-logo {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+}
+
+.gestor-login-kicker {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fbbf24;
+}
+
+.gestor-login-brand h1 {
+  font-size: 1.9rem;
+  color: #ffffff;
+  line-height: 1.15;
+}
+
+.gestor-login-brand p {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #cbd5e1;
+}
+
+.gestor-login-funcoes {
+  list-style: none;
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 0.8rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.gestor-login-funcoes li {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.88rem;
+  color: #e2e8f0;
+}
+
+.gestor-login-funcoes svg {
+  color: #fbbf24;
+  flex-shrink: 0;
+}
+
+.gestor-login-card {
+  padding: 2.75rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.gestor-login-badge {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--sernic-red);
+  background: rgba(195, 32, 38, 0.08);
+  border: 1px solid rgba(195, 32, 38, 0.25);
+}
+
+.gestor-login-card h2 {
+  font-size: 1.45rem;
+  color: var(--portal-text-main);
+  margin-top: 0.6rem;
+}
+
+.gestor-login-sub {
+  font-size: 0.86rem;
+  color: var(--portal-text-muted);
+  margin-bottom: 1.2rem;
+}
+
+.gestor-login-card form {
+  display: grid;
+  gap: 1rem;
+}
+
+.gestor-login-card label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--portal-text-sub);
+  margin-bottom: 0.4rem;
+}
+
+.gestor-login-eye {
+  position: absolute;
+  right: 0.6rem;
+  background: none;
+  border: none;
+  color: var(--portal-text-muted);
+  cursor: pointer;
+  padding: 0.35rem;
+  display: flex;
+}
+
+.gestor-login-card .auth-form-input[type="password"],
+.gestor-login-card #gestor-password {
+  padding-right: 2.75rem;
+}
+
+.gestor-login-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: var(--radius-md);
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #b91c1c;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.portal-theme-preto .gestor-login-error { color: #fca5a5; }
+
+.gestor-login-nota {
+  margin-top: 1rem;
+  font-size: 0.76rem;
+  color: var(--portal-text-muted);
+}
+
+.gestor-login-links {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--portal-border);
+}
+
+.gestor-login-links button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--portal-text-sub);
+  cursor: pointer;
+}
+
+.gestor-login-links button:hover { color: var(--sernic-red); }
+
+@media (max-width: 820px) {
+  .gestor-login-shell { grid-template-columns: 1fr; }
+  .gestor-login-brand {
+    border-right: none;
+    border-bottom: 4px solid var(--sernic-red);
+    padding: 2rem 1.5rem;
+  }
+  .gestor-login-card { padding: 2rem 1.5rem; }
+}
+
+/* ========================================================
+   ÁREA DE GESTÃO — PAINEL DE CONTROLO DO SERVIDOR
+   ======================================================== */
+.gestor-servidor {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.gestor-servidor-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.3rem;
+  border-radius: var(--radius-md);
+  background: var(--portal-btn-tab-bg);
+  align-self: flex-start;
+}
+
+.gestor-servidor-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: none;
+  background: transparent;
+  color: var(--portal-btn-tab-text);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.gestor-servidor-tabs button.active {
+  background: var(--portal-card-bg);
+  color: var(--portal-text-main);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.gestor-servidor-card {
+  background: var(--portal-card-bg);
+  border: 1px solid var(--portal-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+
+.gestor-servidor-card h3 {
+  font-size: 1rem;
+  color: var(--portal-text-main);
+  margin-bottom: 0.25rem;
+}
+
+.gestor-servidor-card .sub {
+  font-size: 0.82rem;
+  color: var(--portal-text-muted);
+  margin-bottom: 1rem;
+}
+
+.gestor-servidor-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.8rem;
+}
+
+.gestor-servidor-stat {
+  background: var(--portal-card-inner);
+  border: 1px solid var(--portal-border);
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1rem;
+}
+
+.gestor-servidor-stat span {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--portal-text-muted);
+}
+
+.gestor-servidor-stat strong {
+  font-size: 1.6rem;
+  color: var(--portal-text-main);
+}
+
+.gestor-servidor-stat.alerta strong { color: #dc2626; }
+
+.gestor-servidor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.gestor-servidor-toolbar input,
+.gestor-servidor-toolbar select,
+.gestor-servidor-form input,
+.gestor-servidor-form select,
+.gestor-servidor-form textarea {
+  height: 40px;
+  padding: 0 0.8rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--portal-input-border);
+  background: var(--portal-input-bg);
+  color: var(--portal-input-text);
+  font: inherit;
+  font-size: 0.86rem;
+}
+
+.gestor-servidor-form textarea {
+  height: auto;
+  min-height: 80px;
+  padding: 0.6rem 0.8rem;
+  resize: vertical;
+}
+
+.gestor-servidor-toolbar input { flex: 1 1 240px; }
+
+.gestor-servidor-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  height: 40px;
+  padding: 0 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--portal-border);
+  background: var(--portal-card-bg);
+  color: var(--portal-text-main);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gestor-servidor-btn.primary {
+  background: var(--sernic-red);
+  border-color: var(--sernic-red);
+  color: #ffffff;
+}
+
+.gestor-servidor-btn.primary:hover { background: var(--sernic-red-hover); }
+.gestor-servidor-btn:disabled { opacity: 0.6; }
+
+.gestor-servidor-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--radius-md);
+}
+
+.gestor-servidor-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.gestor-servidor-table th {
+  text-align: left;
+  padding: 0.65rem 0.8rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--portal-text-muted);
+  background: var(--portal-card-inner);
+  border-bottom: 1px solid var(--portal-border);
+  white-space: nowrap;
+}
+
+.gestor-servidor-table td {
+  padding: 0.65rem 0.8rem;
+  border-bottom: 1px solid var(--portal-border-subtle);
+  color: var(--portal-text-main);
+  vertical-align: top;
+}
+
+.gestor-servidor-table tr:last-child td { border-bottom: none; }
+
+.gestor-servidor-table .mono {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.gestor-servidor-table .muted { color: var(--portal-text-muted); }
+
+.gestor-estado-pill {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--portal-btn-tab-bg);
+  color: var(--portal-text-sub);
+}
+
+.gestor-estado-pill.ok { background: rgba(22, 163, 74, 0.12); color: #15803d; }
+.gestor-estado-pill.aviso { background: rgba(217, 119, 6, 0.12); color: #b45309; }
+.gestor-estado-pill.erro { background: rgba(220, 38, 38, 0.12); color: #b91c1c; }
+.portal-theme-preto .gestor-estado-pill.ok { color: #4ade80; }
+.portal-theme-preto .gestor-estado-pill.aviso { color: #fbbf24; }
+.portal-theme-preto .gestor-estado-pill.erro { color: #f87171; }
+
+.gestor-servidor-empty {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--portal-text-muted);
+  font-size: 0.86rem;
+}
+
+.gestor-servidor-form {
+  display: grid;
+  gap: 0.9rem;
+  max-width: 440px;
+}
+
+.gestor-servidor-form label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--portal-text-sub);
+}
+
+.gestor-servidor-msg {
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius-md);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.gestor-servidor-msg.ok {
+  background: rgba(22, 163, 74, 0.1);
+  border: 1px solid rgba(22, 163, 74, 0.3);
+  color: #15803d;
+}
+
+.gestor-servidor-msg.erro {
+  background: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  color: #b91c1c;
+}
+
+.portal-theme-preto .gestor-servidor-msg.ok { color: #4ade80; }
+.portal-theme-preto .gestor-servidor-msg.erro { color: #fca5a5; }

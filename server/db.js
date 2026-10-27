@@ -80,6 +80,15 @@ db.exec(`
     detalhes TEXT,
     data_hora DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+
+  CREATE TABLE IF NOT EXISTS sessoes (
+    token_hash TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    criada_em INTEGER NOT NULL,
+    expira_em INTEGER NOT NULL,
+    ultimo_acesso INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_sessoes_user ON sessoes(user_id);
 `);
 
 // Pre-seed default test users if empty

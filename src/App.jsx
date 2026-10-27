@@ -18,6 +18,10 @@ import CandidaturaModule from './portal/modules/CandidaturaModule';
 import ConsultaModule from './portal/modules/ConsultaModule';
 import LoginModule from './portal/modules/LoginModule';
 import GestorPortalModule from './portal/modules/GestorPortalModule';
+import GestorLoginPage from './portal/GestorLoginPage';
+import { getSessionToken, restaurarSessao, terminarSessao } from './portal/api';
+
+const GESTOR_TABS = ['dashboard', 'inscritos', 'deliberacao', 'pautas', 'vagas', 'auditoria', 'servidor', 'definicoes'];
 
 export default function App() {
   // ROUTING: Caminho actual (/ ou /portal-recrutamento/...)
@@ -87,7 +91,19 @@ export default function App() {
 
   // Authenticated user session
   const [currentUser, setCurrentUser] = useState(null);
+  const [isRestoringSession, setIsRestoringSession] = useState(() => Boolean(getSessionToken()));
   const [userCandidaturas, setUserCandidaturas] = useState([]);
+
+  useEffect(() => {
+    if (!isRestoringSession) return;
+    let cancelled = false;
+    restaurarSessao().then((user) => {
+      if (cancelled) return;
+      if (user) setCurrentUser(user);
+      setIsRestoringSession(false);
+    });
+    return () => { cancelled = true; };
+  }, [isRestoringSession]);
   const [isGestorModalOpen, setIsGestorModalOpen] = useState(false);
 
   // Modals
@@ -240,16 +256,14 @@ export default function App() {
       // REDIRECIONA PARA O NOVO PORTAL DE RECRUTAMENTO
       navigate('/portal-recrutamento');
       showToast('info', 'A aceder ao Portal de Recrutamento do SERNIC...');
-    } else if (isGestorUser(currentUser)) {
-      setGestorTab('dashboard');
-      navigate('/portal-gestor');
     } else {
-      navigate('/portal-recrutamento/login');
-      showToast('info', 'Autentique-se com as credenciais de gestor para aceder ao Painel de Gestão.');
+      if (isGestorUser(currentUser)) setGestorTab('dashboard');
+      navigate('/portal-gestor');
     }
   };
 
   const handleLogout = () => {
+    terminarSessao();
     setCurrentUser(null);
     setUserCandidaturas([]);
     setIsGestorModalOpen(false);
@@ -279,9 +293,7 @@ export default function App() {
     if (typeof window !== 'undefined' && window.location.hash) {
       const h = window.location.hash.replace('#', '');
       if (h.startsWith('definicoes-')) return 'definicoes';
-      if (['dashboard', 'inscritos', 'deliberacao', 'pautas', 'vagas', 'auditoria', 'definicoes'].includes(h)) {
-        return h;
-      }
+      if (GESTOR_TABS.includes(h)) return h;
     }
     return 'dashboard';
   });
@@ -322,7 +334,7 @@ export default function App() {
           if (['cursos', 'locais', 'temas', 'idioma', 'geral'].includes(sub)) {
             setDefinicoesSubTab(sub);
           }
-        } else if (['dashboard', 'inscritos', 'deliberacao', 'pautas', 'vagas', 'auditoria', 'definicoes'].includes(h)) {
+        } else if (GESTOR_TABS.includes(h)) {
           setGestorTab(h);
         }
       }
@@ -339,26 +351,39 @@ export default function App() {
                                  cleanPath === '/gestor' ||
                                  currentPath.includes('role=gestor');
 
-    if (isGestorModuleActive && !isGestorUser(currentUser)) {
-      portalContent = (
-        <LoginModule
-          currentUser={null}
-          gestorAccessRequired
-          onLoginSuccess={(u) => {
-            setCurrentUser(u);
-            if (isGestorUser(u)) {
-              setGestorTab('dashboard');
-              navigate('/portal-gestor');
-            } else {
-              navigate('/portal-recrutamento/login');
-            }
-          }}
-          onLogout={handleLogout}
-          navigate={navigate}
-          onNotify={showToast}
-        />
+    if (isRestoringSession) {
+      return (
+        <div className="session-restore-screen" role="status">
+          <Loader2 size={28} className="animate-spin" />
+          <span>A verificar a sessão...</span>
+        </div>
       );
-    } else if (isGestorModuleActive) {
+    }
+
+    if (isGestorModuleActive && !isGestorUser(currentUser)) {
+      return (
+        <>
+          <GestorLoginPage
+            navigate={navigate}
+            onLoginSuccess={(u, message) => {
+              setCurrentUser(u);
+              setGestorTab('dashboard');
+              if (typeof window !== 'undefined') window.location.hash = 'dashboard';
+              showToast('success', message || `Bem-vindo(a), ${u.name}!`);
+            }}
+          />
+          {toast && (
+            <div className={`toast-floating toast-${toast.type}`}>
+              {toast.type === 'success' && <CheckCircle2 size={20} color="#22c55e" />}
+              {toast.type === 'error' && <AlertCircle size={20} color="#ef4444" />}
+              <span>{toast.message}</span>
+            </div>
+          )}
+        </>
+      );
+    }
+
+    if (isGestorModuleActive) {
       portalContent = (
         <GestorPortalModule
           currentUser={currentUser}
