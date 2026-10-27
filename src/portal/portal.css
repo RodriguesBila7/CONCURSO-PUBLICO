@@ -86,8 +86,8 @@
    ESTRUTURA GERAL (PREENCHE TODO O ESPAÇO - FULL WIDTH COM ZOOM 80%)
    ======================================================== */
 .portal-container {
-  min-height: calc(100vh / 0.8);
-  width: 100% !important;
+  min-height: 100vh;
+  width: 100%;
   display: flex;
   flex-direction: column;
   background-color: var(--portal-bg);
@@ -98,115 +98,10 @@
   position: relative;
 }
 
-/* Marca de Água Oficial Grande e Transparente no Fundo da Página (SERNIC) */
-.portal-page-watermark-bg {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  z-index: 0;
-  overflow: hidden;
-}
-
-.portal-page-watermark-img {
-  width: 980px;
-  max-width: 92vw;
-  max-height: 90vh;
-  object-fit: contain;
-  opacity: 0.08;
-  user-select: none;
-  filter: drop-shadow(0 0 50px rgba(195, 32, 38, 0.18));
-  transition: opacity 0.4s ease, filter 0.4s ease;
-}
-
-.portal-theme-preto .portal-page-watermark-img {
-  opacity: 0.105;
-  filter: drop-shadow(0 0 60px rgba(0, 0, 0, 0.85));
-}
-
-/* Marcas de Água Oficiais Laterais nas Áreas Indicadas (Esquerda e Direita - Perfeitamente Visíveis) */
-.portal-watermark-lateral {
-  position: fixed;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 480px;
-  height: 480px;
-  pointer-events: none;
-  z-index: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  user-select: none;
-}
-
-.portal-watermark-lateral.left {
-  left: 20px;
-}
-
-.portal-watermark-lateral.right {
-  right: -80px;
-}
-
-.portal-watermark-lateral img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  opacity: 0.12;
-  filter: drop-shadow(0 0 45px rgba(195, 32, 38, 0.28));
-  transition: opacity 0.4s ease;
-}
-
-.portal-theme-preto .portal-watermark-lateral img {
-  opacity: 0.16;
-  filter: drop-shadow(0 0 55px rgba(0, 0, 0, 0.9));
-}
-
-/* MARCA DE ÁGUA OFICIAL NO FUNDO DA BARRA LATERAL ESQUERDA (GARANTINDO QUE NUNCA FIQUE SUMIDO NO LADO ESQUERDO) */
-.portal-sidebar-watermark {
-  position: absolute;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 280px;
-  height: 280px;
-  pointer-events: none;
-  z-index: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  user-select: none;
-  opacity: 0.12;
-  transition: opacity 0.3s ease, width 0.3s ease, height 0.3s ease;
-}
-
-.portal-sidebar-watermark img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  filter: drop-shadow(0 0 30px rgba(195, 32, 38, 0.3));
-}
-
-.portal-sidebar.collapsed .portal-sidebar-watermark {
-  width: 140px;
-  height: 140px;
-  opacity: 0.15;
-  bottom: 90px;
-}
-
-.portal-theme-preto .portal-sidebar-watermark {
-  opacity: 0.15;
-}
-
-.portal-theme-preto .portal-sidebar-watermark img {
-  filter: drop-shadow(0 0 35px rgba(0, 0, 0, 0.9));
-}
+/* Watermarks hidden */
+.portal-page-watermark-bg,
+.portal-watermark-lateral,
+.portal-sidebar-watermark { display: none; }
 
 /* Faixa Superior Institucional Edge-to-Edge */
 .portal-top-strip {
@@ -381,7 +276,7 @@
 
 .portal-theme-claro .portal-nav-btn.active,
 .portal-nav-btn.active {
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%) !important;
+  background: var(--sernic-red, #c32026) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.25) !important;
   box-shadow: 0 4px 14px rgba(195, 32, 38, 0.4) !important;
@@ -389,7 +284,7 @@
 }
 
 .portal-theme-preto .portal-nav-btn.active {
-  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%) !important;
+  background: #a8171d !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
   box-shadow: 0 4px 16px rgba(185, 28, 28, 0.5) !important;
@@ -499,7 +394,6 @@
 
 .portal-theme-toggle-btn:hover {
   border-color: var(--portal-gold);
-  transform: translateY(-1px);
 }
 
 /* Botão Voltar ao Início */
@@ -581,9 +475,9 @@
 
 /* Barra Lateral Esquerda (Alargada +2cm e preenchendo até abaixo) */
 .portal-sidebar {
-  width: calc(340px + 2cm);
-  min-width: calc(340px + 2cm);
-  max-width: calc(340px + 2cm);
+  width: 416px;
+  min-width: 416px;
+  max-width: 416px;
   background-color: var(--portal-header-bg);
   border-right: 1px solid var(--portal-border);
   padding: 1.4rem 1.25rem 1.8rem 1.25rem;
@@ -710,7 +604,6 @@
 }
 
 .portal-sidebar.collapsed .portal-sidebar-btn:hover {
-  transform: translateY(-2px) scale(1.08);
   background-color: rgba(195, 32, 38, 0.08);
   border-color: rgba(195, 32, 38, 0.35);
   box-shadow: 0 6px 18px rgba(195, 32, 38, 0.2);
@@ -726,10 +619,9 @@
 }
 
 .portal-sidebar.collapsed .portal-sidebar-btn.active {
-  background: linear-gradient(135deg, #c32026 0%, #9e141a 100%) !important;
+  background: var(--sernic-red, #c32026) !important;
   border: 1.5px solid rgba(255, 255, 255, 0.35) !important;
   box-shadow: 0 8px 24px rgba(195, 32, 38, 0.5), 0 0 0 3px rgba(195, 32, 38, 0.18) !important;
-  transform: translateY(-2px) scale(1.06);
 }
 
 .portal-sidebar.collapsed .portal-sidebar-btn.active .sidebar-btn-icon {
@@ -787,7 +679,6 @@
   border-radius: 14px;
   border: 1px solid rgba(197, 155, 39, 0.28);
   box-shadow: 0 4px 18px -4px rgba(15, 23, 42, 0.06), 0 0 0 1px rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
   position: relative;
   overflow: hidden;
   transition: all 0.25s ease;
@@ -951,7 +842,7 @@
 }
 
 .portal-sidebar-btn.active {
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 55%, #8f1217 100%) !important;
+  background: var(--sernic-red, #c32026) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.25) !important;
   box-shadow: 0 6px 20px -3px rgba(195, 32, 38, 0.45), 0 2px 6px rgba(195, 32, 38, 0.25) !important;
@@ -978,7 +869,6 @@
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
   font-size: 0.75rem;
   color: var(--portal-text-muted);
-  backdrop-filter: blur(8px);
 }
 
 .portal-theme-preto .portal-sidebar-footer {
@@ -1050,52 +940,23 @@
    ======================================================== */
 .portal-hero-wrapper {
   position: relative;
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   padding: 3px;
   overflow: hidden;
   margin-bottom: 2.4rem;
-  box-shadow: 0 20px 50px -10px rgba(195, 32, 38, 0.38), 0 0 25px rgba(245, 158, 11, 0.15);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
   background: rgba(195, 32, 38, 0.25);
   z-index: 1;
 }
 
 .portal-theme-preto .portal-hero-wrapper {
-  box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.75), 0 0 30px rgba(245, 158, 11, 0.2);
-  background: rgba(245, 158, 11, 0.18);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  background: rgba(245, 158, 11, 0.08);
 }
 
-/* Feixe animado que circula continuamente pelas 4 bordas com as cores oficiais do SERNIC */
+/* Hero beam animation removed — was conic-gradient rotating border */
 .portal-hero-beam {
-  position: absolute;
-  top: -60%;
-  left: -60%;
-  width: 220%;
-  height: 220%;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    transparent 35deg,
-    #c32026 80deg,
-    #f59e0b 130deg,
-    #38bdf8 175deg,
-    #fde047 215deg,
-    #c32026 260deg,
-    transparent 310deg,
-    transparent 360deg
-  );
-  animation: circulateSERNICBeam 5.5s linear infinite;
-  pointer-events: none;
-  filter: blur(1.5px);
-  z-index: 0;
-}
-
-@keyframes circulateSERNICBeam {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+  display: none;
 }
 
 /* Barra Luminosa Superior Circulante */
@@ -1125,35 +986,16 @@
   background: var(--portal-hero-bg);
   color: var(--portal-hero-text);
   padding: 3rem 3.2rem;
-  border-radius: 21px;
+  border-radius: var(--radius-lg);
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  border: 1px solid var(--portal-border);
   z-index: 1;
 }
 
-.portal-hero-banner::before {
-  content: '';
-  position: absolute;
-  top: -80px;
-  right: -80px;
-  width: 360px;
-  height: 360px;
-  background: radial-gradient(circle, var(--portal-hero-glow-gold, rgba(245, 158, 11, 0.28)) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 1;
-}
-
+.portal-hero-banner::before,
 .portal-hero-banner::after {
-  content: '';
-  position: absolute;
-  bottom: -60px;
-  left: 15%;
-  width: 320px;
-  height: 320px;
-  background: radial-gradient(circle, var(--portal-hero-glow-sky, rgba(56, 189, 248, 0.16)) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 1;
+  display: none;
 }
 
 .portal-hero-content {
@@ -1238,7 +1080,7 @@
 
 .module-card-wrapper {
   position: relative;
-  border-radius: 22px;
+  border-radius: var(--radius-lg);
   padding: 2.5px;
   overflow: hidden;
   cursor: pointer;
@@ -1248,31 +1090,9 @@
   text-decoration: none;
 }
 
-/* Feixe animado que circula continuamente com as cores oficiais do SERNIC */
+/* Module card beam animation removed — was conic-gradient rotating border */
 .module-card-beam {
-  position: absolute;
-  top: -60%;
-  left: -60%;
-  width: 220%;
-  height: 220%;
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    transparent 40deg,
-    #c32026 80deg,
-    #f59e0b 130deg,
-    #38bdf8 175deg,
-    #fde047 215deg,
-    #c32026 260deg,
-    transparent 310deg,
-    transparent 360deg
-  );
-  animation: circulateSERNICBeam 4s linear infinite;
-  opacity: 0;
-  transition: opacity 0.35s ease;
-  pointer-events: none;
-  filter: blur(2px);
-  z-index: 0;
+  display: none;
 }
 
 /* Ativação do feixe luminoso circulando: ao passar o rato (hover) ou ao clicar/focar (active/focus) */
@@ -1283,12 +1103,11 @@
 }
 
 .module-card-wrapper:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 20px 45px -10px rgba(195, 32, 38, 0.25), 0 0 25px rgba(245, 158, 11, 0.2);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
 }
 
 .portal-theme-preto .module-card-wrapper:hover {
-  box-shadow: 0 25px 55px -10px rgba(0, 0, 0, 0.85), 0 0 30px rgba(245, 158, 11, 0.25);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
 /* Modo Vidro (Glassmorphism) */
@@ -1296,7 +1115,7 @@
   position: relative;
   z-index: 1;
   width: 100%;
-  border-radius: 19px;
+  border-radius: var(--radius-lg);
   padding: 2.2rem;
   display: flex;
   flex-direction: column;
@@ -1304,8 +1123,6 @@
   
   /* Efeito de Vidro (Frosted Glass / Glassmorphism) */
   background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.7);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
   transition: all 0.3s ease;
@@ -1313,8 +1130,6 @@
 
 .portal-theme-preto .module-card-inner {
   background: rgba(22, 32, 50, 0.76);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.09);
   box-shadow: 0 10px 35px rgba(0, 0, 0, 0.4);
 }
@@ -1355,7 +1170,7 @@
 }
 
 .module-card-wrapper:hover .module-icon-wrap {
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%);
+  background: var(--sernic-red, #c32026);
   color: #fde047;
   transform: scale(1.08);
   box-shadow: 0 4px 14px rgba(195, 32, 38, 0.35);
@@ -1434,8 +1249,6 @@
   padding: 1rem 1.4rem;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.76);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--portal-border);
   box-shadow: var(--portal-shadow);
   flex-wrap: wrap;
@@ -1473,7 +1286,7 @@
 }
 
 .portal-flow-btn.forward {
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%);
+  background: var(--sernic-red, #c32026);
   color: #ffffff;
   box-shadow: 0 4px 12px rgba(195, 32, 38, 0.3);
 }
@@ -1494,12 +1307,12 @@
    ======================================================== */
 .module-page-container {
   width: 100%;
-  max-width: calc(1080px + 12cm);
+  max-width: 1200px;
   margin: 0 auto;
   background-color: var(--portal-card-bg);
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--portal-border);
-  box-shadow: 0 20px 45px -12px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
   padding: 2.2rem 2.6rem;
   transition: background-color 0.3s ease, border-color 0.3s ease;
   position: relative;
@@ -1508,18 +1321,18 @@
 }
 
 .portal-theme-preto .module-page-container {
-  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
 .portal-home-container {
   width: 100%;
-  max-width: calc(1080px + 12cm);
+  max-width: 1200px;
   margin: 0 auto;
   box-sizing: border-box;
 }
 
 .gestor-portal-main {
-  max-width: calc(1140px + 12cm);
+  max-width: 1200px;
 }
 
 .module-page-header {
@@ -1584,7 +1397,7 @@
 
 .filter-tab-btn.active,
 .portal-theme-claro .filter-tab-btn.active {
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%) !important;
+  background: var(--sernic-red, #c32026) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.25) !important;
   box-shadow: 0 4px 14px rgba(195, 32, 38, 0.4) !important;
@@ -1597,7 +1410,7 @@
 }
 
 .portal-theme-preto .filter-tab-btn.active {
-  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%) !important;
+  background: #a8171d !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
   box-shadow: 0 4px 16px rgba(185, 28, 28, 0.5) !important;
@@ -1703,7 +1516,7 @@
 }
 
 .btn-vaga-candidatar {
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%);
+  background: var(--sernic-red, #c32026);
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.2);
   font-weight: 800;
@@ -1723,7 +1536,6 @@
   background: linear-gradient(135deg, #d4272e 0%, #b81a20 100%);
   color: #ffffff;
   box-shadow: 0 8px 20px rgba(195, 32, 38, 0.5);
-  transform: translateY(-2px);
 }
 
 .btn-vaga-detalhes {
@@ -1960,7 +1772,7 @@
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%);
+  background: var(--sernic-red, #c32026);
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 0.75rem 1.4rem;
@@ -1982,14 +1794,13 @@
   background: linear-gradient(135deg, #d4272e 0%, #b81a20 100%);
   color: #ffffff;
   box-shadow: 0 8px 20px rgba(195, 32, 38, 0.5);
-  transform: translateY(-2px);
 }
 
 .btn-submit-candidatura {
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%);
+  background: var(--sernic-red, #c32026);
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.25);
   padding: 0.85rem 1.8rem;
@@ -2005,7 +1816,6 @@
   background: linear-gradient(135deg, #d4272e 0%, #b81a20 100%);
   color: #ffffff;
   box-shadow: 0 8px 24px rgba(195, 32, 38, 0.6);
-  transform: translateY(-2px);
 }
 
 /* ========================================================
@@ -2155,23 +1965,21 @@
 
 .auth-wrapper-card {
   width: 100%;
-  max-width: calc(540px + 12cm);
-  min-height: calc(440px + 4cm);
+  max-width: 560px;
+  min-height: 480px;
   margin: 0 auto;
   background-color: var(--portal-card-bg);
   border: 1px solid var(--portal-border);
-  border-radius: 24px;
-  padding: calc(2.2rem + 2cm) 3.2rem;
-  box-shadow: 0 24px 50px -12px rgba(0, 0, 0, 0.14), 0 0 0 1px rgba(0, 0, 0, 0.05);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem 3rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
   position: relative;
   z-index: 2;
   box-sizing: border-box;
 }
 
 .portal-theme-preto .auth-wrapper-card {
-  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
 .auth-segmented-tabs {
@@ -2207,7 +2015,7 @@
 }
 
 .auth-segmented-btn.active {
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%) !important;
+  background: var(--sernic-red, #c32026) !important;
   color: #ffffff !important;
   box-shadow: 0 4px 14px rgba(195, 32, 38, 0.4) !important;
   font-weight: 800;
@@ -2218,7 +2026,7 @@
 }
 
 .portal-theme-preto .auth-segmented-btn.active {
-  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%) !important;
+  background: #a8171d !important;
   color: #ffffff !important;
   box-shadow: 0 4px 16px rgba(185, 28, 28, 0.5) !important;
 }
@@ -2332,7 +2140,7 @@
 .btn-auth-primary {
   width: 100%;
   height: 48px;
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%);
+  background: var(--sernic-red, #c32026);
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 10px;
@@ -2354,7 +2162,6 @@
 .btn-auth-primary:hover {
   background: linear-gradient(135deg, #d4272e 0%, #b81a20 100%);
   box-shadow: 0 10px 24px -2px rgba(195, 32, 38, 0.55);
-  transform: translateY(-2px);
 }
 
 .btn-auth-primary:active {
@@ -2406,7 +2213,6 @@
   background: rgba(195, 32, 38, 0.08);
   color: #c32026;
   border-color: rgba(195, 32, 38, 0.3);
-  transform: translateY(-1px);
 }
 
 .portal-theme-preto .auth-demo-pill:hover {
@@ -2566,7 +2372,7 @@ textarea::placeholder,
 }
 
 .candidate-sidebar-tab-btn.active {
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%) !important;
+  background: var(--sernic-red, #c32026) !important;
   color: #ffffff !important;
   border-color: rgba(255, 255, 255, 0.25) !important;
   box-shadow: 0 4px 14px rgba(195, 32, 38, 0.4) !important;
@@ -2578,7 +2384,7 @@ textarea::placeholder,
 }
 
 .portal-theme-preto .candidate-sidebar-tab-btn.active {
-  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%) !important;
+  background: #a8171d !important;
   color: #ffffff !important;
   border-color: rgba(255, 255, 255, 0.2) !important;
   box-shadow: 0 4px 16px rgba(185, 28, 28, 0.5) !important;
@@ -2696,7 +2502,7 @@ textarea::placeholder,
 .gestor-hero-banner {
   background: var(--portal-card-bg);
   border: 1px solid var(--portal-border);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   padding: 1.85rem 2.2rem 1.75rem 2.2rem;
   margin-bottom: 2rem;
   box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.06);
@@ -2805,18 +2611,16 @@ textarea::placeholder,
 
 .gestor-action-btn.secondary:hover {
   background: var(--portal-border);
-  transform: translateY(-1px);
 }
 
 .gestor-action-btn.primary {
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%);
+  background: var(--sernic-red, #c32026);
   border: 1px solid #c32026;
   color: #ffffff;
   box-shadow: 0 3px 12px rgba(195, 32, 38, 0.28);
 }
 
 .gestor-action-btn.primary:hover {
-  transform: translateY(-1px);
   box-shadow: 0 6px 18px rgba(195, 32, 38, 0.38);
 }
 
@@ -2856,7 +2660,7 @@ textarea::placeholder,
 }
 
 .gestor-tab-btn.active {
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%) !important;
+  background: var(--sernic-red, #c32026) !important;
   color: #ffffff !important;
   box-shadow: 0 4px 14px rgba(195, 32, 38, 0.35) !important;
 }
@@ -2910,7 +2714,6 @@ textarea::placeholder,
 }
 
 .gestor-kpi-card:hover {
-  transform: translateY(-2px);
   box-shadow: var(--portal-shadow-hover);
 }
 
@@ -3103,7 +2906,7 @@ textarea::placeholder,
 .gestor-funnel-full-card {
   background: var(--portal-card-bg);
   border: 1px solid var(--portal-border);
-  border-radius: 18px;
+  border-radius: var(--radius-lg);
   padding: 1.85rem 2.2rem;
   box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.06);
   margin-top: 1.75rem;
@@ -3133,7 +2936,7 @@ textarea::placeholder,
   width: 46px;
   height: 46px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%);
+  background: var(--sernic-red, #c32026);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3449,7 +3252,6 @@ textarea::placeholder,
 }
 
 .funnel-kpi-card:hover {
-  transform: translateY(-2px);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
 }
 
@@ -3529,7 +3331,7 @@ textarea::placeholder,
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%) !important;
+  background: var(--sernic-red, #c32026) !important;
   color: #ffffff !important;
   border: 1px solid #c32026;
   padding: 0.65rem 1.25rem;
@@ -3542,7 +3344,6 @@ textarea::placeholder,
 }
 
 .gestor-btn-primary-red:hover {
-  transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(195, 32, 38, 0.4);
 }
 
@@ -3934,7 +3735,7 @@ textarea::placeholder,
 }
 
 .btn-action-deliberar:hover {
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%);
+  background: var(--sernic-red, #c32026);
   color: #ffffff;
   border-color: #c32026;
 }
@@ -4076,7 +3877,7 @@ textarea::placeholder,
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%);
+  background: var(--sernic-red, #c32026);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -4390,7 +4191,7 @@ textarea::placeholder,
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%) !important;
+  background: var(--sernic-red, #c32026) !important;
   color: #ffffff !important;
   border: 1px solid #c32026;
   padding: 0.75rem 1.6rem;
@@ -4403,7 +4204,6 @@ textarea::placeholder,
 }
 
 .btn-salvar-deliberacao-red:hover {
-  transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(195, 32, 38, 0.45);
 }
 
@@ -4478,7 +4278,6 @@ textarea::placeholder,
 }
 
 .pauta-gestor-card:hover {
-  transform: translateY(-2px);
   box-shadow: var(--portal-shadow-hover);
 }
 
@@ -4579,7 +4378,7 @@ textarea::placeholder,
   justify-content: center;
   gap: 0.4rem;
   padding: 0.6rem;
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%);
+  background: var(--sernic-red, #c32026);
   border: 1px solid #c32026;
   border-radius: 8px;
   font-size: 0.82rem;
@@ -4831,14 +4630,14 @@ textarea::placeholder,
   color: #0f172a !important;
   opacity: 1 !important;
   border: 1px solid #cbd5e1 !important;
-  border-radius: 20px !important;
-  box-shadow: 0 25px 65px -12px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.08) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.16) !important;
   position: relative !important;
   box-sizing: border-box !important;
   margin: auto !important;
-  width: min(calc(760px + 7cm), 96vw);
+  width: min(960px, 96vw);
   max-width: 96vw;
-  height: min(calc(490px + 7cm), 92vh);
+  height: min(700px, 92vh);
   min-height: min(380px, 80vh);
   max-height: 94vh;
   display: flex !important;
@@ -4880,16 +4679,15 @@ textarea::placeholder,
   background: #1a2538 !important;
   color: #f8fafc !important;
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  box-shadow: 0 30px 80px -15px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
 }
 
-/* Dimensões Específicas Ampliadas de Sub-Abas (+7cm horizontal e +7cm vertical) */
-.dossier-modal { width: min(calc(940px + 7cm), 96vw); height: min(calc(540px + 7cm), 92vh); max-height: 94vh !important; }
-.novo-edital-modal { width: min(calc(700px + 7cm), 96vw); height: min(calc(520px + 7cm), 92vh); max-height: 94vh !important; }
-.pauta-timbrada-modal { width: min(calc(900px + 7cm), 96vw); height: min(calc(560px + 7cm), 92vh); max-height: 94vh !important; }
-.doc-preview-modal { width: min(calc(740px + 7cm), 96vw); height: min(calc(520px + 7cm), 92vh); max-height: 94vh !important; }
-.definicoes-modal { width: min(calc(660px + 7cm), 96vw); height: min(calc(480px + 7cm), 92vh); max-height: 94vh !important; }
-.comprovativo-print-modal { width: min(calc(840px + 7cm), 96vw); height: min(calc(540px + 7cm), 92vh); max-height: 94vh !important; }
+.dossier-modal { width: min(1080px, 96vw); height: min(720px, 92vh); max-height: 94vh; }
+.novo-edital-modal { width: min(860px, 96vw); height: min(680px, 92vh); max-height: 94vh; }
+.pauta-timbrada-modal { width: min(1040px, 96vw); height: min(740px, 92vh); max-height: 94vh; }
+.doc-preview-modal { width: min(900px, 96vw); height: min(680px, 92vh); max-height: 94vh; }
+.definicoes-modal { width: min(800px, 96vw); height: min(640px, 92vh); max-height: 94vh; }
+.comprovativo-print-modal { width: min(980px, 96vw); height: min(720px, 92vh); max-height: 94vh; }
 
 /* ========================================================
    CONTROLO DE MOVIMENTO E EXTENSÃO DE REDIMENSIONAMENTO (SUB-ABAS)
@@ -5092,7 +4890,7 @@ textarea::placeholder,
 }
 
 .sub-aba-mode-btn.active {
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%);
+  background: var(--sernic-red, #c32026);
   color: #ffffff;
   box-shadow: 0 2px 6px rgba(195, 32, 38, 0.3);
 }
@@ -5442,7 +5240,7 @@ textarea::placeholder,
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%);
+  background: var(--sernic-red, #c32026);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -5855,11 +5653,10 @@ textarea::placeholder,
 }
 
 .portal-header-logout-btn:hover {
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%);
+  background: var(--sernic-red, #c32026);
   color: #ffffff;
   border-color: #c32026;
   box-shadow: 0 4px 14px rgba(195, 32, 38, 0.35);
-  transform: translateY(-1px);
 }
 
 /* ========================================================
@@ -5958,7 +5755,7 @@ textarea::placeholder,
 }
 
 .definicoes-subtab-btn.active {
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%) !important;
+  background: var(--sernic-red, #c32026) !important;
   color: #ffffff !important;
   border-color: rgba(255, 255, 255, 0.2) !important;
   box-shadow: 0 4px 14px rgba(195, 32, 38, 0.35) !important;
@@ -6232,7 +6029,6 @@ textarea::placeholder,
 .local-center-card:hover {
   border-color: #c32026;
   box-shadow: 0 8px 24px rgba(195, 32, 38, 0.08);
-  transform: translateY(-2px);
 }
 
 .local-card-header {
@@ -6394,7 +6190,6 @@ textarea::placeholder,
 
 .theme-color-card:hover {
   border-color: #c32026;
-  transform: translateY(-2px);
 }
 
 .theme-color-card.selected {
@@ -6630,7 +6425,6 @@ textarea::placeholder,
 .theme-color-crud-card:hover {
   border-color: #c32026;
   box-shadow: 0 10px 28px -6px rgba(195, 32, 38, 0.16);
-  transform: translateY(-3px);
 }
 
 .theme-color-crud-card.selected {
@@ -6727,11 +6521,10 @@ textarea::placeholder,
 }
 
 .theme-btn-activate:hover {
-  background: linear-gradient(135deg, #c32026 0%, #a8171d 100%);
+  background: var(--sernic-red, #c32026);
   color: #ffffff;
   border-color: #c32026;
   box-shadow: 0 4px 14px rgba(195, 32, 38, 0.3);
-  transform: translateY(-1px);
 }
 
 .theme-btn-activate.is-active {
@@ -6760,7 +6553,6 @@ textarea::placeholder,
   border-color: #c32026;
   color: #c32026;
   background-color: rgba(195, 32, 38, 0.08);
-  transform: translateY(-1px);
 }
 
 .theme-btn-icon-action.danger:hover {
@@ -6780,7 +6572,6 @@ textarea::placeholder,
   border-left: 4px solid #c32026;
   border-radius: 14px;
   box-shadow: 0 4px 18px -4px rgba(15, 23, 42, 0.05);
-  backdrop-filter: blur(8px);
 }
 
 .definicoes-section-indicator h4 {
@@ -6818,7 +6609,6 @@ textarea::placeholder,
 
 .theme-mode-choice-card:hover {
   border-color: #c32026;
-  transform: translateY(-2px);
 }
 
 .theme-mode-choice-card.active {
@@ -7453,7 +7243,6 @@ textarea::placeholder,
   background-color: #f8fafd;
   border-color: #c2e7ff;
   box-shadow: 0 4px 12px rgba(66, 133, 244, 0.16);
-  transform: translateY(-1px);
   color: #1a73e8;
 }
 
@@ -7519,7 +7308,6 @@ textarea::placeholder,
   right: 0;
   bottom: 0;
   background-color: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -7532,8 +7320,8 @@ textarea::placeholder,
   width: 100%;
   max-width: 480px;
   background: #ffffff;
-  border-radius: 18px;
-  box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
   overflow: hidden;
   animation: slideUpModal 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -7544,7 +7332,7 @@ textarea::placeholder,
   background: #182234;
   color: #f8fafc;
   border: 1px solid #334155;
-  box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
 .google-modal-header {
@@ -8299,7 +8087,6 @@ textarea::placeholder,
   right: 0;
   bottom: 0;
   background-color: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(4px);
   z-index: 9999;
   display: flex;
   justify-content: center;
@@ -8394,7 +8181,6 @@ textarea::placeholder,
 
 .btn-print-comprovativo:hover {
   background: linear-gradient(135deg, #162c5c 0%, #2563eb 100%);
-  transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(15, 32, 66, 0.35);
 }
 
@@ -8805,7 +8591,6 @@ textarea::placeholder,
 
 .btn-proximo-pendente:hover {
   background: linear-gradient(135deg, #162c5c 0%, #2563eb 100%);
-  transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(15, 32, 66, 0.35);
 }
 
@@ -8839,7 +8624,6 @@ textarea::placeholder,
   background: #d97706;
   color: #ffffff;
   border-color: #b45309;
-  transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(217, 119, 6, 0.25);
 }
 
@@ -8868,7 +8652,6 @@ textarea::placeholder,
   background: #d97706;
   color: #ffffff;
   border-color: #b45309;
-  transform: translateY(-1px);
 }
 
 /* Card do Homologador / Perfil Autorizador no Topo da Deliberação */
@@ -9143,7 +8926,6 @@ textarea::placeholder,
 
 .admin-unlock-gate-card .btn-unlock-submit:hover {
   background: linear-gradient(135deg, #162c5c 0%, #2563eb 100%);
-  transform: translateY(-1px);
 }
 
 .admin-unlock-gate-card .unlock-error-msg {
@@ -9235,7 +9017,7 @@ textarea::placeholder,
 
 /* Modais de Segurança SERNIC */
 .security-modal-card {
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
   border-radius: 14px;
   overflow: hidden;
   background: var(--portal-card-bg, #ffffff);
@@ -9640,7 +9422,6 @@ textarea::placeholder,
 }
 
 .carreira-kpi-pill:hover {
-  transform: translateY(-2px);
   box-shadow: var(--portal-shadow);
 }
 
@@ -9702,7 +9483,6 @@ textarea::placeholder,
 }
 
 .carreira-card-sernic:hover {
-  transform: translateY(-3px);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1);
   border-color: rgba(195, 32, 38, 0.35);
 }
@@ -10023,7 +9803,7 @@ textarea::placeholder,
 }
 
 .carreira-modal-dialog {
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2) !important;
 }
 
 /* ========================================================
@@ -10043,7 +9823,6 @@ textarea::placeholder,
 }
 
 .gestor-kpi-card:hover {
-  transform: translateY(-2px);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08) !important;
 }
 
@@ -10076,12 +9855,10 @@ textarea::placeholder,
 }
 
 .gestor-btn-primary-red:hover {
-  transform: translateY(-1px);
   box-shadow: 0 4px 14px rgba(195, 32, 38, 0.35);
 }
 
 .gestor-btn-outline:hover {
-  transform: translateY(-1px);
 }
 
 /* ========================================================
@@ -10158,7 +9935,6 @@ textarea::placeholder,
 }
 
 .acessibilidade-card:hover {
-  transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
 }
 
@@ -10289,7 +10065,7 @@ textarea::placeholder,
   bottom: 0;
   background-color: #cbd5e1;
   transition: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  border-radius: 26px;
+  border-radius: var(--radius-lg);
 }
 
 .slider-custom:before {
