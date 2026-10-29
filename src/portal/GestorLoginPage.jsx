@@ -16,6 +16,7 @@ import {
 import sernicLogo from '../assets/sernic-logo.png';
 import { apiFetch, setSessionToken } from './api';
 import './portal.css';
+import PortalFooter from './components/PortalFooter';
 
 const FUNCOES = [
   { icon: Users, texto: 'Gerir inscritos e dossiers dos candidatos' },
@@ -155,7 +156,8 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
         <img src={sernicLogo} alt="" />
       </div>
 
-      <div className="gestor-login-shell">
+      <div className="gestor-login-content-area">
+        <div className="gestor-login-shell">
         <aside className="gestor-login-brand">
           <img src={sernicLogo} alt="Logótipo do SERNIC" className="gestor-login-logo" />
           <span className="gestor-login-kicker">Serviço Nacional de Investigação Criminal</span>
@@ -266,7 +268,11 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
             </button>
           </div>
         </main>
+        </div>
       </div>
+
+      {/* RODAPÉ OFICIAL DO PORTAL */}
+      <PortalFooter navigate={navigate} />
     </div>
   );
 }

@@ -10518,11 +10518,20 @@ html.portal-modo-simplificado * {
    ======================================================== */
 .gestor-login-page {
   display: flex;
+  flex-direction: column;
+  min-height: var(--vh-full, 100vh);
+  background: var(--portal-bg);
+  padding: 0;
+}
+
+.gestor-login-content-area {
+  flex: 1 0 auto;
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2.5rem 1.5rem;
-  background: var(--portal-bg);
-  min-height: 100vh;
+  padding: 3.5rem 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .gestor-login-shell {
@@ -10579,9 +10588,9 @@ html.portal-modo-simplificado * {
   list-style: none;
   display: grid;
   gap: 0.85rem;
-  margin-top: 1rem;
-  padding-top: 1.35rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  margin-top: 0.8rem;
+  padding-top: 0;
+  border-top: none;
 }
 
 .gestor-login-funcoes li {
