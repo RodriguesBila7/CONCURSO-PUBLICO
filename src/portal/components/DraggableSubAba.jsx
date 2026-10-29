@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Move } from 'lucide-react';
+import { Move, X } from 'lucide-react';
 
 // O body usa zoom CSS; as coordenadas do rato vêm em píxeis do ecrã
 function getPageZoom() {
@@ -353,6 +353,20 @@ export default function DraggableSubAba({
           </div>
           <div className="sub-aba-drag-controls no-drag" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <span className="sub-aba-drag-hint">Arraste para mover • Duplo-clique p/ centralizar</span>
+            {onClose && (
+              <button
+                type="button"
+                className="sub-aba-header-close-btn no-drag"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClose();
+                }}
+                title="Fechar janela"
+                aria-label="Fechar janela"
+              >
+                <X size={15} strokeWidth={2.5} />
+              </button>
+            )}
           </div>
         </div>
       )}
