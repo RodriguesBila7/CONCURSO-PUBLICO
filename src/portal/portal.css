@@ -10551,22 +10551,23 @@ html.portal-modo-simplificado * {
 .gestor-login-brand {
   background: #0f2042;
   color: #e2e8f0;
-  padding: 3.5rem 3.25rem;
+  padding: 2.25rem 3rem 2.5rem 3rem;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   text-align: center;
-  gap: 1rem;
+  gap: 0.85rem;
   border-right: 4px solid var(--sernic-red);
 }
 
 .gestor-login-logo {
-  width: 115px;
-  height: 115px;
+  width: 190px;
+  height: 190px;
   object-fit: contain;
-  margin: 0 auto 0.25rem auto;
+  margin: 0 auto 0.15rem auto;
   display: block;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.3));
 }
 
 .gestor-login-kicker {
@@ -10581,17 +10582,17 @@ html.portal-modo-simplificado * {
 }
 
 .gestor-login-brand h1 {
-  font-size: 2.2rem;
+  font-size: 2.15rem;
   color: #ffffff;
-  line-height: 1.18;
+  line-height: 1.15;
   text-align: center;
   margin: 0;
   width: 100%;
 }
 
 .gestor-login-brand p {
-  font-size: 0.98rem;
-  line-height: 1.6;
+  font-size: 0.95rem;
+  line-height: 1.55;
   color: #cbd5e1;
   text-align: center;
   max-width: 480px;
@@ -10602,8 +10603,8 @@ html.portal-modo-simplificado * {
 .gestor-login-funcoes {
   list-style: none;
   display: grid;
-  gap: 0.85rem;
-  margin: 0.8rem auto 0 auto;
+  gap: 0.8rem;
+  margin: auto auto 0 auto;
   padding-top: 0;
   border-top: none;
   width: 100%;
@@ -10743,7 +10744,11 @@ html.portal-modo-simplificado * {
   .gestor-login-brand {
     border-right: none;
     border-bottom: 4px solid var(--sernic-red);
-    padding: 2.5rem 1.75rem;
+    padding: 2.2rem 1.75rem;
+  }
+  .gestor-login-logo {
+    width: 150px;
+    height: 150px;
   }
   .gestor-login-card {
     padding: 2.5rem 1.75rem;
