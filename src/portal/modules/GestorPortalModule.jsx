@@ -3217,19 +3217,6 @@ export default function GestorPortalModule({
 
               <button
                 type="button"
-                className={`deliberacao-tab-btn ${filtroDeliberacaoModo === 'excluidos' ? 'active' : ''}`}
-                onClick={() => {
-                  setFiltroDeliberacaoModo('excluidos');
-                  const first = candidatos.find(c => (c.status && c.status.includes('Excluíd')) || (c.deliberacaoJuri?.notaFinal && parseFloat(c.deliberacaoJuri.notaFinal) < 10));
-                  if (first) iniciarDeliberacao(first);
-                }}
-              >
-                <span>Excluídos</span>
-                <span className="tab-count">{stats.excluidosTotal}</span>
-              </button>
-
-              <button
-                type="button"
                 className={`deliberacao-tab-btn ${filtroDeliberacaoModo === 'suplentes' ? 'active' : ''}`}
                 onClick={() => {
                   setFiltroDeliberacaoModo('suplentes');
@@ -3239,6 +3226,19 @@ export default function GestorPortalModule({
               >
                 <span>Suplentes</span>
                 <span className="tab-count">{stats.suplentesTotal}</span>
+              </button>
+
+              <button
+                type="button"
+                className={`deliberacao-tab-btn ${filtroDeliberacaoModo === 'excluidos' ? 'active' : ''}`}
+                onClick={() => {
+                  setFiltroDeliberacaoModo('excluidos');
+                  const first = candidatos.find(c => (c.status && c.status.includes('Excluíd')) || (c.deliberacaoJuri?.notaFinal && parseFloat(c.deliberacaoJuri.notaFinal) < 10));
+                  if (first) iniciarDeliberacao(first);
+                }}
+              >
+                <span>Excluídos</span>
+                <span className="tab-count">{stats.excluidosTotal}</span>
               </button>
             </div>
           </div>
