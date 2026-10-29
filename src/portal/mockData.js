@@ -1300,6 +1300,7 @@ export function evaluatePasswordStrength(password) {
 // ========================================================
 
 const STORAGE_KEY_CANDIDATURAS = 'sernic_concurso_candidaturas_v8';
+const STORAGE_KEY_DELETED_CANDIDATURAS = 'sernic_candidaturas_eliminadas_permanente_v1';
 const STORAGE_KEY_LISTAS = 'sernic_concurso_listas_v2';
 const STORAGE_KEY_AUDITORIA = 'sernic_concurso_auditoria_v2';
 const STORAGE_KEY_VAGAS = 'sernic_concurso_vagas_v2';
@@ -1560,20 +1561,38 @@ export function getCandidateSeqNumber(candidato, allCandidatos = null) {
   return String(seq).padStart(5, '0');
 }
 
+export function getStoredDeletedCandidaturas() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_DELETED_CANDIDATURAS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {
+    console.warn('Erro ao ler candidaturas eliminadas', e);
+  }
+  return [];
+}
+
+export function saveStoredDeletedCandidaturas(deletedCodigos) {
+  try {
+    localStorage.setItem(STORAGE_KEY_DELETED_CANDIDATURAS, JSON.stringify(deletedCodigos));
+  } catch (e) {
+    console.warn('Erro ao salvar candidaturas eliminadas', e);
+  }
+}
+
 export function getStoredCandidaturas() {
+  const deletedSet = new Set(getStoredDeletedCandidaturas());
+
   try {
     const raw = localStorage.getItem(STORAGE_KEY_CANDIDATURAS);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        // Se a lista no localStorage tiver menos de 20 candidatos (versão anterior),
-        // unifica com INITIAL_CANDIDATURAS_CONSULTA para perfazer os 45 candidatos e habilitar a paginação de 20 por página
-        let listaTrabalho = parsed;
-        if (parsed.length < 20) {
-          listaTrabalho = deduplicateCandidaturas([...parsed, ...INITIAL_CANDIDATURAS_CONSULTA]);
-        }
-        // Aplica deduplicação estrita de imediato para eliminar quaisquer repetições
-        const uniqueParsed = deduplicateCandidaturas(listaTrabalho);
+      if (Array.isArray(parsed)) {
+        // Filtra candidaturas que foram eliminadas definitivamente
+        const activeParsed = parsed.filter(c => !deletedSet.has(c.codigoCandidatura));
+        const uniqueParsed = deduplicateCandidaturas(activeParsed);
         let hasChanges = uniqueParsed.length !== parsed.length;
 
         const normalized = uniqueParsed.map((c, i) => {
@@ -1632,8 +1651,10 @@ export function getStoredCandidaturas() {
   } catch (e) {
     console.warn('Erro ao ler candidaturas do localStorage', e);
   }
-  // Inicializa com as candidaturas padrão com unicidade garantida e número sequencial
-  const deduplicatedInitial = deduplicateCandidaturas(INITIAL_CANDIDATURAS_CONSULTA).map((c, i) => ({
+  // Inicializa com as candidaturas padrão, excluindo quaisquer candidaturas eliminadas
+  const deduplicatedInitial = deduplicateCandidaturas(
+    INITIAL_CANDIDATURAS_CONSULTA.filter(c => !deletedSet.has(c.codigoCandidatura))
+  ).map((c, i) => ({
     ...c,
     numeroCandidato: String(i + 1).padStart(5, '0')
   }));
@@ -1694,6 +1715,7 @@ export function resetStoredCandidaturasParaInicio() {
 
   try {
     localStorage.removeItem('sernic_homologacao_desbloqueada');
+    localStorage.removeItem(STORAGE_KEY_DELETED_CANDIDATURAS);
   } catch {}
 
   saveStoredCandidaturas(freshList);
@@ -2019,18 +2041,45 @@ export function deleteStoredCandidatura(codigo, operador = 'Comissão de Júri S
   const target = list.find(c => c.codigoCandidatura === codigo);
   if (!target) return false;
 
+  // 1. Regista o código na lista de eliminados permanentes
+  const deleted = getStoredDeletedCandidaturas();
+  if (!deleted.includes(codigo)) {
+    saveStoredDeletedCandidaturas([...deleted, codigo]);
+  }
+
+  // 2. Atualiza e persiste a lista de candidaturas ativas no localStorage
   const updatedList = list.filter(c => c.codigoCandidatura !== codigo);
   saveStoredCandidaturas(updatedList);
+
+  // 3. Remove também das listas publicadas se constar
+  try {
+    const rawListas = localStorage.getItem(STORAGE_KEY_LISTAS);
+    if (rawListas) {
+      const parsedListas = JSON.parse(rawListas);
+      if (Array.isArray(parsedListas)) {
+        const cleanedListas = parsedListas.map(lista => ({
+          ...lista,
+          candidatos: Array.isArray(lista.candidatos) ? lista.candidatos.filter(cand => cand.codigoCandidatura !== codigo) : []
+        }));
+        saveStoredListasPublicadas(cleanedListas);
+      }
+    }
+  } catch (e) {
+    console.warn('Erro ao limpar listas publicadas após eliminação', e);
+  }
+
+  // 4. Notifica aplicação e ouvintes globais
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('sernic-candidatura-eliminada', { detail: { codigo } }));
   }
 
+  // 5. Lavra no livro de auditoria institucional
   addStoredAuditoria({
-    acao: 'Remoção de Inscrição / Candidatura',
+    acao: 'Eliminação Permanente de Perfil de Candidato',
     candidato: `${target.nomeCompleto} (${codigo})`,
     estadoAnterior: target.status,
-    novoEstado: 'Registo Eliminado',
-    motivo: 'Eliminação administrativa de registo por decisão do júri',
+    novoEstado: 'Perfil Eliminado Permanentemente',
+    motivo: 'Exclusão administrativa permanente efetuada pelo Perfil do Técnico',
     operador: operador
   });
 
