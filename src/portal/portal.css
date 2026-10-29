@@ -10979,3 +10979,437 @@ html.portal-modo-simplificado * {
 
 .portal-theme-preto .gestor-servidor-msg.ok { color: #4ade80; }
 .portal-theme-preto .gestor-servidor-msg.erro { color: #fca5a5; }
+
+
+/* ========================================================
+   MÓDULO DE AVALIAÇÃO - PADRÃO REGRA 1 (SEM POLUIÇÃO VISUAL)
+   ======================================================== */
+.deliberacao-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.deliberacao-header-left h2 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--portal-text-main);
+  margin: 0;
+}
+
+.btn-deliberacao-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--portal-btn-tab-bg);
+  border: 1px solid var(--portal-border);
+  color: var(--portal-text-main);
+  padding: 0.5rem 0.95rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-deliberacao-secondary:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.portal-theme-preto .btn-deliberacao-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ABAS DE CATEGORIA LIMPAS (SEM EMOJIS, CONFORME REGRA 1) */
+.deliberacao-filter-toolbar {
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--portal-border);
+  padding-bottom: 0.25rem;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0 0 0.5rem 0;
+}
+
+.deliberacao-filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.deliberacao-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--portal-text-muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s ease;
+  border-radius: 6px 6px 0 0;
+}
+
+.deliberacao-tab-btn:hover {
+  color: var(--portal-text-main);
+  background: var(--portal-btn-tab-bg);
+}
+
+.deliberacao-tab-btn.active {
+  color: var(--portal-text-main);
+  border-bottom: 2px solid var(--sernic-red, #c32026);
+  background: rgba(195, 32, 38, 0.04);
+}
+
+.deliberacao-tab-btn .tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 0.35rem;
+  border-radius: 9999px;
+  background: var(--portal-btn-tab-bg);
+  border: 1px solid var(--portal-border);
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--portal-text-muted);
+}
+
+.deliberacao-tab-btn.active .tab-count {
+  background: var(--sernic-red, #c32026);
+  border-color: var(--sernic-red, #c32026);
+  color: #ffffff;
+}
+
+/* SIDEBAR REFINADA */
+.deliberacao-sidebar-card .deliberacao-sidebar-header h3 {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--portal-text-main);
+  margin: 0;
+}
+
+.deliberacao-candidato-item .item-status-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.item-nota-pill {
+  font-size: 0.72rem;
+  font-weight: 800;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  color: var(--portal-text-main);
+}
+
+.portal-theme-preto .item-nota-pill {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.deliberacao-empty-list {
+  padding: 2.5rem 1rem;
+  text-align: center;
+  color: var(--portal-text-muted);
+  font-size: 0.85rem;
+}
+
+.btn-link-action {
+  background: none;
+  border: none;
+  color: var(--sernic-red, #c32026);
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  text-decoration: underline;
+}
+
+/* HOMOLOGAÇÃO INFO */
+.deliberacao-homologacao-info {
+  background: rgba(34, 197, 94, 0.08);
+  border-left: 3px solid #16a34a;
+  padding: 0.5rem 0.85rem;
+  margin-bottom: 1rem;
+  border-radius: 0 6px 6px 0;
+  font-size: 0.8rem;
+  color: var(--portal-text-main);
+}
+
+/* APRESENTAÇÃO DIRECTA DOS DADOS (SEM CAIXAS DECORATIVAS) */
+.deliberacao-dados-strip {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 0.85rem 1.1rem;
+  background: var(--portal-card-inner);
+  border: 1px solid var(--portal-border);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.deliberacao-dados-strip .dado-col {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+}
+
+.deliberacao-dados-strip .dado-label {
+  color: var(--portal-text-muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.deliberacao-dados-strip .dado-val {
+  color: var(--portal-text-main);
+  font-weight: 800;
+}
+
+.deliberacao-dados-strip .dado-val-text {
+  color: var(--portal-text-main);
+  font-weight: 700;
+}
+
+.deliberacao-dados-strip .dado-sub {
+  color: var(--portal-text-muted);
+  font-size: 0.78rem;
+}
+
+/* OPÇÕES DE DECISÃO FORMAL LIMPAS */
+.deliberacao-section-block {
+  margin-bottom: 1.25rem;
+}
+
+.deliberacao-section-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--portal-text-main);
+  margin-bottom: 0.65rem;
+}
+
+.deliberacao-clean-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.deliberacao-choice-btn {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--portal-border);
+  border-radius: 8px;
+  background: var(--portal-card-inner);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.deliberacao-choice-btn:hover {
+  background: var(--portal-btn-tab-bg);
+  border-color: #cbd5e1;
+}
+
+.deliberacao-choice-btn.checked {
+  border-color: var(--sernic-red, #c32026);
+  background: rgba(195, 32, 38, 0.03);
+}
+
+.deliberacao-choice-btn input[type="radio"] {
+  margin-top: 0.2rem;
+  accent-color: var(--sernic-red, #c32026);
+  cursor: pointer;
+}
+
+.deliberacao-choice-btn .choice-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.deliberacao-choice-btn .choice-info strong {
+  font-size: 0.88rem;
+  color: var(--portal-text-main);
+}
+
+.deliberacao-choice-btn .choice-info span {
+  font-size: 0.78rem;
+  color: var(--portal-text-muted);
+}
+
+/* CAMPOS AGRUPADOS POR FINALIDADE */
+.deliberacao-fields-group {
+  padding: 1rem;
+  border: 1px solid var(--portal-border);
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+  background: var(--portal-card-inner);
+}
+
+.fields-group-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--portal-text-muted);
+  margin-bottom: 0.75rem;
+}
+
+/* ALERTA E STATUS DE NOTA */
+.deliberacao-alert {
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  border: 1px solid var(--portal-border);
+}
+
+.deliberacao-alert.warning {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #b45309;
+}
+
+.portal-theme-preto .deliberacao-alert.warning {
+  color: #fbbf24;
+}
+
+.deliberacao-alert.info {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.deliberacao-alert strong {
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.deliberacao-alert p {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.form-field-nota-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.input-nota-clean {
+  padding: 0.55rem 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 800;
+  width: 100%;
+  border: 1px solid var(--portal-input-border);
+  border-radius: 8px;
+  background: var(--portal-input-bg);
+  color: var(--portal-input-text);
+  outline: none;
+}
+
+.input-nota-clean:focus {
+  border-color: var(--sernic-red, #c32026);
+}
+
+.nota-tag-pos {
+  display: inline-block;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: rgba(34, 197, 94, 0.1);
+  color: #15803d;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.nota-tag-neg {
+  display: inline-block;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: rgba(239, 68, 68, 0.1);
+  color: #b91c1c;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* BOTÕES DE ACÇÃO */
+.btn-action-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--portal-border);
+  border-radius: 6px;
+  background: var(--portal-btn-tab-bg);
+  color: var(--portal-text-main);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-action-outline:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.portal-theme-preto .btn-action-outline:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.btn-action-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--sernic-red, #c32026);
+  border-radius: 6px;
+  background: var(--sernic-red, #c32026);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-deliberacao-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1.4rem;
+  background: var(--sernic-red, #c32026);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.btn-deliberacao-submit:hover {
+  opacity: 0.92;
+}
+
+.btn-deliberacao-submit.disabled-locked {
+  opacity: 0.55;
+  cursor: not-allowed;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
