@@ -1706,10 +1706,10 @@
 }
 
 .stepper-step.active .step-circle {
-  border-color: #16a34a;
+  border-color: var(--sernic-red, #c32026);
   background-color: var(--portal-card-bg);
-  color: #15803d;
-  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.2);
+  color: var(--sernic-red, #c32026);
+  box-shadow: 0 0 0 4px rgba(195, 32, 38, 0.2);
 }
 
 .stepper-step.completed .step-circle {
@@ -1730,7 +1730,7 @@
 }
 
 .stepper-step.active .step-label {
-  color: #15803d;
+  color: var(--sernic-red, #c32026);
   font-weight: 800;
 }
 
@@ -2021,9 +2021,9 @@
 
 .timeline-step.active .timeline-circle {
   background-color: var(--portal-header-bg);
-  border-color: var(--portal-gold);
-  color: var(--portal-gold);
-  box-shadow: 0 0 0 4px rgba(197, 155, 39, 0.2);
+  border-color: var(--sernic-red, #c32026);
+  color: var(--sernic-red, #c32026);
+  box-shadow: 0 0 0 4px rgba(195, 32, 38, 0.2);
 }
 
 .timeline-step.done .timeline-circle {
@@ -2065,7 +2065,8 @@
 }
 
 .timeline-step.active .timeline-subtext {
-  color: var(--portal-gold);
+  color: var(--sernic-red, #c32026);
+  font-weight: 800;
 }
 
 .timeline-step.suplente .timeline-circle {
@@ -4029,19 +4030,29 @@ textarea::placeholder,
 }
 
 .deliberacao-candidato-item {
-  padding: 0.9rem 1.1rem;
+  padding: 0.85rem 1.1rem;
   border-bottom: 1px solid var(--portal-border);
   cursor: pointer;
+  border-left: 4px solid transparent;
   transition: all 0.15s ease;
 }
 
 .deliberacao-candidato-item:hover {
-  background: rgba(0, 0, 0, 0.03);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.portal-theme-preto .deliberacao-candidato-item:hover {
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .deliberacao-candidato-item.selected {
-  background: rgba(195, 32, 38, 0.08);
-  border-left: 4px solid #c32026;
+  background: rgba(195, 32, 38, 0.06);
+  border-left: 4px solid var(--sernic-red, #c32026);
+}
+
+.portal-theme-preto .deliberacao-candidato-item.selected {
+  background: rgba(195, 32, 38, 0.14);
+  border-left-color: #ef4444;
 }
 
 .deliberacao-candidato-item .item-top {
@@ -7968,10 +7979,10 @@ textarea::placeholder,
 }
 
 .deliberacao-filter-pill.pendentes.active {
-  background: #d97706;
-  border-color: #d97706;
+  background: var(--sernic-red, #c32026);
+  border-color: var(--sernic-red, #c32026);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.3);
+  box-shadow: 0 2px 8px rgba(195, 32, 38, 0.3);
 }
 
 .deliberacao-filter-pill.suplentes.active {
@@ -10824,9 +10835,9 @@ html.portal-modo-simplificado * {
 }
 
 .gestor-servidor-tabs button.active {
-  background: var(--portal-card-bg);
-  color: var(--portal-text-main);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  background: var(--sernic-red, #c32026);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(195, 32, 38, 0.3);
 }
 
 .gestor-servidor-card {
@@ -11078,70 +11089,98 @@ html.portal-modo-simplificado * {
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* ABAS DE CATEGORIA LIMPAS (SEM EMOJIS, CONFORME REGRA 1) */
+/* ABAS DE CATEGORIA E INDICADORES DE ACTIVIDADE (VERMELHO INSTITUCIONAL) */
 .deliberacao-filter-toolbar {
-  margin-bottom: 1.25rem;
-  border-bottom: 1px solid var(--portal-border);
-  padding-bottom: 0.25rem;
-  background: transparent;
-  box-shadow: none;
-  border-radius: 0;
-  padding: 0 0 0.5rem 0;
+  margin-bottom: 1.5rem;
+  background: var(--portal-card-inner, #f8fafc);
+  border: 1px solid var(--portal-border, #e2e8f0);
+  border-radius: 10px;
+  padding: 0.4rem 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.portal-theme-preto .deliberacao-filter-toolbar {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .deliberacao-filter-tabs {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
   flex-wrap: wrap;
 }
 
 .deliberacao-tab-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.55rem 1rem;
-  border: none;
+  gap: 0.55rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
   background: transparent;
-  color: var(--portal-text-muted);
+  color: var(--portal-text-muted, #64748b);
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: all 0.15s ease;
-  border-radius: 6px 6px 0 0;
+  border-radius: 8px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
 }
 
 .deliberacao-tab-btn:hover {
-  color: var(--portal-text-main);
-  background: var(--portal-btn-tab-bg);
+  color: var(--portal-text-main, #0f172a);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.portal-theme-preto .deliberacao-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f1f5f9;
 }
 
 .deliberacao-tab-btn.active {
-  color: var(--portal-text-main);
-  border-bottom: 2px solid var(--sernic-red, #c32026);
-  background: rgba(195, 32, 38, 0.04);
+  background: var(--sernic-red, #c32026) !important;
+  color: #ffffff !important;
+  border-color: var(--sernic-red, #c32026) !important;
+  box-shadow: 0 3px 10px rgba(195, 32, 38, 0.32);
+}
+
+.portal-theme-preto .deliberacao-tab-btn.active {
+  background: #a8171d !important;
+  border-color: #a8171d !important;
+  color: #ffffff !important;
+  box-shadow: 0 3px 12px rgba(195, 32, 38, 0.45);
 }
 
 .deliberacao-tab-btn .tab-count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 0.35rem;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 0.4rem;
   border-radius: 9999px;
-  background: var(--portal-btn-tab-bg);
-  border: 1px solid var(--portal-border);
+  background: rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   font-size: 0.72rem;
   font-weight: 800;
   color: var(--portal-text-muted);
+  transition: all 0.2s ease;
+}
+
+.portal-theme-preto .deliberacao-tab-btn .tab-count {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #94a3b8;
 }
 
 .deliberacao-tab-btn.active .tab-count {
-  background: var(--sernic-red, #c32026);
-  border-color: var(--sernic-red, #c32026);
-  color: #ffffff;
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  color: #ffffff !important;
+  font-weight: 800;
 }
 
 /* SIDEBAR REFINADA */
@@ -11278,7 +11317,9 @@ html.portal-modo-simplificado * {
 
 .deliberacao-choice-btn.checked {
   border-color: var(--sernic-red, #c32026);
-  background: rgba(195, 32, 38, 0.03);
+  border-width: 1.5px;
+  background: rgba(195, 32, 38, 0.04);
+  box-shadow: 0 2px 8px rgba(195, 32, 38, 0.08);
 }
 
 .deliberacao-choice-btn input[type="radio"] {
