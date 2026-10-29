@@ -547,6 +547,12 @@ export default function GestorPortalModule({
   // 2. Reposição Individual de Candidato
   const [candidatoParaReporIndividual, setCandidatoParaReporIndividual] = useState(null);
 
+  // 2.1 Eliminação Segura de Candidato (Permissão do Técnico / Confirmação do Técnico para o Júri)
+  const [candidatoParaEliminar, setCandidatoParaEliminar] = useState(null);
+  const [senhaTecnicoEliminar, setSenhaTecnicoEliminar] = useState('');
+  const [erroSenhaTecnico, setErroSenhaTecnico] = useState('');
+  const [mostrarSenhaTecnico, setMostrarSenhaTecnico] = useState(false);
+
   // 3. Modal de Confirmação de Homologação da 1ª Fase (para Entrevista)
   const [confirmHomologacao1aFaseModal, setConfirmHomologacao1aFaseModal] = useState(null);
 
@@ -805,15 +811,56 @@ export default function GestorPortalModule({
     executeSaveDeliberacao(candidato, updates, currentUser);
   };
 
-  const handleInlineDeleteCandidato = (codigo) => {
-    if (window.confirm(`Tem a certeza que deseja eliminar permanentemente a candidatura ${codigo}?`)) {
-      const ok = deleteStoredCandidatura(codigo, currentUser?.name || 'Comissão de Júri SERNIC');
-      if (ok) {
-        reloadData();
-        setSelectedDossier(null);
-        if (onNotify) onNotify('info', `Candidatura ${codigo} eliminada com sucesso.`);
+  const isSuperAdminTecnico = userRole === 'super_admin';
+
+  const handleSolicitarEliminacaoCandidato = (candidato) => {
+    setCandidatoParaEliminar(candidato);
+    setSenhaTecnicoEliminar('');
+    setErroSenhaTecnico('');
+    setMostrarSenhaTecnico(false);
+  };
+
+  const handleConfirmarEliminacaoCandidato = (e) => {
+    if (e) e.preventDefault();
+    if (!candidatoParaEliminar) return;
+
+    // Se NÃO for Super Administrador (Técnico), exige a validação da credencial do Técnico
+    if (!isSuperAdminTecnico) {
+      const s = senhaTecnicoEliminar.trim();
+      const isSenhaTecnicoValida = (
+        s === 'admin123' ||
+        s === 'buenaverte7' ||
+        s === 'buenaverte' ||
+        s === 'tecnico123' ||
+        s === 'sernic2026'
+      );
+      if (!isSenhaTecnicoValida) {
+        setErroSenhaTecnico('Senha de autorização do Técnico incorreta. Apenas o perfil técnico pode autorizar a eliminação.');
+        return;
       }
     }
+
+    const operadorStr = isSuperAdminTecnico
+      ? `${currentUser?.name || 'Eng. Técnico de Sistemas'} (Super Administrador)`
+      : `${currentUser?.name || 'Júri de Seleção'} [Autorizado pelo Perfil Técnico]`;
+
+    const ok = deleteStoredCandidatura(candidatoParaEliminar.codigoCandidatura, operadorStr);
+    if (ok) {
+      reloadData();
+      if (selectedDossier && selectedDossier.codigoCandidatura === candidatoParaEliminar.codigoCandidatura) {
+        setSelectedDossier(null);
+      }
+      if (deliberandoCandidato && deliberandoCandidato.codigoCandidatura === candidatoParaEliminar.codigoCandidatura) {
+        const remaining = candidatos.filter(c => c.codigoCandidatura !== candidatoParaEliminar.codigoCandidatura);
+        setDeliberandoCandidato(remaining[0] || null);
+      }
+      if (onNotify) {
+        onNotify('success', `Perfil da candidatura de ${candidatoParaEliminar.nomeCompleto} (${candidatoParaEliminar.codigoCandidatura}) foi eliminado com sucesso.`);
+      }
+    }
+    setCandidatoParaEliminar(null);
+    setSenhaTecnicoEliminar('');
+    setErroSenhaTecnico('');
   };
 
   // ========================================================
@@ -3188,6 +3235,16 @@ export default function GestorPortalModule({
                             <RotateCcw size={14} />
                             <span>Repor</span>
                           </button>
+                          <button
+                            type="button"
+                            className="btn-action-repor"
+                            style={{ color: '#dc2626', borderColor: 'rgba(220, 38, 38, 0.3)', background: 'rgba(220, 38, 38, 0.05)' }}
+                            onClick={() => handleSolicitarEliminacaoCandidato(c)}
+                            title={isSuperAdminTecnico ? "Apagar perfil do candidato definitivamente (Super Administrador)" : "Apagar perfil do candidato (requer autorização do Técnico)"}
+                          >
+                            <Trash2 size={14} />
+                            <span>Apagar</span>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -3599,6 +3656,17 @@ export default function GestorPortalModule({
                       >
                         <RotateCcw size={14} />
                         <span>Repor</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn-action-outline"
+                        style={{ color: '#dc2626', borderColor: 'rgba(220, 38, 38, 0.3)', background: 'rgba(220, 38, 38, 0.05)' }}
+                        onClick={() => handleSolicitarEliminacaoCandidato(deliberandoCandidato)}
+                        title={isSuperAdminTecnico ? "Apagar este perfil definitivamente" : "Apagar perfil (requer autorização do Técnico)"}
+                      >
+                        <Trash2 size={14} />
+                        <span>Apagar Perfil</span>
                       </button>
                     </div>
                   </div>
@@ -6254,11 +6322,11 @@ export default function GestorPortalModule({
                   type="button"
                   className="sub-aba-btn-action danger"
                   style={{ backgroundColor: '#fee2e2' }}
-                  onClick={() => handleInlineDeleteCandidato(selectedDossier.codigoCandidatura)}
-                  title="Eliminar este registo de candidatura definitivamente"
+                  onClick={() => handleSolicitarEliminacaoCandidato(selectedDossier)}
+                  title={isSuperAdminTecnico ? "Apagar perfil do candidato definitivamente (Super Administrador)" : "Apagar perfil do candidato (requer autorização do Técnico)"}
                 >
                   <Trash2 size={13} />
-                  <span>Eliminar Registo</span>
+                  <span>Apagar Perfil</span>
                 </button>
               </div>
             </div>
@@ -8408,6 +8476,126 @@ export default function GestorPortalModule({
                 </button>
               </div>
             </div>
+          </DraggableSubAba>
+        </div>,
+        document.body
+      )}
+
+      {/* ========================================================
+          MODAL 8.1: ELIMINAÇÃO SEGURA DO PERFIL DO CANDIDATO
+          ======================================================== */}
+      {candidatoParaEliminar && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="gestor-modal-overlay fadeIn" 
+          style={{ zIndex: 1350 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setCandidatoParaEliminar(null);
+          }}
+        >
+          <DraggableSubAba 
+            className="gestor-modal-card security-modal-card" 
+            style={{ width: 'min(500px, 95vw)', maxWidth: '500px' }}
+            moveHandleLabel="Mover Eliminação"
+            onClose={() => setCandidatoParaEliminar(null)}
+          >
+            <div className="dossier-modal-header" style={{ borderBottom: '1px solid rgba(220, 38, 38, 0.25)', background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.08) 0%, rgba(15, 32, 66, 0.04) 100%)' }}>
+              <div className="dossier-header-left">
+                <div className="modal-security-icon-circle" style={{ background: 'rgba(220, 38, 38, 0.12)', color: '#dc2626' }}>
+                  <Trash2 size={24} color="#dc2626" />
+                </div>
+                <div>
+                  <h3 style={{ color: '#dc2626', fontSize: '1.15rem' }}>Apagar Perfil de Candidato</h3>
+                  <span className="dossier-protocolo" style={{ color: 'var(--portal-text-muted)' }}>
+                    {candidatoParaEliminar.codigoCandidatura} • Eliminação Permanente
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleConfirmarEliminacaoCandidato} className="dossier-modal-body" style={{ padding: '1.4rem 1.6rem' }}>
+              <div className="candidate-repor-preview-card" style={{ borderColor: 'rgba(220, 38, 38, 0.25)' }}>
+                <div className="candidate-repor-row">
+                  <span className="label">Candidato:</span>
+                  <span className="value"><strong>{candidatoParaEliminar.nomeCompleto}</strong></span>
+                </div>
+                <div className="candidate-repor-row">
+                  <span className="label">N.º de BI:</span>
+                  <span className="value">{candidatoParaEliminar.biNumero || 'Não informado'}</span>
+                </div>
+                <div className="candidate-repor-row">
+                  <span className="label">Carreira / Vaga:</span>
+                  <span className="value">{candidatoParaEliminar.vagaTitulo}</span>
+                </div>
+                <div className="candidate-repor-row">
+                  <span className="label">Estado Atual:</span>
+                  <span className="value tag-current-status">{candidatoParaEliminar.status}</span>
+                </div>
+              </div>
+
+              {isSuperAdminTecnico ? (
+                <div style={{ marginTop: '1rem', padding: '0.85rem', borderRadius: '8px', background: 'rgba(220, 38, 38, 0.06)', border: '1px solid rgba(220, 38, 38, 0.2)' }}>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#991b1b', lineHeight: 1.5 }}>
+                    <strong>Atenção (Super Administrador / Técnico):</strong> Está prestes a eliminar definitivamente este perfil de candidatura do sistema. Esta ação removerá a inscrição, histórico e anexos.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ marginTop: '1rem' }}>
+                  <div style={{ padding: '0.85rem', borderRadius: '8px', background: 'rgba(217, 119, 6, 0.08)', border: '1px solid rgba(217, 119, 6, 0.25)', marginBottom: '1rem' }}>
+                    <p style={{ margin: 0, fontSize: '0.83rem', color: '#b45309', lineHeight: 1.5 }}>
+                      <strong>Controlo de Segurança Institucional:</strong> Apenas o perfil do <strong>Técnico (Super Administrador)</strong> tem competência para apagar candidatos. Para autorizar esta exclusão requerida pelo Júri, insira a senha do Técnico.
+                    </p>
+                  </div>
+
+                  <div className="form-field full-width">
+                    <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>Senha de Autorização do Técnico *:</label>
+                    <div style={{ position: 'relative' }}>
+                      <input 
+                        type={mostrarSenhaTecnico ? 'text' : 'password'}
+                        value={senhaTecnicoEliminar}
+                        onChange={(e) => {
+                          setSenhaTecnicoEliminar(e.target.value);
+                          setErroSenhaTecnico('');
+                        }}
+                        placeholder="Insira a senha do Técnico (Ex: admin123)"
+                        style={{ width: '100%', padding: '0.55rem 2.5rem 0.55rem 0.75rem', borderRadius: '6px', border: '1px solid var(--portal-border)' }}
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setMostrarSenhaTecnico(!mostrarSenhaTecnico)}
+                        style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--portal-text-muted)' }}
+                      >
+                        {mostrarSenhaTecnico ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {erroSenhaTecnico && (
+                    <div style={{ marginTop: '0.5rem', color: '#dc2626', fontSize: '0.8rem', fontWeight: 600 }}>
+                      {erroSenhaTecnico}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="dossier-modal-footer" style={{ padding: 0, marginTop: '1.4rem' }}>
+                <button
+                  type="button"
+                  className="gestor-btn-secondary"
+                  onClick={() => setCandidatoParaEliminar(null)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="gestor-btn-primary-red"
+                  style={{ background: '#dc2626', borderColor: '#b91c1c' }}
+                >
+                  <Trash2 size={15} />
+                  <span>{isSuperAdminTecnico ? 'Confirmar e Apagar Candidato' : 'Autorizar e Apagar Candidato'}</span>
+                </button>
+              </div>
+            </form>
           </DraggableSubAba>
         </div>,
         document.body
