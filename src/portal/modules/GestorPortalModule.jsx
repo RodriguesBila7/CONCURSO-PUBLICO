@@ -6193,14 +6193,6 @@ export default function GestorPortalModule({
                   </p>
                 </div>
               </div>
-
-              <button
-                type="button"
-                className="modal-close-btn"
-                onClick={() => setSelectedDossier(null)}
-              >
-                ✕
-              </button>
             </div>
 
             {/* TOOLBAR DE AVALIAÇÃO DIRETA DENTRO DA SUB-ABA (INSTANTÂNEO) */}
@@ -6695,13 +6687,6 @@ export default function GestorPortalModule({
                 <h3>Visualização de Documento Anexado</h3>
                 <p>{previewDoc.doc.tipo} • Candidato: {previewDoc.candidato.nomeCompleto}</p>
               </div>
-              <button
-                type="button"
-                className="modal-close-btn"
-                onClick={() => setPreviewDoc(null)}
-              >
-                ✕
-              </button>
             </div>
 
             <div className="doc-preview-body">
@@ -6763,13 +6748,6 @@ export default function GestorPortalModule({
                 <h3>Publicação Oficial de Pauta / Edital</h3>
                 <p>O edital ficará imediatamente disponível para consulta pública e download pelos candidatos.</p>
               </div>
-              <button
-                type="button"
-                className="modal-close-btn"
-                onClick={() => setIsNovoEditalModalOpen(false)}
-              >
-                ✕
-              </button>
             </div>
 
             <form onSubmit={handlePublicarEdital} className="novo-edital-form">
@@ -6856,13 +6834,6 @@ export default function GestorPortalModule({
                 <h3>Edital Oficial do Concurso Público</h3>
                 <p>Documento Timbrado • Direcção Geral do SERNIC</p>
               </div>
-              <button
-                type="button"
-                className="modal-close-btn"
-                onClick={() => setSelectedPautaPrint(null)}
-              >
-                ✕
-              </button>
             </div>
 
             <div className="pauta-sheet-body">
