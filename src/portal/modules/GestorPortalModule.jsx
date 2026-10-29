@@ -3191,19 +3191,6 @@ export default function GestorPortalModule({
 
               <button
                 type="button"
-                className={`deliberacao-tab-btn ${filtroDeliberacaoModo === 'admitidos' ? 'active' : ''}`}
-                onClick={() => {
-                  setFiltroDeliberacaoModo('admitidos');
-                  const first = candidatos.find(c => c.status === 'Admitido na Análise Documental' || c.status === 'Admitida na Análise Documental' || c.status === 'Admitido' || c.status === 'Admitida');
-                  if (first) iniciarDeliberacao(first);
-                }}
-              >
-                <span>Admitidos</span>
-                <span className="tab-count">{stats.admitidosTotal}</span>
-              </button>
-
-              <button
-                type="button"
                 className={`deliberacao-tab-btn ${filtroDeliberacaoModo === 'convocados' ? 'active' : ''}`}
                 onClick={() => {
                   setFiltroDeliberacaoModo('convocados');
@@ -3213,6 +3200,19 @@ export default function GestorPortalModule({
               >
                 <span>Convocados</span>
                 <span className="tab-count">{stats.convocadosTotal}</span>
+              </button>
+
+              <button
+                type="button"
+                className={`deliberacao-tab-btn ${filtroDeliberacaoModo === 'admitidos' ? 'active' : ''}`}
+                onClick={() => {
+                  setFiltroDeliberacaoModo('admitidos');
+                  const first = candidatos.find(c => c.status === 'Admitido na Análise Documental' || c.status === 'Admitida na Análise Documental' || c.status === 'Admitido' || c.status === 'Admitida');
+                  if (first) iniciarDeliberacao(first);
+                }}
+              >
+                <span>Admitidos</span>
+                <span className="tab-count">{stats.admitidosTotal}</span>
               </button>
 
               <button
