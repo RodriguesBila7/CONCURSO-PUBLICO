@@ -49,39 +49,42 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
 
   const CREDENCIAIS_OFICIAIS = [
     {
-      ids: ['123922328', 'drh@sernic.gov.mz', 'drh', 'admin'],
+      ids: ['superadmin', 'tecnico', 'tecnico@sernic.gov.mz', 'admin_tecnico'],
+      senhas: ['admin123', 'buenaverte7', 'buenaverte'],
+      user: {
+        id: 1,
+        nuit: '100000001',
+        name: 'Eng. Técnico de Sistemas - SERNIC',
+        email: 'tecnico@sernic.gov.mz',
+        role: 'super_admin',
+        cargo: 'Super Administrador (Técnico do Sistema)',
+        perfil: 'Super Administrador'
+      }
+    },
+    {
+      ids: ['123922328', 'drh@sernic.gov.mz', 'drh', 'admin', 'principal'],
       senhas: ['buenaverte7', 'buenaverte', 'admin123'],
       user: {
         id: 3,
         nuit: '123922328',
         name: 'Direcção de Recursos Humanos - SERNIC',
         email: 'drh@sernic.gov.mz',
-        role: 'admin',
-        cargo: 'Direcção-Geral / DRH'
+        role: 'admin_principal',
+        cargo: 'Administrador Principal (Direcção Central DRH)',
+        perfil: 'Administrador Principal'
       }
     },
     {
-      ids: ['gestor', 'gestor@sernic.gov.mz'],
+      ids: ['juri', 'usuario', 'juri@sernic.gov.mz', 'chissano', 'gestor'],
       senhas: ['admin123', 'buenaverte7', 'buenaverte'],
       user: {
-        id: 5,
-        nuit: 'gestor',
-        name: 'Gestor de Recursos Humanos - SERNIC',
-        email: 'gestor@sernic.gov.mz',
-        role: 'admin',
-        cargo: 'Gestor da Comissão de Júri'
-      }
-    },
-    {
-      ids: ['alberto.chissano@sernic.gov.mz', 'chissano', 'prf-01'],
-      senhas: ['buenaverte7', 'buenaverte', 'admin123'],
-      user: {
         id: 101,
-        nuit: '123922328',
+        nuit: '100099887',
         name: 'Dr. Alberto Chissano',
-        email: 'alberto.chissano@sernic.gov.mz',
-        role: 'admin',
-        cargo: 'Presidente do Júri de Seleção'
+        email: 'juri@sernic.gov.mz',
+        role: 'juri',
+        cargo: 'Usuário (Membro da Comissão de Júri)',
+        perfil: 'Usuário (Júri)'
       }
     }
   ];
@@ -228,28 +231,39 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
               <span>{isSubmitting ? 'A verificar credenciais...' : 'Entrar na Área de Gestão'}</span>
             </button>
 
-            {/* ATALHOS DE ACESSO RÁPIDO INSTITUCIONAL */}
+            {/* ATALHOS DE ACESSO RÁPIDO AOS 3 PERFIS OFICIAIS */}
             <div className="gestor-quick-creds-box" style={{ marginTop: '1.25rem', padding: '0.9rem', background: 'rgba(15, 32, 66, 0.04)', borderRadius: '8px', border: '1px solid var(--portal-border)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem', fontSize: '0.78rem', fontWeight: 700, color: '#c59b27' }}>
                 <ShieldCheck size={14} />
-                <span>Credenciais Homologadas da DRH (1 Clique para preencher):</span>
+                <span>Perfis Oficiais Homologados (Clique para preencher):</span>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <button
                   type="button"
                   className="gestor-quick-chip"
-                  onClick={() => handleQuickFill('123922328', 'buenaverte7')}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.75rem', borderRadius: '6px', border: '1px solid #c32026', background: 'rgba(195, 32, 38, 0.08)', color: '#c32026', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                  onClick={() => handleQuickFill('superadmin', 'admin123')}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.75rem', borderRadius: '6px', border: '1px solid #1e293b', background: 'rgba(30, 41, 59, 0.08)', color: '#0f172a', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                  title="Super Administrador: Técnico responsável pelo sistema"
                 >
-                  <span>DRH Central (123922328)</span>
+                  <span>Super Administrador (Técnico)</span>
                 </button>
                 <button
                   type="button"
                   className="gestor-quick-chip"
-                  onClick={() => handleQuickFill('gestor', 'admin123')}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.75rem', borderRadius: '6px', border: '1px solid #0f2042', background: 'rgba(15, 32, 66, 0.08)', color: '#0f2042', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                  onClick={() => handleQuickFill('123922328', 'buenaverte7')}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.75rem', borderRadius: '6px', border: '1px solid #c32026', background: 'rgba(195, 32, 38, 0.08)', color: '#c32026', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                  title="Administrador Principal: Homologação e publicação oficial aos candidatos"
                 >
-                  <span>Gestor Oficial (gestor)</span>
+                  <span>Administrador Principal (DRH)</span>
+                </button>
+                <button
+                  type="button"
+                  className="gestor-quick-chip"
+                  onClick={() => handleQuickFill('juri', 'admin123')}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.75rem', borderRadius: '6px', border: '1px solid #0f2042', background: 'rgba(15, 32, 66, 0.08)', color: '#0f2042', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                  title="Usuário: Membro do Júri de Seleção (parecer não publica directamente)"
+                >
+                  <span>Usuário (Júri de Seleção)</span>
                 </button>
               </div>
             </div>

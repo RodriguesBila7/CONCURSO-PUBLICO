@@ -122,7 +122,10 @@ import {
   updateStoredPerfil,
   deleteStoredPerfil,
   getStoredAcessibilidade,
-  saveStoredAcessibilidade
+  saveStoredAcessibilidade,
+  LOCAIS_DIRECCOES_PROVINCIAIS,
+  homologarEPublicarCandidatura,
+  homologarEPublicarTodasCandidaturas
 } from '../mockData';
 import sernicLogo from '../../assets/sernic-logo.png';
 import DraggableSubAba from '../components/DraggableSubAba';
@@ -505,15 +508,26 @@ export default function GestorPortalModule({
   // ========================================================
   // ESTADOS DO MÓDULO "DELIBERAÇÃO DO JÚRI" (AVALIAÇÃO DOS CANDIDATOS)
   // ========================================================
+  const userRole = currentUser?.role || 'admin';
+  const isJuriUser = userRole === 'juri' || userRole === 'usuario';
+  const isPrincipalOrSuper = userRole === 'admin_principal' || userRole === 'super_admin' || userRole === 'admin' || userRole === 'gestor';
+
   const [deliberandoCandidato, setDeliberandoCandidato] = useState(null);
-  const [novoEstado, setNovoEstado] = useState('Admitido na Análise Documental');
+  const [novoEstado, setNovoEstado] = useState('Aprovado na Análise Documental');
   const [motivoExclusao, setMotivoExclusao] = useState('Falta de Certificado de Habilitações autenticado');
   const [outroMotivo, setOutroMotivo] = useState('');
   const [parecerJuri, setParecerJuri] = useState('');
   const [notaFinal, setNotaFinal] = useState('16.0');
-  const [eventoData, setEventoData] = useState('15 de Novembro de 2026 às 08h30');
-  const [eventoLocal, setEventoLocal] = useState('Direcção Geral do SERNIC - Sala de Conferências n.º 1, Maputo');
+  const [eventoData, setEventoData] = useState('25 de Novembro de 2026 às 08h30');
+  const [eventoLocal, setEventoLocal] = useState('Direcção Geral do SERNIC - Maputo');
   const [tipoProva, setTipoProva] = useState('Entrevista Profissional e de Competências');
+
+  // Estados específicos para as 4 Fases Regulamentares:
+  const [haveraExameEscrito, setHaveraExameEscrito] = useState('sim'); // 'sim' | 'nao'
+  const [localExameEscrito, setLocalExameEscrito] = useState('Direcção Geral do SERNIC - Av. Vladimir Lenine n.º 1234, Maputo');
+  const [dataExameEscrito, setDataExameEscrito] = useState('20 de Novembro de 2026 às 09h00');
+  const [salaExameEscrito, setSalaExameEscrito] = useState('Sala de Provas n.º 01');
+  const [notaExameEscrito, setNotaExameEscrito] = useState('14.0');
 
   // MODO FILTRO E PESQUISA NA AVALIAÇÃO DOS CANDIDATOS (INICIA EM PENDENTES DE AVALIAÇÃO)
   const [filtroDeliberacaoModo, setFiltroDeliberacaoModo] = useState('pendentes'); // 'pendentes' | 'admitidos' | 'excluidos' | 'convocados' | 'suplentes'
@@ -563,10 +577,12 @@ export default function GestorPortalModule({
   // MOTOR DE GRAVAÇÃO E HOMOLOGAÇÃO DAS DELIBERAÇÕES
   // ========================================================
   const executeSaveDeliberacao = (candidato, updates, operador = currentUser) => {
+    const opRole = operador?.role || userRole;
     const operadorObj = {
-      name: operador?.name || 'Dr. Alberto Chissano',
-      cargo: operador?.cargo || 'Presidente do Júri de Seleção',
-      perfil: operador?.perfil || 'Gestor Autorizado DRH / SERNIC'
+      name: operador?.name || (opRole === 'juri' ? 'Membro da Comissão de Júri' : 'Dr. Alberto Chissano'),
+      cargo: operador?.cargo || (opRole === 'juri' ? 'Vogal da Comissão de Júri' : 'Presidente do Júri de Seleção'),
+      perfil: operador?.perfil || (opRole === 'juri' ? 'Comissão de Júri SERNIC' : 'Administrador Principal DRH'),
+      role: opRole
     };
 
     const updated = updateStoredCandidatura(candidato.codigoCandidatura, updates, operadorObj);
@@ -574,28 +590,32 @@ export default function GestorPortalModule({
       reloadData();
 
       // Determinar a pasta de destino consoante a decisão oficial tomada
-      let targetModo = 'admitidos';
-      let nomePasta = 'Admitidos';
+      let targetModo = 'convocados';
+      let nomePasta = 'Convocados';
       const st = updates.status || updated.status;
-      if (st.includes('Excluíd') || st === 'Excluído' || st === 'Excluída') {
+      if (st.includes('Excluíd') || st.includes('Reprovad') || st === 'Excluído' || st === 'Excluída') {
         targetModo = 'excluidos';
         nomePasta = 'Excluídos';
       } else if (st === 'Aprovado (Suplente)' || st === 'Aprovada (Suplente)') {
         targetModo = 'suplentes';
         nomePasta = 'Suplentes (Reserva)';
-      } else if (st === 'Admitido na Análise Documental' || st === 'Admitida na Análise Documental' || st === 'Entrevista Profissional' || st.includes('Convocad')) {
-        targetModo = 'convocados';
-        nomePasta = 'Convocados para Entrevista';
       } else if (st === 'Admitido' || st === 'Admitida') {
         targetModo = 'admitidos';
         nomePasta = 'Admitidos';
+      } else {
+        targetModo = 'convocados';
+        nomePasta = 'Convocados';
       }
 
       setFiltroDeliberacaoModo(targetModo);
       setDeliberandoCandidato(updated);
 
       if (onNotify) {
-        onNotify('success', `Decisão homologada e guardada! ${candidato.nomeCompleto} saiu dos pendentes e foi transferido(a) para a pasta de "${nomePasta}".`);
+        if (opRole === 'juri' || opRole === 'usuario') {
+          onNotify('info', `Parecer do Júri registado para ${candidato.nomeCompleto}! Aguarda homologação do Administrador Principal para publicação oficial.`);
+        } else {
+          onNotify('success', `Decisão homologada e publicada oficialmente! ${candidato.nomeCompleto} encaminhado(a) para a pasta de "${nomePasta}".`);
+        }
       }
     }
     return updated;
@@ -906,23 +926,43 @@ export default function GestorPortalModule({
     const uniqueCandidatos = deduplicateCandidaturas(candidatos);
     const total = uniqueCandidatos.length;
     const analise = uniqueCandidatos.filter(c => c.status === 'Em Análise Documental' || c.status === 'Em análise' || c.status === 'Submetida').length;
-    const entrevista = uniqueCandidatos.filter(c => c.status === 'Entrevista Profissional' || c.status === 'Convocada para provas' || c.status === 'Convocado para provas' || c.status === 'Admitido na Análise Documental' || c.status === 'Admitida na Análise Documental').length;
+    const convocadosTotal = uniqueCandidatos.filter(c => 
+      c.status === 'Convocado para Teste Escrito' ||
+      c.status === 'Convocada para Teste Escrito' ||
+      c.status === 'Convocado para Entrevista Profissional' ||
+      c.status === 'Convocada para Entrevista Profissional' ||
+      c.status === 'Entrevista Profissional' || 
+      c.status === 'Convocada para provas' || 
+      c.status === 'Convocado para provas' || 
+      c.status === 'Admitido na Análise Documental' || 
+      c.status === 'Admitida na Análise Documental' ||
+      c.status === 'Aprovado na Análise Documental' ||
+      c.status === 'Aprovada na Análise Documental' ||
+      c.status === 'Aprovado no Teste Escrito' ||
+      c.status === 'Aprovada no Teste Escrito' ||
+      c.status === 'Convocado' ||
+      c.status === 'Convocada'
+    ).length;
     
-    // Admitidos na 1ª fase (Documental) e na 3ª fase (Efetivo na Vaga)
-    const admitidosFase1 = uniqueCandidatos.filter(c => c.status === 'Admitido na Análise Documental' || c.status === 'Admitida na Análise Documental').length;
+    // Admitidos efetivos
     const admitidosEfetivos = uniqueCandidatos.filter(c => c.status === 'Admitido' || c.status === 'Admitida').length;
-    const admitidosTotal = admitidosFase1 + admitidosEfetivos;
+    const admitidosTotal = admitidosEfetivos;
     
     // Suplentes (Lista de reserva de recrutamento)
     const suplentesTotal = uniqueCandidatos.filter(c => c.status === 'Aprovado (Suplente)' || c.status === 'Aprovada (Suplente)').length;
     
-    // Excluídos na 1ª Fase e na Entrevista (< 10 valores)
-    const excluidosFase1 = uniqueCandidatos.filter(c => c.status === 'Excluído na Análise Documental' || c.status === 'Excluída na Análise Documental').length;
-    const excluidosEntrevista = uniqueCandidatos.filter(c => c.status === 'Excluído na Entrevista' || c.status === 'Excluída na Entrevista' || (c.deliberacaoJuri?.notaFinal && parseFloat(c.deliberacaoJuri.notaFinal) < 10)).length;
-    const excluidosTotal = uniqueCandidatos.filter(c => (c.status && c.status.includes('Excluíd'))).length;
+    // Excluídos e Reprovados em qualquer fase
+    const excluidosTotal = uniqueCandidatos.filter(c => 
+      (c.status && (c.status.includes('Excluíd') || c.status.includes('Reprovad'))) ||
+      (c.deliberacaoJuri?.notaFinal && parseFloat(c.deliberacaoJuri.notaFinal) < 10) ||
+      (c.deliberacaoJuri?.notaExameEscrito && parseFloat(c.deliberacaoJuri.notaExameEscrito) < 10)
+    ).length;
 
-    const convocadosTotal = entrevista;
     const pendentesTotal = analise;
+    const entrevista = convocadosTotal;
+    const admitidosFase1 = convocadosTotal;
+    const excluidosFase1 = uniqueCandidatos.filter(c => c.status?.includes('Análise Documental') && (c.status?.includes('Excluíd') || c.status?.includes('Reprovad'))).length;
+    const excluidosEntrevista = uniqueCandidatos.filter(c => c.status?.includes('Entrevista') && (c.status?.includes('Excluíd') || c.status?.includes('Reprovad'))).length;
 
     const taxaAdmissao = total > 0 ? Math.round(((admitidosEfetivos + suplentesTotal) / total) * 100) : 0;
     const taxaExclusao = total > 0 ? Math.round((excluidosTotal / total) * 100) : 0;
@@ -1162,18 +1202,25 @@ export default function GestorPortalModule({
     return uniqueCandidatos.filter(c => {
       // Modo Filtro por Abas
       if (filtroDeliberacaoModo === 'admitidos') {
-        const isAdmitido = c.status === 'Admitido na Análise Documental' || 
-          c.status === 'Admitida na Análise Documental' || 
-          c.status === 'Admitido' || 
-          c.status === 'Admitida';
+        const isAdmitido = c.status === 'Admitido' || c.status === 'Admitida';
         if (!isAdmitido) return false;
       } else if (filtroDeliberacaoModo === 'excluidos') {
-        const isExcluido = (c.status && c.status.includes('Excluíd')) ||
-          (c.deliberacaoJuri?.notaFinal && parseFloat(c.deliberacaoJuri.notaFinal) < 10);
+        const isExcluido = (c.status && (c.status.includes('Excluíd') || c.status.includes('Reprovad'))) ||
+          (c.deliberacaoJuri?.notaFinal && parseFloat(c.deliberacaoJuri.notaFinal) < 10) ||
+          (c.deliberacaoJuri?.notaExameEscrito && parseFloat(c.deliberacaoJuri.notaExameEscrito) < 10);
         if (!isExcluido) return false;
       } else if (filtroDeliberacaoModo === 'convocados') {
-        const isConvocado = c.status === 'Admitido na Análise Documental' || 
+        const isConvocado = 
+          c.status === 'Aprovado na Análise Documental' ||
+          c.status === 'Aprovada na Análise Documental' ||
+          c.status === 'Admitido na Análise Documental' || 
           c.status === 'Admitida na Análise Documental' || 
+          c.status === 'Convocado para Teste Escrito' ||
+          c.status === 'Convocada para Teste Escrito' ||
+          c.status === 'Aprovado no Teste Escrito' ||
+          c.status === 'Aprovada no Teste Escrito' ||
+          c.status === 'Convocado para Entrevista Profissional' ||
+          c.status === 'Convocada para Entrevista Profissional' ||
           c.status === 'Entrevista Profissional' || 
           c.status === 'Convocada para provas' || 
           c.status === 'Convocado para provas' ||
@@ -1220,29 +1267,64 @@ export default function GestorPortalModule({
   // ========================================================
   const iniciarDeliberacao = (candidato) => {
     setDeliberandoCandidato(candidato);
-    const isFase1 = candidato.faseAtual === 1 || candidato.status === 'Em Análise Documental' || candidato.status === 'Em análise' || candidato.status === 'Submetida';
-    const isFase2 = candidato.faseAtual === 2 || candidato.status === 'Admitido na Análise Documental' || candidato.status === 'Admitida na Análise Documental' || candidato.status === 'Entrevista Profissional' || candidato.status === 'Convocada para provas';
-
     const isFem = detectCandidateGender(candidato) === 'Feminino';
-    if (isFase1) {
-      setNovoEstado(isFem ? 'Admitida na Análise Documental' : 'Admitido na Análise Documental');
-      setParecerJuri(`Candidatura com documentação em conformidade. ${isFem ? 'Admitida' : 'Admitido'} na Análise Documental (1ª Fase) e convocada para a Entrevista Profissional.`);
-      setEventoLocal(candidato.detalhesFase?.local || `Gabinete Provincial de Entrevistas do SERNIC - ${candidato.provincia || 'Maputo'}`);
-      setEventoData(candidato.detalhesFase?.dataEvento || '15 de Novembro de 2026 às 08h30');
-    } else if (isFase2) {
-      const currentNota = candidato.deliberacaoJuri?.notaFinal ? parseFloat(candidato.deliberacaoJuri.notaFinal) : 16.0;
-      if (currentNota < 10.0) {
-        setNovoEstado(isFem ? 'Excluída na Entrevista' : 'Excluído na Entrevista');
-        setParecerJuri(`Classificação de ${currentNota} valores na Entrevista Profissional (< 10 valores). Candidato reprovado e obrigatoriamente excluído.`);
+
+    const candFase = candidato.faseAtual || (
+      (candidato.status === 'Em Análise Documental' || candidato.status === 'Em análise' || candidato.status === 'Submetida') ? 1 :
+      (candidato.status === 'Aprovado na Análise Documental' || candidato.status === 'Aprovada na Análise Documental' || candidato.status === 'Admitido na Análise Documental' || candidato.status === 'Admitida na Análise Documental') ? 2 :
+      (candidato.status === 'Convocado para Teste Escrito' || candidato.status === 'Convocada para Teste Escrito') ? 3 :
+      4
+    );
+
+    const provDefaultLocal = LOCAIS_DIRECCOES_PROVINCIAIS[candidato.provincia] || LOCAIS_DIRECCOES_PROVINCIAIS['Maputo Cidade'] || 'Direcção Geral do SERNIC - Av. Vladimir Lenine n.º 1234, Maputo';
+
+    if (candFase === 1) {
+      setNovoEstado(isFem ? 'Aprovada na Análise Documental' : 'Aprovado na Análise Documental');
+      setParecerJuri(candidato.deliberacaoJuri?.parecer || 'Documentação em conformidade com o Edital. Candidato aprovado na 1ª Fase (Análise Documental).');
+      setMotivoExclusao(candidato.deliberacaoJuri?.motivoExclusao || 'Falta de Certificado de Habilitações autenticado');
+    } else if (candFase === 2) {
+      const haveraExame = candidato.haveraExameEscrito || 'sim';
+      setHaveraExameEscrito(haveraExame);
+      setLocalExameEscrito(candidato.localExameEscrito || provDefaultLocal);
+      setDataExameEscrito(candidato.dataExameEscrito || '20 de Novembro de 2026 às 09h00');
+      setSalaExameEscrito(candidato.salaExameEscrito || 'Sala de Provas n.º 01');
+      setEventoLocal(candidato.detalhesFase?.local || provDefaultLocal);
+      setEventoData(candidato.detalhesFase?.dataEvento || '25 de Novembro de 2026 às 08h30');
+      if (haveraExame === 'nao') {
+        setNovoEstado(isFem ? 'Convocada para Entrevista Profissional' : 'Convocado para Entrevista Profissional');
+        setParecerJuri(candidato.deliberacaoJuri?.parecer || 'Dispensado de teste escrito. Convocado diretamente para a Entrevista Profissional.');
+      } else {
+        setNovoEstado(isFem ? 'Convocada para Teste Escrito' : 'Convocado para Teste Escrito');
+        setParecerJuri(candidato.deliberacaoJuri?.parecer || `Convocado para realização de Teste Escrito em ${provDefaultLocal}.`);
+      }
+    } else if (candFase === 3) {
+      const curNotaE = candidato.deliberacaoJuri?.notaExameEscrito || '14.0';
+      setNotaExameEscrito(curNotaE);
+      setEventoLocal(candidato.detalhesFase?.local || provDefaultLocal);
+      setEventoData(candidato.detalhesFase?.dataEvento || '25 de Novembro de 2026 às 08h30');
+      if (parseFloat(curNotaE) < 10.0) {
+        setNovoEstado(isFem ? 'Reprovada no Teste Escrito' : 'Reprovado no Teste Escrito');
+        setMotivoExclusao('Classificação inferior a 10 valores no Teste Escrito (Reprovação Eliminatória)');
+        setParecerJuri(`Classificação de ${curNotaE} valores no Teste Escrito (< 10 valores). Reprovado.`);
+      } else {
+        setNovoEstado(isFem ? 'Aprovada no Teste Escrito' : 'Aprovado no Teste Escrito');
+        setParecerJuri(candidato.deliberacaoJuri?.parecer || `Aprovado no Teste Escrito com ${curNotaE} valores. Avança para a Entrevista Profissional.`);
+      }
+    } else {
+      // candFase === 4
+      const curNotaF = candidato.deliberacaoJuri?.notaFinal || '16.0';
+      setNotaFinal(curNotaF);
+      if (parseFloat(curNotaF) < 10.0) {
+        setNovoEstado(isFem ? 'Reprovada na Entrevista' : 'Reprovado na Entrevista');
         setMotivoExclusao('Nota inferior a 10 valores na Entrevista Profissional');
+        setParecerJuri(`Classificação de ${curNotaF} valores na Entrevista Profissional (< 10 valores). Reprovado.`);
+      } else if (candidato.status?.includes('Suplente')) {
+        setNovoEstado(isFem ? 'Aprovada (Suplente)' : 'Aprovado (Suplente)');
+        setParecerJuri(candidato.deliberacaoJuri?.parecer || `Aprovado na Entrevista com ${curNotaF} valores. Integrado na lista de suplentes.`);
       } else {
         setNovoEstado(isFem ? 'Admitida' : 'Admitido');
-        setParecerJuri(`${isFem ? 'Candidata demonstrou' : 'Candidato demonstrou'} excelente domínio técnico na Entrevista Profissional com nota de ${currentNota} valores. Proposta para provimento efetivo da vaga.`);
+        setParecerJuri(candidato.deliberacaoJuri?.parecer || `Aprovado na Entrevista com nota de ${curNotaF} valores. Proposta para provimento efetivo da vaga.`);
       }
-      setNotaFinal(String(currentNota));
-    } else {
-      setNovoEstado(candidato.status);
-      setParecerJuri(candidato.deliberacaoJuri?.parecer || '');
     }
 
     if (candidato.deliberacaoJuri?.motivoExclusao) {
@@ -1251,26 +1333,18 @@ export default function GestorPortalModule({
     if (candidato.deliberacaoJuri?.notaFinal) {
       setNotaFinal(candidato.deliberacaoJuri.notaFinal);
     }
-    if (candidato.detalhesFase?.local) {
-      setEventoLocal(candidato.detalhesFase.local);
-    }
-    if (candidato.detalhesFase?.dataEvento) {
-      setEventoData(candidato.detalhesFase.dataEvento);
-    }
 
     // Ajusta a pasta ativa na estação de avaliação para o estado do candidato
     if (candidato.status === 'Em Análise Documental' || candidato.status === 'Em análise' || candidato.status === 'Submetida') {
       setFiltroDeliberacaoModo('pendentes');
-    } else if (candidato.status === 'Admitido na Análise Documental' || candidato.status === 'Admitida na Análise Documental' || candidato.status === 'Entrevista Profissional' || candidato.status?.includes('Convocad')) {
-      setFiltroDeliberacaoModo('convocados');
     } else if (candidato.status === 'Admitido' || candidato.status === 'Admitida') {
       setFiltroDeliberacaoModo('admitidos');
-    } else if (candidato.status?.includes('Excluíd')) {
+    } else if (candidato.status?.includes('Excluíd') || candidato.status?.includes('Reprovad')) {
       setFiltroDeliberacaoModo('excluidos');
     } else if (candidato.status?.includes('Suplente')) {
       setFiltroDeliberacaoModo('suplentes');
     } else {
-      setFiltroDeliberacaoModo('pendentes');
+      setFiltroDeliberacaoModo('convocados');
     }
 
     setGestorTab('deliberacao');
@@ -1285,85 +1359,149 @@ export default function GestorPortalModule({
     if (!deliberandoCandidato) return;
 
     const isFem = deliberandoCandidato ? (detectCandidateGender(deliberandoCandidato) === 'Feminino') : false;
-    const isExclusao = novoEstado.includes('Excluíd') || novoEstado === 'Excluído' || novoEstado === 'Excluída';
+    const isExclusao = novoEstado.includes('Excluíd') || novoEstado.includes('Reprovad') || novoEstado === 'Excluído' || novoEstado === 'Excluída';
 
     const motivoFinal = isExclusao
       ? (motivoExclusao === 'Outro fundamento legal com descrição detalhada' || motivoExclusao === 'Outro motivo detalhado' ? outroMotivo : motivoExclusao)
       : null;
 
     if (isExclusao && !motivoFinal) {
-      if (onNotify) onNotify('error', 'É obrigatório indicar o fundamento ou motivo para a exclusão do candidato.');
+      if (onNotify) onNotify('error', 'É obrigatório indicar o fundamento ou motivo para a exclusão/reprovação do candidato.');
       return;
     }
 
     const candFase = deliberandoCandidato.faseAtual || (
       (deliberandoCandidato.status === 'Em Análise Documental' || deliberandoCandidato.status === 'Em análise' || deliberandoCandidato.status === 'Submetida') ? 1 :
-      (deliberandoCandidato.status === 'Admitido na Análise Documental' || deliberandoCandidato.status === 'Admitida na Análise Documental' || deliberandoCandidato.status === 'Entrevista Profissional' || deliberandoCandidato.status === 'Convocada para provas') ? 2 : 3
+      (deliberandoCandidato.status === 'Aprovado na Análise Documental' || deliberandoCandidato.status === 'Aprovada na Análise Documental' || deliberandoCandidato.status === 'Admitido na Análise Documental' || deliberandoCandidato.status === 'Admitida na Análise Documental') ? 2 :
+      (deliberandoCandidato.status === 'Convocado para Teste Escrito' || deliberandoCandidato.status === 'Convocada para Teste Escrito') ? 3 :
+      4
     );
 
-    // 1. REGRA REGULAMENTAR: DECISÃO FINAL EXIGE CONCLUSÃO DE TODOS OS CANDIDATOS NA FASE 1
-    if (candFase >= 2 || novoEstado === 'Admitido' || novoEstado === 'Admitida' || novoEstado.includes('Suplente') || novoEstado === 'Excluído na Entrevista' || novoEstado === 'Excluída na Entrevista') {
-      if (!isFase1Concluida) {
-        if (onNotify) {
-          onNotify('error', `Bloqueio Regulamentar SERNIC: É estritamente obrigatório concluir a 1ª Fase de todos os candidatos antes de avançar para a decisão final. Restam ${totalPendentesFase1} candidato(s) pendente(s).`);
+    let updates = {};
+
+    if (candFase === 1) {
+      // FASE 1: ANÁLISE DOCUMENTAL (Aprovado ou Reprovado)
+      if (novoEstado.includes('Aprovad') || novoEstado.includes('Admitid')) {
+        updates = {
+          status: isFem ? 'Aprovada na Análise Documental' : 'Aprovado na Análise Documental',
+          faseAtual: 2,
+          motivoExclusao: null,
+          parecer: parecerJuri || 'Candidatura com documentação em conformidade com o Edital. Aprovado na 1ª Fase (Análise Documental).'
+        };
+      } else {
+        updates = {
+          status: isFem ? 'Reprovada na Análise Documental' : 'Reprovado na Análise Documental',
+          faseAtual: 1,
+          motivoExclusao: motivoFinal,
+          parecer: parecerJuri || `Reprovado na Análise Documental: ${motivoFinal}.`
+        };
+      }
+    } else if (candFase === 2) {
+      // FASE 2: CONVOCATÓRIA (Opção de Teste Escrito: Sim/Não)
+      if (haveraExameEscrito === 'sim') {
+        if (!localExameEscrito.trim() || !dataExameEscrito.trim()) {
+          if (onNotify) onNotify('error', 'É obrigatório selecionar a Direcção/Local e a Data/Hora do Teste Escrito.');
+          return;
         }
-        return;
-      }
-      if (!isHomologacaoFinalDesbloqueada) {
-        if (onNotify) {
-          onNotify('error', 'É obrigatório introduzir o Código de Administrador do Gestor para desbloquear a Fase de Homologação Efetiva.');
+        updates = {
+          status: isFem ? 'Convocada para Teste Escrito' : 'Convocado para Teste Escrito',
+          faseAtual: 3,
+          haveraExameEscrito: 'sim',
+          localExameEscrito: localExameEscrito,
+          dataExameEscrito: dataExameEscrito,
+          salaExameEscrito: salaExameEscrito,
+          eventoLocal: localExameEscrito,
+          eventoData: dataExameEscrito,
+          eventoTitulo: 'Teste Escrito de Conhecimentos',
+          motivoExclusao: null,
+          parecer: parecerJuri || `Convocado para Teste Escrito em ${localExameEscrito} (${salaExameEscrito}) no dia ${dataExameEscrito}.`
+        };
+      } else {
+        if (!eventoLocal.trim() || !eventoData.trim()) {
+          if (onNotify) onNotify('error', 'É obrigatório indicar o Local e a Data/Hora da Entrevista Profissional.');
+          return;
         }
+        updates = {
+          status: isFem ? 'Convocada para Entrevista Profissional' : 'Convocado para Entrevista Profissional',
+          faseAtual: 4,
+          haveraExameEscrito: 'nao',
+          eventoLocal: eventoLocal,
+          eventoData: eventoData,
+          eventoTitulo: 'Entrevista Profissional e de Competências',
+          motivoExclusao: null,
+          parecer: parecerJuri || `Dispensado de teste escrito. Convocado diretamente para a Entrevista Profissional em ${eventoLocal} no dia ${eventoData}.`
+        };
+      }
+    } else if (candFase === 3) {
+      // FASE 3: TESTE ESCRITO (Aprovado ou Reprovado)
+      const notaE = parseFloat(notaExameEscrito);
+      if (isNaN(notaE)) {
+        if (onNotify) onNotify('error', 'Por favor insira uma classificação válida no Teste Escrito (0.0 a 20.0).');
         return;
       }
-    }
-
-    // Regra Eliminatória da Entrevista: Se a nota for < 10 valores, é estritamente proibido admitir ou aprovar como suplente!
-    const notaNum = parseFloat(notaFinal);
-    if (!isNaN(notaNum) && (novoEstado === 'Admitido' || novoEstado === 'Admitida' || novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)')) {
-      if (notaNum < 10.0) {
-        if (onNotify) onNotify('error', 'Regra Eliminatória SERNIC: Candidatos com nota inferior a 10 valores reprovam na entrevista e devem ser excluídos.');
+      if (notaE < 10.0 && novoEstado.includes('Aprovad')) {
+        if (onNotify) onNotify('error', 'Regra Eliminatória SERNIC: Candidato com nota inferior a 10 valores reprova no teste escrito.');
         return;
       }
-    }
 
-    // Validação da 1ª Fase (Admitido na Análise Documental): Local e data da entrevista são obrigatórios
-    if (novoEstado === 'Admitido na Análise Documental' || novoEstado === 'Admitida na Análise Documental' || novoEstado === 'Entrevista Profissional') {
-      if (!eventoLocal.trim() || !eventoData.trim()) {
-        if (onNotify) onNotify('error', 'É obrigatório comunicar o Local e a Data/Hora da Entrevista Profissional para os admitidos na 1ª Fase.');
+      if (notaE >= 10.0 && (novoEstado.includes('Aprovad') || !novoEstado.includes('Reprovad'))) {
+        updates = {
+          status: isFem ? 'Aprovada no Teste Escrito' : 'Aprovado no Teste Escrito',
+          faseAtual: 4,
+          notaExameEscrito: notaExameEscrito,
+          motivoExclusao: null,
+          eventoLocal: eventoLocal || LOCAIS_DIRECCOES_PROVINCIAIS[deliberandoCandidato.provincia] || 'Gabinete Provincial de Entrevistas',
+          eventoData: eventoData || '25 de Novembro de 2026 às 08h30',
+          eventoTitulo: 'Entrevista Profissional e de Competências',
+          parecer: parecerJuri || `Aprovado no Teste Escrito com ${notaExameEscrito} valores. Convocado para a 4ª Fase (Entrevista Profissional).`
+        };
+      } else {
+        updates = {
+          status: isFem ? 'Reprovada no Teste Escrito' : 'Reprovado no Teste Escrito',
+          faseAtual: 3,
+          notaExameEscrito: notaExameEscrito,
+          motivoExclusao: motivoFinal || 'Classificação inferior a 10 valores no Teste Escrito (Reprovação Eliminatória)',
+          parecer: parecerJuri || `Reprovado no Teste Escrito com ${notaExameEscrito} valores (< 10 valores).`
+        };
+      }
+    } else {
+      // FASE 4: ENTREVISTA PROFISSIONAL (Admitido, Suplente, Reprovado)
+      const notaF = parseFloat(notaFinal);
+      if (isNaN(notaF)) {
+        if (onNotify) onNotify('error', 'Por favor insira uma nota válida na Entrevista (0.0 a 20.0).');
         return;
       }
-    }
 
-    const updates = {
-      status: novoEstado,
-      parecer: parecerJuri || (
-        (novoEstado === 'Admitido na Análise Documental' || novoEstado === 'Admitida na Análise Documental' || novoEstado === 'Entrevista Profissional')
-          ? `Candidatura aprovada e admitida na Análise Documental. ${isFem ? 'Convocada' : 'Convocado'} para a 2ª Fase (Entrevista Profissional).`
-          : (novoEstado === 'Admitido' || novoEstado === 'Admitida')
-          ? `${isFem ? 'Aprovada' : 'Aprovado'} na entrevista com nota ${notaFinal} valores para provimento de vaga.`
-          : (novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)')
-          ? `${isFem ? 'Aprovada' : 'Aprovado'} na entrevista com nota ${notaFinal} valores para a lista de reserva (suplente).`
-          : (novoEstado === 'Excluído na Análise Documental' || novoEstado === 'Excluída na Análise Documental')
-          ? `Exclusão na Análise Documental: ${motivoFinal}.`
-          : (novoEstado === 'Excluído na Entrevista' || novoEstado === 'Excluída na Entrevista')
-          ? `Reprovado na Entrevista com classificação de ${notaFinal} valores: ${motivoFinal}.`
-          : 'Decisão gravada com sucesso.'
-      ),
-      motivoExclusao: motivoFinal,
-      notaFinal: (novoEstado === 'Admitido' || novoEstado === 'Admitida' || novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)' || novoEstado === 'Excluído na Entrevista' || novoEstado === 'Excluída na Entrevista') ? notaFinal : null,
-      eventoData: (novoEstado === 'Admitido na Análise Documental' || novoEstado === 'Admitida na Análise Documental' || novoEstado === 'Entrevista Profissional') ? eventoData : null,
-      eventoLocal: (novoEstado === 'Admitido na Análise Documental' || novoEstado === 'Admitida na Análise Documental' || novoEstado === 'Entrevista Profissional') ? eventoLocal : null,
-      eventoTitulo: (novoEstado === 'Admitido na Análise Documental' || novoEstado === 'Admitida na Análise Documental' || novoEstado === 'Entrevista Profissional') ? tipoProva : null
-    };
+      if ((novoEstado === 'Admitido' || novoEstado === 'Admitida' || novoEstado.includes('Suplente')) && notaF < 10.0) {
+        if (onNotify) onNotify('error', 'Regra Eliminatória SERNIC: Candidatos com nota inferior a 10 valores não podem ser admitidos nem ficar suplentes.');
+        return;
+      }
 
-    // 2. CONFIRMAÇÃO OBRIGATÓRIA DA 1ª FASE PARA HOMOLOGAR PARA A FASE DE ENTREVISTA
-    if (candFase === 1 && (novoEstado === 'Admitido na Análise Documental' || novoEstado === 'Admitida na Análise Documental' || novoEstado === 'Entrevista Profissional')) {
-      setConfirmHomologacao1aFaseModal({
-        candidato: deliberandoCandidato,
-        updates: updates,
-        operador: currentUser || { name: 'Dr. Alberto Chissano', cargo: 'Presidente do Júri de Seleção', perfil: 'Gestor Autorizado DRH / SERNIC' }
-      });
-      return;
+      if (novoEstado === 'Admitido' || novoEstado === 'Admitida') {
+        updates = {
+          status: isFem ? 'Admitida' : 'Admitido',
+          faseAtual: 4,
+          notaFinal: notaFinal,
+          motivoExclusao: null,
+          parecer: parecerJuri || `Aprovado na Entrevista Profissional com nota de ${notaFinal} valores. Selecionado para provimento efetivo da vaga.`
+        };
+      } else if (novoEstado.includes('Suplente')) {
+        updates = {
+          status: isFem ? 'Aprovada (Suplente)' : 'Aprovado (Suplente)',
+          faseAtual: 4,
+          notaFinal: notaFinal,
+          motivoExclusao: null,
+          parecer: parecerJuri || `Aprovado na Entrevista com nota de ${notaFinal} valores. Integrado na lista de reserva (suplente).`
+        };
+      } else {
+        updates = {
+          status: isFem ? 'Reprovada na Entrevista' : 'Reprovado na Entrevista',
+          faseAtual: 4,
+          notaFinal: notaFinal,
+          motivoExclusao: motivoFinal || 'Nota inferior a 10 valores na Entrevista Profissional (Reprovação Eliminatória)',
+          parecer: parecerJuri || `Reprovado na Entrevista Profissional com ${notaFinal} valores: ${motivoFinal || 'Inaptidão técnica'}.`
+        };
+      }
     }
 
     executeSaveDeliberacao(deliberandoCandidato, updates, currentUser);
@@ -3157,19 +3295,43 @@ export default function GestorPortalModule({
                 <h2>Avaliação de Candidatos</h2>
               </div>
 
-              <button
-                type="button"
-                className="btn-deliberacao-secondary"
-                title="Repor todos os candidatos de teste na fase inicial com confirmação por senha"
-                onClick={() => {
-                  setSenhaResetGeral('');
-                  setErroResetGeral('');
-                  setIsModalResetGeralOpen(true);
-                }}
-              >
-                <RefreshCw size={14} />
-                <span>Repor dados de teste</span>
-              </button>
+              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                {isPrincipalOrSuper && (
+                  <button
+                    type="button"
+                    className="btn-deliberacao-primary-green"
+                    title="Homologar e publicar oficialmente todas as deliberações pendentes nas contas dos candidatos"
+                    onClick={() => {
+                      const count = homologarEPublicarTodasCandidaturas(currentUser);
+                      reloadData();
+                      if (onNotify) {
+                        if (count > 0) {
+                          onNotify('success', `${count} deliberação(ões) homologada(s) e publicada(s) oficialmente com sucesso!`);
+                        } else {
+                          onNotify('info', 'Todas as candidaturas já se encontram homologadas e publicadas.');
+                        }
+                      }
+                    }}
+                  >
+                    <CheckCircle2 size={14} />
+                    <span>Homologar e Publicar Todos</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  className="btn-deliberacao-secondary"
+                  title="Repor todos os candidatos de teste na fase inicial com confirmação por senha"
+                  onClick={() => {
+                    setSenhaResetGeral('');
+                    setErroResetGeral('');
+                    setIsModalResetGeralOpen(true);
+                  }}
+                >
+                  <RefreshCw size={14} />
+                  <span>Repor dados de teste</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -3457,75 +3619,123 @@ export default function GestorPortalModule({
                     </div>
 
                     <div className="dado-col">
+                      <span className="dado-label">Fase Atual do Candidato:</span>
+                      <strong className="dado-val" style={{ color: '#c32026' }}>
+                        {(() => {
+                          const cf = deliberandoCandidato.faseAtual || 1;
+                          if (cf === 1) return '1ª Fase: Análise Documental';
+                          if (cf === 2) return '2ª Fase: Convocatória';
+                          if (cf === 3) return '3ª Fase: Teste Escrito';
+                          return '4ª Fase: Entrevista Profissional';
+                        })()}
+                      </strong>
+                    </div>
+
+                    <div className="dado-col">
+                      <span className="dado-label">Nota do Teste Escrito:</span>
+                      <strong className="dado-val">
+                        {deliberandoCandidato.deliberacaoJuri?.notaExameEscrito 
+                          ? `${deliberandoCandidato.deliberacaoJuri.notaExameEscrito} val.` 
+                          : (deliberandoCandidato.haveraExameEscrito === 'nao' ? 'Isento' : 'Pendente')}
+                      </strong>
+                    </div>
+
+                    <div className="dado-col">
                       <span className="dado-label">Nota da Entrevista:</span>
                       <strong className="dado-val">
                         {deliberandoCandidato.deliberacaoJuri?.notaFinal ? `${deliberandoCandidato.deliberacaoJuri.notaFinal} val.` : 'Pendente'}
                       </strong>
                     </div>
-
-                    <div className="dado-col">
-                      <span className="dado-label">Convocatória:</span>
-                      <span className="dado-val-text">
-                        {deliberandoCandidato.faseAtual >= 2 || deliberandoCandidato.status?.includes('Admitid')
-                          ? (deliberandoCandidato.detalhesFase?.dataEvento || eventoData || 'Agendada')
-                          : 'Definida na 1ª Fase'}
-                      </span>
-                    </div>
                   </div>
+
+                  {/* NOTIFICAÇÃO DE PARECER DO JÚRI AGUARDANDO HOMOLOGAÇÃO PELO ADMINISTRADOR PRINCIPAL */}
+                  {deliberandoCandidato.parecerJuriPendente && isPrincipalOrSuper && (
+                    <div className="deliberacao-parecer-pendente-banner">
+                      <div className="parecer-info">
+                        <span className="parecer-badge">Parecer do Júri Aguardando Homologação</span>
+                        <p>
+                          <strong>Proposta Técnica:</strong> {deliberandoCandidato.parecerJuriPendente.status}
+                          {deliberandoCandidato.parecerJuriPendente.notaExameEscrito && ` • Teste Escrito: ${deliberandoCandidato.parecerJuriPendente.notaExameEscrito} val.`}
+                          {deliberandoCandidato.parecerJuriPendente.notaFinal && ` • Entrevista: ${deliberandoCandidato.parecerJuriPendente.notaFinal} val.`}
+                        </p>
+                        <p className="parecer-desc">
+                          {deliberandoCandidato.parecerJuriPendente.parecer}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn-deliberacao-primary-green"
+                        onClick={() => {
+                          const res = homologarEPublicarCandidatura(deliberandoCandidato.codigoCandidatura, currentUser);
+                          if (res) {
+                            reloadData();
+                            setDeliberandoCandidato(res);
+                            if (onNotify) onNotify('success', `Decisão homologada e publicada oficialmente na conta de ${deliberandoCandidato.nomeCompleto}!`);
+                          }
+                        }}
+                      >
+                        <CheckCircle2 size={16} />
+                        <span>Homologar e Publicar na Conta do Candidato</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {deliberandoCandidato.parecerJuriPendente && isJuriUser && (
+                    <div className="deliberacao-parecer-info-banner">
+                      <Clock size={16} />
+                      <span>O parecer deste candidato foi registado com sucesso e aguarda homologação do Administrador Principal para publicação oficial.</span>
+                    </div>
+                  )}
 
                   {/* FORMULÁRIO DE DELIBERAÇÃO FORMAL */}
                   <form onSubmit={handleGravarDeliberacao} className="deliberacao-form-body">
                     {(() => {
                       const candFase = deliberandoCandidato.faseAtual || (
                         (deliberandoCandidato.status === 'Em Análise Documental' || deliberandoCandidato.status === 'Em análise' || deliberandoCandidato.status === 'Submetida') ? 1 :
-                        (deliberandoCandidato.status === 'Admitido na Análise Documental' || deliberandoCandidato.status === 'Admitida na Análise Documental' || deliberandoCandidato.status === 'Entrevista Profissional' || deliberandoCandidato.status === 'Convocada para provas') ? 2 : 3
+                        (deliberandoCandidato.status === 'Aprovado na Análise Documental' || deliberandoCandidato.status === 'Aprovada na Análise Documental' || deliberandoCandidato.status === 'Admitido na Análise Documental' || deliberandoCandidato.status === 'Admitida na Análise Documental') ? 2 :
+                        (deliberandoCandidato.status === 'Convocado para Teste Escrito' || deliberandoCandidato.status === 'Convocada para Teste Escrito') ? 3 :
+                        4
                       );
 
                       const isDelibFem = detectCandidateGender(deliberandoCandidato) === 'Feminino';
-                      const notaAtualNum = parseFloat(notaFinal);
-                      const isReprovadoNota = !isNaN(notaAtualNum) && notaAtualNum < 10.0;
 
                       return (
                         <>
-                          {/* DECISÃO DA 1ª FASE */}
+                          {/* FASE 1: ANÁLISE DOCUMENTAL */}
                           {candFase === 1 && (
                             <div className="deliberacao-section-block">
-                              <label className="deliberacao-section-label">Decisão da Análise Documental:</label>
+                              <label className="deliberacao-section-label">1ª Fase: Decisão da Análise Documental</label>
                               <div className="deliberacao-clean-choices">
-                                <label className={`deliberacao-choice-btn ${(novoEstado === 'Admitido na Análise Documental' || novoEstado === 'Admitida na Análise Documental' || novoEstado === 'Entrevista Profissional') ? 'checked' : ''}`}>
+                                <label className={`deliberacao-choice-btn ${(novoEstado.includes('Aprovad') || novoEstado.includes('Admitid')) ? 'checked' : ''}`}>
                                   <input
                                     type="radio"
                                     name="estadoDeliberacao"
-                                    value="Admitido na Análise Documental"
-                                    checked={novoEstado === 'Admitido na Análise Documental' || novoEstado === 'Admitida na Análise Documental' || novoEstado === 'Entrevista Profissional'}
+                                    value="Aprovado na Análise Documental"
+                                    checked={novoEstado.includes('Aprovad') || novoEstado.includes('Admitid')}
                                     onChange={() => {
-                                      setNovoEstado(isDelibFem ? 'Admitida na Análise Documental' : 'Admitido na Análise Documental');
-                                      if (!parecerJuri || parecerJuri.includes('exclu')) {
-                                        setParecerJuri(`Documentação em conformidade. ${isDelibFem ? 'Admitida' : 'Admitido'} na Análise Documental (1ª Fase) e convocada para a Entrevista Profissional.`);
-                                      }
+                                      setNovoEstado(isDelibFem ? 'Aprovada na Análise Documental' : 'Aprovado na Análise Documental');
+                                      setParecerJuri(`Documentação em conformidade com o Edital. Candidato aprovado na 1ª Fase (Análise Documental) e encaminhado para a 2ª Fase.`);
                                     }}
                                   />
                                   <div className="choice-info">
-                                    <strong>Admitir na Análise Documental</strong>
-                                    <span>Documentação em conformidade. Candidato avança para a Entrevista Profissional.</span>
+                                    <strong>Aprovado na Análise Documental</strong>
+                                    <span>Documentação em conformidade. Candidato avança para a 2ª Fase (Convocatória).</span>
                                   </div>
                                 </label>
 
-                                <label className={`deliberacao-choice-btn ${(novoEstado === 'Excluído na Análise Documental' || novoEstado === 'Excluída na Análise Documental' || novoEstado === 'Excluído' || novoEstado === 'Excluída') ? 'checked' : ''}`}>
+                                <label className={`deliberacao-choice-btn ${(novoEstado.includes('Reprovad') || novoEstado.includes('Excluíd')) ? 'checked' : ''}`}>
                                   <input
                                     type="radio"
                                     name="estadoDeliberacao"
-                                    value="Excluído na Análise Documental"
-                                    checked={novoEstado === 'Excluído na Análise Documental' || novoEstado === 'Excluída na Análise Documental' || novoEstado === 'Excluído' || novoEstado === 'Excluída'}
+                                    value="Reprovado na Análise Documental"
+                                    checked={novoEstado.includes('Reprovad') || novoEstado.includes('Excluíd')}
                                     onChange={() => {
-                                      setNovoEstado(isDelibFem ? 'Excluída na Análise Documental' : 'Excluído na Análise Documental');
-                                      if (!parecerJuri || parecerJuri.includes('Admitid')) {
-                                        setParecerJuri(`Candidatura excluída na 1ª Fase por inconformidade regulamentar.`);
-                                      }
+                                      setNovoEstado(isDelibFem ? 'Reprovada na Análise Documental' : 'Reprovado na Análise Documental');
+                                      setParecerJuri(`Candidatura reprovada na Análise Documental por não conformidade dos requisitos regulamentares.`);
                                     }}
                                   />
                                   <div className="choice-info">
-                                    <strong>Excluir na Análise Documental</strong>
+                                    <strong>Reprovado na Análise Documental</strong>
                                     <span>Documentos incompletos ou inconformes com os requisitos do Edital.</span>
                                   </div>
                                 </label>
@@ -3533,224 +3743,344 @@ export default function GestorPortalModule({
                             </div>
                           )}
 
-                          {/* AGENDAMENTO DA ENTREVISTA (CAMPOS ALINHADOS - SEM CAIXAS AZUIS DECORATIVAS) */}
-                          {(novoEstado === 'Admitido na Análise Documental' || novoEstado === 'Admitida na Análise Documental' || novoEstado === 'Entrevista Profissional') && (
-                            <div className="deliberacao-fields-group">
-                              <div className="fields-group-title">Agendamento da Entrevista Profissional (2ª Fase)</div>
-                              <div className="extra-box-grid-two">
-                                <div className="form-field">
-                                  <label>Data e Hora da Entrevista *:</label>
+                          {/* FASE 2: CONVOCATÓRIA E OPÇÃO DE EXAME ESCRITO */}
+                          {candFase === 2 && (
+                            <div className="deliberacao-section-block">
+                              <label className="deliberacao-section-label">2ª Fase: Haverá Exame Escrito para este Candidato / Carreira?</label>
+                              <div className="deliberacao-clean-choices">
+                                <label className={`deliberacao-choice-btn ${haveraExameEscrito === 'sim' ? 'checked' : ''}`}>
                                   <input
-                                    type="text"
-                                    value={eventoData}
-                                    onChange={(e) => setEventoData(e.target.value)}
-                                    placeholder="Ex: 15 de Novembro de 2026 às 08h30"
-                                    required
+                                    type="radio"
+                                    name="haveraExameEscrito"
+                                    value="sim"
+                                    checked={haveraExameEscrito === 'sim'}
+                                    onChange={() => {
+                                      setHaveraExameEscrito('sim');
+                                      setNovoEstado(isDelibFem ? 'Convocada para Teste Escrito' : 'Convocado para Teste Escrito');
+                                      setParecerJuri(`Convocado para Teste Escrito em ${localExameEscrito}.`);
+                                    }}
                                   />
-                                </div>
+                                  <div className="choice-info">
+                                    <strong>Sim, haverá Exame Escrito</strong>
+                                    <span>Candidato realizará prova escrita e avança para a 3ª Fase (Teste Escrito).</span>
+                                  </div>
+                                </label>
 
-                                <div className="form-field">
-                                  <label>Local Oficial da Entrevista *:</label>
+                                <label className={`deliberacao-choice-btn ${haveraExameEscrito === 'nao' ? 'checked' : ''}`}>
                                   <input
-                                    type="text"
-                                    value={eventoLocal}
-                                    onChange={(e) => setEventoLocal(e.target.value)}
-                                    placeholder="Ex: Gabinete Provincial de Entrevistas do SERNIC - Maputo"
-                                    required
+                                    type="radio"
+                                    name="haveraExameEscrito"
+                                    value="nao"
+                                    checked={haveraExameEscrito === 'nao'}
+                                    onChange={() => {
+                                      setHaveraExameEscrito('nao');
+                                      setNovoEstado(isDelibFem ? 'Convocada para Entrevista Profissional' : 'Convocado para Entrevista Profissional');
+                                      setParecerJuri(`Dispensado de teste escrito. Convocado diretamente para a Entrevista Profissional.`);
+                                    }}
+                                  />
+                                  <div className="choice-info">
+                                    <strong>Não, avança diretamente para a Entrevista Profissional</strong>
+                                    <span>Dispensado de prova escrita. Candidato avança diretamente para a 4ª Fase (Entrevista).</span>
+                                  </div>
+                                </label>
+                              </div>
+
+                              {haveraExameEscrito === 'sim' ? (
+                                <div className="deliberacao-fields-group" style={{ marginTop: '1.25rem' }}>
+                                  <div className="fields-group-title">Convocatória para Teste Escrito (Locais por Direcção)</div>
+                                  <div className="form-field full-width">
+                                    <label>Direcção Provincial e Local do Teste Escrito *:</label>
+                                    <select
+                                      value={localExameEscrito}
+                                      onChange={(e) => setLocalExameEscrito(e.target.value)}
+                                      className="gestor-select"
+                                      required
+                                    >
+                                      {Object.entries(LOCAIS_DIRECCOES_PROVINCIAIS).map(([prov, loc]) => (
+                                        <option key={prov} value={loc}>
+                                          {prov} — {loc}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+
+                                  <div className="extra-box-grid-two" style={{ marginTop: '0.75rem' }}>
+                                    <div className="form-field">
+                                      <label>Data e Hora do Teste Escrito *:</label>
+                                      <input
+                                        type="text"
+                                        value={dataExameEscrito}
+                                        onChange={(e) => setDataExameEscrito(e.target.value)}
+                                        placeholder="Ex: 20 de Novembro de 2026 às 09h00"
+                                        required
+                                      />
+                                    </div>
+                                    <div className="form-field">
+                                      <label>Sala de Provas *:</label>
+                                      <input
+                                        type="text"
+                                        value={salaExameEscrito}
+                                        onChange={(e) => setSalaExameEscrito(e.target.value)}
+                                        placeholder="Ex: Sala de Provas n.º 01"
+                                        required
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="deliberacao-fields-group" style={{ marginTop: '1.25rem' }}>
+                                  <div className="fields-group-title">Agendamento Direto da Entrevista Profissional (4ª Fase)</div>
+                                  <div className="extra-box-grid-two">
+                                    <div className="form-field">
+                                      <label>Data e Hora da Entrevista *:</label>
+                                      <input
+                                        type="text"
+                                        value={eventoData}
+                                        onChange={(e) => setEventoData(e.target.value)}
+                                        placeholder="Ex: 25 de Novembro de 2026 às 08h30"
+                                        required
+                                      />
+                                    </div>
+                                    <div className="form-field">
+                                      <label>Local Oficial da Entrevista *:</label>
+                                      <input
+                                        type="text"
+                                        value={eventoLocal}
+                                        onChange={(e) => setEventoLocal(e.target.value)}
+                                        placeholder="Ex: Gabinete Provincial de Entrevistas"
+                                        required
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* FASE 3: TESTE ESCRITO */}
+                          {candFase === 3 && (
+                            <div className="deliberacao-section-block">
+                              <label className="deliberacao-section-label">3ª Fase: Avaliação do Teste Escrito</label>
+                              <div className="form-field-nota-row">
+                                <div className="form-field" style={{ maxWidth: '220px' }}>
+                                  <label>Nota do Teste Escrito (0.0 a 20.0 val.) *:</label>
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    min="0"
+                                    max="20"
+                                    value={notaExameEscrito}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setNotaExameEscrito(val);
+                                      const num = parseFloat(val);
+                                      if (!isNaN(num)) {
+                                        if (num < 10.0) {
+                                          setNovoEstado(isDelibFem ? 'Reprovada no Teste Escrito' : 'Reprovado no Teste Escrito');
+                                          setMotivoExclusao('Classificação inferior a 10 valores no Teste Escrito (Reprovação Eliminatória)');
+                                          setParecerJuri(`Classificação de ${val} valores no Teste Escrito (< 10 val.). Reprovado.`);
+                                        } else {
+                                          setNovoEstado(isDelibFem ? 'Aprovada no Teste Escrito' : 'Aprovado no Teste Escrito');
+                                          setParecerJuri(`Aprovado no Teste Escrito com ${val} valores. Candidato avança para a Entrevista Profissional.`);
+                                        }
+                                      }
+                                    }}
+                                    className="input-nota-clean"
                                   />
                                 </div>
+                                <div className="nota-feedback-tag">
+                                  {parseFloat(notaExameEscrito) >= 10.0 ? (
+                                    <span className="nota-tag-pos">Nota ≥ 10 val. (Aprovado p/ 4ª Fase)</span>
+                                  ) : (
+                                    <span className="nota-tag-neg">Nota &lt; 10 val. (Reprovado no Teste)</span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="deliberacao-clean-choices" style={{ marginTop: '1rem' }}>
+                                <label className={`deliberacao-choice-btn ${novoEstado.includes('Aprovad') ? 'checked' : ''} ${parseFloat(notaExameEscrito) < 10.0 ? 'disabled-locked' : ''}`}>
+                                  <input
+                                    type="radio"
+                                    name="estadoDeliberacao"
+                                    value="Aprovado no Teste Escrito"
+                                    checked={novoEstado.includes('Aprovad')}
+                                    disabled={parseFloat(notaExameEscrito) < 10.0}
+                                    onChange={() => {
+                                      if (parseFloat(notaExameEscrito) < 10.0) return;
+                                      setNovoEstado(isDelibFem ? 'Aprovada no Teste Escrito' : 'Aprovado no Teste Escrito');
+                                      setParecerJuri(`Aprovado no Teste Escrito com ${notaExameEscrito} valores. Avança para a 4ª Fase.`);
+                                    }}
+                                  />
+                                  <div className="choice-info">
+                                    <strong>Aprovado no Teste Escrito</strong>
+                                    <span>{parseFloat(notaExameEscrito) < 10.0 ? 'Bloqueado: requer nota mínima de 10.0 valores.' : 'Aprovado no teste. Candidato avança para a Entrevista Profissional (4ª Fase).'}</span>
+                                  </div>
+                                </label>
+
+                                <label className={`deliberacao-choice-btn ${novoEstado.includes('Reprovad') ? 'checked' : ''}`}>
+                                  <input
+                                    type="radio"
+                                    name="estadoDeliberacao"
+                                    value="Reprovado no Teste Escrito"
+                                    checked={novoEstado.includes('Reprovad')}
+                                    onChange={() => {
+                                      setNovoEstado(isDelibFem ? 'Reprovada no Teste Escrito' : 'Reprovado no Teste Escrito');
+                                      setMotivoExclusao('Classificação inferior a 10 valores no Teste Escrito (Reprovação Eliminatória)');
+                                      setParecerJuri(`Reprovado no Teste Escrito com classificação de ${notaExameEscrito} valores.`);
+                                    }}
+                                  />
+                                  <div className="choice-info">
+                                    <strong>Reprovado no Teste Escrito</strong>
+                                    <span>Classificação inferior a 10 valores. Candidato excluído do concurso público.</span>
+                                  </div>
+                                </label>
+                              </div>
+
+                              {novoEstado.includes('Aprovad') && (
+                                <div className="deliberacao-fields-group" style={{ marginTop: '1.25rem' }}>
+                                  <div className="fields-group-title">Convocatória para a Entrevista Profissional (4ª Fase)</div>
+                                  <div className="extra-box-grid-two">
+                                    <div className="form-field">
+                                      <label>Data e Hora da Entrevista *:</label>
+                                      <input
+                                        type="text"
+                                        value={eventoData}
+                                        onChange={(e) => setEventoData(e.target.value)}
+                                        placeholder="Ex: 25 de Novembro de 2026 às 08h30"
+                                        required
+                                      />
+                                    </div>
+                                    <div className="form-field">
+                                      <label>Local Oficial da Entrevista *:</label>
+                                      <input
+                                        type="text"
+                                        value={eventoLocal}
+                                        onChange={(e) => setEventoLocal(e.target.value)}
+                                        placeholder="Ex: Gabinete Provincial de Entrevistas"
+                                        required
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* FASE 4: ENTREVISTA PROFISSIONAL (ÚLTIMA FASE) */}
+                          {candFase === 4 && (
+                            <div className="deliberacao-section-block">
+                              <label className="deliberacao-section-label">4ª Fase: Entrevista Profissional (Decisão Final)</label>
+                              <div className="form-field-nota-row">
+                                <div className="form-field" style={{ maxWidth: '220px' }}>
+                                  <label>Nota da Entrevista (0.0 a 20.0 val.) *:</label>
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    min="0"
+                                    max="20"
+                                    value={notaFinal}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setNotaFinal(val);
+                                      const num = parseFloat(val);
+                                      if (!isNaN(num)) {
+                                        if (num < 10.0) {
+                                          setNovoEstado(isDelibFem ? 'Reprovada na Entrevista' : 'Reprovado na Entrevista');
+                                          setMotivoExclusao('Nota inferior a 10 valores na Entrevista Profissional');
+                                          setParecerJuri(`Classificação de ${val} valores na Entrevista Profissional (< 10 val.). Reprovado.`);
+                                        } else {
+                                          if (novoEstado.includes('Reprovad') || novoEstado.includes('Excluíd')) {
+                                            setNovoEstado(isDelibFem ? 'Admitida' : 'Admitido');
+                                            setParecerJuri(`Aproveitamento de ${val} valores na Entrevista Profissional. Proposta para provimento efetivo da vaga.`);
+                                          }
+                                        }
+                                      }
+                                    }}
+                                    className="input-nota-clean"
+                                  />
+                                </div>
+                                <div className="nota-feedback-tag">
+                                  {parseFloat(notaFinal) >= 10.0 ? (
+                                    <span className="nota-tag-pos">Nota ≥ 10 val. (Aprovado)</span>
+                                  ) : (
+                                    <span className="nota-tag-neg">Nota &lt; 10 val. (Reprovado na Entrevista)</span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="deliberacao-clean-choices" style={{ marginTop: '1rem' }}>
+                                {/* ADMITIR EFETIVO */}
+                                <label className={`deliberacao-choice-btn ${(novoEstado === 'Admitido' || novoEstado === 'Admitida') ? 'checked' : ''} ${parseFloat(notaFinal) < 10.0 ? 'disabled-locked' : ''}`}>
+                                  <input
+                                    type="radio"
+                                    name="estadoDeliberacao"
+                                    value="Admitido"
+                                    checked={novoEstado === 'Admitido' || novoEstado === 'Admitida'}
+                                    disabled={parseFloat(notaFinal) < 10.0}
+                                    onChange={() => {
+                                      if (parseFloat(notaFinal) < 10.0) return;
+                                      setNovoEstado(isDelibFem ? 'Admitida' : 'Admitido');
+                                      setParecerJuri(`${isDelibFem ? 'Candidata admitida' : 'Candidato admitido'} com ${notaFinal} valores na Entrevista Profissional para provimento efetivo da vaga.`);
+                                    }}
+                                  />
+                                  <div className="choice-info">
+                                    <strong>Admitido (Vaga Efetiva)</strong>
+                                    <span>{parseFloat(notaFinal) < 10.0 ? 'Bloqueado: requer nota mínima de 10.0 valores.' : 'Aprovado para preenchimento de vaga imediata.'}</span>
+                                  </div>
+                                </label>
+
+                                {/* SUPLENTE */}
+                                <label className={`deliberacao-choice-btn ${(novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)') ? 'checked' : ''} ${parseFloat(notaFinal) < 10.0 ? 'disabled-locked' : ''}`}>
+                                  <input
+                                    type="radio"
+                                    name="estadoDeliberacao"
+                                    value="Aprovado (Suplente)"
+                                    checked={novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)'}
+                                    disabled={parseFloat(notaFinal) < 10.0}
+                                    onChange={() => {
+                                      if (parseFloat(notaFinal) < 10.0) return;
+                                      setNovoEstado(isDelibFem ? 'Aprovada (Suplente)' : 'Aprovado (Suplente)');
+                                      setParecerJuri(`${isDelibFem ? 'Candidata' : 'Candidato'} com nota de ${notaFinal} valores. Integrado na lista de reserva / suplente.`);
+                                    }}
+                                  />
+                                  <div className="choice-info">
+                                    <strong>Suplente (Lista de Reserva)</strong>
+                                    <span>{parseFloat(notaFinal) < 10.0 ? 'Bloqueado: requer nota mínima de 10.0 valores.' : 'Aprovado para bolsa de reserva de recrutamento.'}</span>
+                                  </div>
+                                </label>
+
+                                {/* REPROVADO */}
+                                <label className={`deliberacao-choice-btn ${(novoEstado.includes('Reprovad') || novoEstado.includes('Excluíd')) ? 'checked' : ''}`}>
+                                  <input
+                                    type="radio"
+                                    name="estadoDeliberacao"
+                                    value="Reprovado na Entrevista"
+                                    checked={novoEstado.includes('Reprovad') || novoEstado.includes('Excluíd')}
+                                    onChange={() => {
+                                      setNovoEstado(isDelibFem ? 'Reprovada na Entrevista' : 'Reprovado na Entrevista');
+                                      setMotivoExclusao(parseFloat(notaFinal) < 10.0 ? 'Nota inferior a 10 valores na Entrevista Profissional' : 'Perfil técnico não adequado para as funções exigidas');
+                                      setParecerJuri(`Reprovado na 4ª Fase de Entrevista Profissional (${notaFinal} valores).`);
+                                    }}
+                                  />
+                                  <div className="choice-info">
+                                    <strong>Reprovado na Entrevista</strong>
+                                    <span>Reprovação eliminatória por classificação &lt; 10 valores ou inaptidão técnica.</span>
+                                  </div>
+                                </label>
                               </div>
                             </div>
                           )}
 
-                          {/* 2ª E 3ª FASE: ENTREVISTA */}
-                          {candFase >= 2 && (
-                            <>
-                              {/* BLOQUEIO REGULAMENTAR QUANDO RESTAM CANDIDATOS NA FASE 1 */}
-                              {!isFase1Concluida && (
-                                <div className="deliberacao-alert warning">
-                                  <div>
-                                    <strong>Conclusão da 1ª Fase Pendente</strong>
-                                    <p>É obrigatório concluir a Análise Documental de todos os inscritos antes de homologar notas de entrevista. Restam {totalPendentesFase1} candidato(s) pendente(s).</p>
-                                  </div>
-                                  <button
-                                    type="button"
-                                    className="btn-action-outline"
-                                    onClick={() => {
-                                      setFiltroDeliberacaoModo('pendentes');
-                                      const next = candidatosPendentesFase1[0];
-                                      if (next) iniciarDeliberacao(next);
-                                    }}
-                                  >
-                                    Avaliar Pendentes ({totalPendentesFase1})
-                                  </button>
-                                </div>
-                              )}
-
-                              {/* AUTENTICAÇÃO DO GESTOR */}
-                              {isFase1Concluida && !isHomologacaoFinalDesbloqueada && (
-                                <div className="deliberacao-alert info">
-                                  <div style={{ flex: 1 }}>
-                                    <strong>Autenticação do Gestor Requerida</strong>
-                                    <p>Introduza o Código de Administrador para desbloquear a homologação definitiva das notas e vagas.</p>
-                                    <div className="admin-code-input-row" style={{ marginTop: '0.6rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                      <input 
-                                        type={mostrarCodigoAdmin ? 'text' : 'password'}
-                                        value={codigoAdminInput}
-                                        onChange={(e) => {
-                                          setCodigoAdminInput(e.target.value);
-                                          setCodigoAdminErro('');
-                                        }}
-                                        placeholder="Código Administrador"
-                                        className="input-codigo-admin"
-                                        style={{ maxWidth: '240px' }}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') {
-                                            e.preventDefault();
-                                            handleDesbloquearHomologacaoFinal();
-                                          }
-                                        }}
-                                      />
-                                      <button
-                                        type="button"
-                                        className="btn-action-outline"
-                                        onClick={() => setMostrarCodigoAdmin(!mostrarCodigoAdmin)}
-                                      >
-                                        {mostrarCodigoAdmin ? 'Ocultar' : 'Ver'}
-                                      </button>
-                                      <button
-                                        type="button"
-                                        className="btn-action-primary"
-                                        onClick={handleDesbloquearHomologacaoFinal}
-                                      >
-                                        Desbloquear
-                                      </button>
-                                    </div>
-                                    {codigoAdminErro && (
-                                      <span style={{ color: '#dc2626', fontSize: '0.82rem', marginTop: '0.35rem', display: 'block' }}>
-                                        {codigoAdminErro}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-
-                              {/* FORMULÁRIO DE NOTA E DECISÃO DA ENTREVISTA */}
-                              {isFase1Concluida && isHomologacaoFinalDesbloqueada && (
-                                <div className="deliberacao-section-block">
-                                  <div className="form-field-nota-row">
-                                    <div className="form-field" style={{ maxWidth: '200px' }}>
-                                      <label>Nota da Entrevista (0.0 a 20.0 val.) *:</label>
-                                      <input
-                                        type="number"
-                                        step="0.1"
-                                        min="0"
-                                        max="20"
-                                        value={notaFinal}
-                                        onChange={(e) => {
-                                          const val = e.target.value;
-                                          setNotaFinal(val);
-                                          const num = parseFloat(val);
-                                          if (!isNaN(num)) {
-                                            if (num < 10.0) {
-                                              setNovoEstado(isDelibFem ? 'Excluída na Entrevista' : 'Excluído na Entrevista');
-                                              setMotivoExclusao('Nota inferior a 10 valores na Entrevista Profissional');
-                                              setParecerJuri(`Classificação de ${val} valores na Entrevista Profissional (< 10.0 val.). Exclusão obrigatória.`);
-                                            } else {
-                                              if (novoEstado.includes('Excluíd')) {
-                                                setNovoEstado(isDelibFem ? 'Admitida' : 'Admitido');
-                                                setParecerJuri(`Aproveitamento de ${val} valores na Entrevista Profissional. Proposta para provimento efetivo da vaga.`);
-                                              }
-                                            }
-                                          }
-                                        }}
-                                        className="input-nota-clean"
-                                      />
-                                    </div>
-                                    <div className="nota-feedback-tag">
-                                      {isReprovadoNota ? (
-                                        <span className="nota-tag-neg">Nota &lt; 10 val. (Reprovado por Edital)</span>
-                                      ) : (
-                                        <span className="nota-tag-pos">Nota ≥ 10 val. (Aprovado)</span>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  <label className="deliberacao-section-label" style={{ marginTop: '1.25rem' }}>Decisão da Entrevista Profissional:</label>
-                                  <div className="deliberacao-clean-choices">
-                                    {/* OPÇÃO ADMITIR EFETIVO */}
-                                    <label className={`deliberacao-choice-btn ${(novoEstado === 'Admitido' || novoEstado === 'Admitida') ? 'checked' : ''} ${isReprovadoNota ? 'disabled-locked' : ''}`}>
-                                      <input
-                                        type="radio"
-                                        name="estadoDeliberacao"
-                                        value="Admitido"
-                                        checked={novoEstado === 'Admitido' || novoEstado === 'Admitida'}
-                                        disabled={isReprovadoNota}
-                                        onChange={() => {
-                                          if (isReprovadoNota) return;
-                                          setNovoEstado(isDelibFem ? 'Admitida' : 'Admitido');
-                                          setParecerJuri(`${isDelibFem ? 'Candidata' : 'Candidato'} com nota de ${notaFinal} valores na Entrevista Profissional. Proposta para vaga efetiva.`);
-                                        }}
-                                      />
-                                      <div className="choice-info">
-                                        <strong>Admitir (Vaga Efetiva)</strong>
-                                        <span>{isReprovadoNota ? 'Bloqueado: requer nota mínima de 10.0 valores.' : 'Aprovado para preenchimento de vaga imediata.'}</span>
-                                      </div>
-                                    </label>
-
-                                    {/* OPÇÃO SUPLENTE */}
-                                    <label className={`deliberacao-choice-btn ${(novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)') ? 'checked' : ''} ${isReprovadoNota ? 'disabled-locked' : ''}`}>
-                                      <input
-                                        type="radio"
-                                        name="estadoDeliberacao"
-                                        value="Aprovado (Suplente)"
-                                        checked={novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)'}
-                                        disabled={isReprovadoNota}
-                                        onChange={() => {
-                                          if (isReprovadoNota) return;
-                                          setNovoEstado(isDelibFem ? 'Aprovada (Suplente)' : 'Aprovado (Suplente)');
-                                          setParecerJuri(`${isDelibFem ? 'Candidata' : 'Candidato'} com nota de ${notaFinal} valores. Integrado na lista de reserva / suplente.`);
-                                        }}
-                                      />
-                                      <div className="choice-info">
-                                        <strong>Aprovado como Suplente</strong>
-                                        <span>{isReprovadoNota ? 'Bloqueado: requer nota mínima de 10.0 valores.' : 'Aprovado para lista de reserva.'}</span>
-                                      </div>
-                                    </label>
-
-                                    {/* OPÇÃO EXCLUÍDO */}
-                                    <label className={`deliberacao-choice-btn ${(novoEstado === 'Excluído na Entrevista' || novoEstado === 'Excluída na Entrevista' || novoEstado === 'Excluído' || novoEstado === 'Excluída') ? 'checked' : ''}`}>
-                                      <input
-                                        type="radio"
-                                        name="estadoDeliberacao"
-                                        value="Excluído na Entrevista"
-                                        checked={novoEstado === 'Excluído na Entrevista' || novoEstado === 'Excluída na Entrevista' || novoEstado === 'Excluído' || novoEstado === 'Excluída'}
-                                        onChange={() => {
-                                          setNovoEstado(isDelibFem ? 'Excluída na Entrevista' : 'Excluído na Entrevista');
-                                          setMotivoExclusao(isReprovadoNota ? 'Nota inferior a 10 valores na Entrevista Profissional' : 'Perfil técnico não adequado para as funções exigidas');
-                                          setParecerJuri(`Candidatura excluída na 2ª Fase de Entrevista Profissional (${notaFinal} valores).`);
-                                        }}
-                                      />
-                                      <div className="choice-info">
-                                        <strong>Excluir na Entrevista</strong>
-                                        <span>Reprovado por nota &lt; 10 valores ou inaptidão técnica.</span>
-                                      </div>
-                                    </label>
-                                  </div>
-                                </div>
-                              )}
-                            </>
-                          )}
-
-                          {/* MOTIVO DA EXCLUSÃO (SEM CAIXAS VERMELHAS DECORATIVAS) */}
-                          {(novoEstado.includes('Excluíd') || novoEstado === 'Excluído' || novoEstado === 'Excluída') && (
+                          {/* MOTIVO DA EXCLUSÃO / REPROVAÇÃO */}
+                          {(novoEstado.includes('Excluíd') || novoEstado.includes('Reprovad') || novoEstado === 'Excluído' || novoEstado === 'Excluída') && (
                             <div className="deliberacao-fields-group">
-                              <div className="fields-group-title">Motivo da Exclusão</div>
+                              <div className="fields-group-title">Fundamentação Legal da Reprovação / Exclusão</div>
                               <div className="form-field full-width">
-                                <label>Fundamento Legal *:</label>
+                                <label>Motivo Regulamentar *:</label>
                                 <select 
                                   value={motivoExclusao} 
                                   onChange={(e) => setMotivoExclusao(e.target.value)}
+                                  className="gestor-select"
                                 >
                                   <optgroup label="1ª Fase - Análise Documental">
                                     <option value="Falta de Certificado de Habilitações autenticado">
@@ -3772,7 +4102,15 @@ export default function GestorPortalModule({
                                       Falta de Atestado Médico ou inaptidão física comprovada
                                     </option>
                                   </optgroup>
-                                  <optgroup label="2ª Fase - Entrevista Profissional">
+                                  <optgroup label="3ª Fase - Teste Escrito">
+                                    <option value="Classificação inferior a 10 valores no Teste Escrito (Reprovação Eliminatória)">
+                                      Classificação inferior a 10 valores no Teste Escrito (Reprovação Eliminatória)
+                                    </option>
+                                    <option value="Não comparência ao Teste Escrito de Conhecimentos">
+                                      Não comparência ao Teste Escrito de Conhecimentos (Falta)
+                                    </option>
+                                  </optgroup>
+                                  <optgroup label="4ª Fase - Entrevista Profissional">
                                     <option value="Nota inferior a 10 valores na Entrevista Profissional">
                                       Nota inferior a 10 valores na Entrevista Profissional (Reprovação Eliminatória)
                                     </option>
@@ -3826,55 +4164,35 @@ export default function GestorPortalModule({
                     {/* BOTÃO DE CONFIRMAÇÃO OFICIAL */}
                     <div className="deliberacao-submit-row">
                       <div className="deliberacao-auditor-info">
-                        <span>Homologador: <strong>{currentUser?.name || 'Comissão Central de Júri'}</strong></span>
+                        <span>Operador: <strong>{currentUser?.name || 'Comissão Central de Júri'}</strong> ({isJuriUser ? 'Comissão de Júri' : currentUser?.role === 'super_admin' ? 'Super Administrador' : 'Administrador Principal'})</span>
                       </div>
 
-                      {(() => {
-                        const candFase = deliberandoCandidato.faseAtual || (
-                          (deliberandoCandidato.status === 'Em Análise Documental' || deliberandoCandidato.status === 'Em análise' || deliberandoCandidato.status === 'Submetida') ? 1 :
-                          (deliberandoCandidato.status === 'Admitido na Análise Documental' || deliberandoCandidato.status === 'Admitida na Análise Documental' || deliberandoCandidato.status === 'Entrevista Profissional' || deliberandoCandidato.status === 'Convocada para provas') ? 2 : 3
-                        );
-
-                        if (candFase >= 2 && !isFase1Concluida) {
-                          return (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.35rem' }}>
+                        {isJuriUser ? (
+                          <>
                             <button
-                              type="button"
-                              className="btn-deliberacao-submit disabled-locked"
-                              onClick={() => {
-                                if (onNotify) onNotify('error', `Conclua a 1ª Fase de todos os candidatos antes de avançar. Restam ${totalPendentesFase1} pendentes.`);
-                              }}
-                            >
-                              <Lock size={16} />
-                              <span>Fase 1 Pendente ({totalPendentesFase1})</span>
-                            </button>
-                          );
-                        }
-
-                        if (candFase >= 2 && !isHomologacaoFinalDesbloqueada) {
-                          return (
-                            <button
-                              type="button"
+                              type="submit"
                               className="btn-deliberacao-submit"
-                              onClick={() => {
-                                const el = document.querySelector('.input-codigo-admin');
-                                if (el) el.focus();
-                              }}
+                              style={{ backgroundColor: '#0f2042' }}
                             >
-                              <KeyRound size={16} />
-                              <span>Requer Código de Administrador</span>
+                              <FileSignature size={16} />
+                              <span>Registar Parecer do Júri</span>
                             </button>
-                          );
-                        }
-
-                        return (
+                            <span style={{ fontSize: '0.74rem', color: 'var(--portal-text-muted)' }}>
+                              * O parecer aguardará homologação do Administrador Principal para publicação oficial.
+                            </span>
+                          </>
+                        ) : (
                           <button
                             type="submit"
                             className="btn-deliberacao-submit"
+                            style={{ backgroundColor: '#c32026' }}
                           >
-                            <span>Homologar Decisão</span>
+                            <Award size={16} />
+                            <span>Homologar e Publicar Decisão Oficial</span>
                           </button>
-                        );
-                      })()}
+                        )}
+                      </div>
                     </div>
                   </form>
                 </div>

@@ -1761,6 +1761,20 @@ export function resetStoredCandidaturaIndividual(codigo, operador = 'Comissão d
   return resetCandidate;
 }
 
+export const LOCAIS_DIRECCOES_PROVINCIAIS = {
+  'Maputo Cidade': 'Direcção Geral do SERNIC - Av. Vladimir Lenine n.º 1234, Maputo',
+  'Maputo Província': 'Delegação Provincial do SERNIC - Matola (Av. da União Africana)',
+  'Gaza': 'Delegação Provincial do SERNIC - Xai-Xai (Bairro 3)',
+  'Inhambane': 'Delegação Provincial do SERNIC - Inhambane Cidade',
+  'Sofala': 'Delegação Provincial do SERNIC - Beira (Rua Correia de Brito)',
+  'Manica': 'Delegação Provincial do SERNIC - Chimoio (Av. 25 de Setembro)',
+  'Tete': 'Delegação Provincial do SERNIC - Tete Cidade',
+  'Zambézia': 'Delegação Provincial do SERNIC - Quelimane',
+  'Nampula': 'Delegação Provincial do SERNIC - Nampula Cidade (Av. do Trabalho)',
+  'Cabo Delgado': 'Delegação Provincial do SERNIC - Pemba',
+  'Niassa': 'Delegação Provincial do SERNIC - Lichinga'
+};
+
 export function updateStoredCandidatura(codigo, updates, operador = 'Comissão de Júri SERNIC') {
   const list = getStoredCandidaturas();
   const index = list.findIndex(c => c.codigoCandidatura === codigo);
@@ -1773,40 +1787,61 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
   const operadorNome = typeof operador === 'object' ? (operador.name || 'Presidente do Júri') : operador;
   const operadorCargo = typeof operador === 'object' ? (operador.cargo || 'Presidente do Júri de Seleção') : 'Presidente do Júri de Seleção';
   const operadorPerfil = typeof operador === 'object' ? (operador.perfil || operador.role || 'Gestor Autorizado DRH / SERNIC') : 'Gestor Autorizado DRH / SERNIC';
+  const operadorRole = typeof operador === 'object' ? (operador.role || 'admin') : 'admin';
+
+  const isJuriUser = operadorRole === 'juri' || operadorRole === 'usuario';
+  const isPrincipalOrSuper = operadorRole === 'admin_principal' || operadorRole === 'super_admin' || operadorRole === 'admin' || operadorRole === 'gestor';
 
   // Novo histórico
   const novoHistorico = [...(current.historico || [])];
   let novaEtapa = 'Decisão da Avaliação';
   let descEtapa = `Estado atualizado para: ${updates.status || current.status}.`;
-  let novaFaseAtual = current.faseAtual || 1;
+  let novaFaseAtual = updates.faseAtual || current.faseAtual || 1;
 
   const isFem = detectCandidateGender(current) === 'Feminino';
+  const finalStatus = updates.status || current.status;
 
-  if (updates.status === 'Entrevista Profissional' || updates.status === 'Convocada para provas' || updates.status === 'Admitido na Análise Documental' || updates.status === 'Admitida na Análise Documental') {
-    novaEtapa = isFem ? '1ª Fase: Admitida na Análise Documental (Convocada)' : '1ª Fase: Admitido na Análise Documental (Convocado)';
-    descEtapa = updates.parecer || (updates.eventoLocal ? `Admitido na análise. Entrevista agendada em ${updates.eventoLocal} para ${updates.eventoData || 'data a definir'}.` : (isFem ? 'Documentos aprovados. Convocada para a Entrevista Profissional.' : 'Documentos aprovados. Convocado para a Entrevista Profissional.'));
-    novaFaseAtual = 2;
-  } else if (updates.status === 'Admitido' || updates.status === 'Admitida' || updates.status === 'Aprovada') {
-    novaEtapa = isFem ? '3ª Fase: Candidata Admitida (Vaga Efetiva)' : '3ª Fase: Candidato Admitido (Vaga Efetiva)';
+  // Lógica das 4 Fases Regulamentares:
+  if (finalStatus === 'Aprovado na Análise Documental' || finalStatus === 'Admitido na Análise Documental' || finalStatus === 'Admitida na Análise Documental') {
+    novaEtapa = isFem ? '1ª Fase: Aprovada na Análise Documental' : '1ª Fase: Aprovado na Análise Documental';
+    descEtapa = updates.parecer || 'Documentos aprovados em conformidade com o edital.';
+    novaFaseAtual = 2; // Avança para a Fase 2 (Convocatória / Opção de Exame)
+  } else if (finalStatus === 'Convocado para Teste Escrito' || finalStatus === 'Convocada para Teste Escrito') {
+    novaEtapa = isFem ? '2ª Fase: Convocada para Teste Escrito' : '2ª Fase: Convocado para Teste Escrito';
+    descEtapa = updates.parecer || `Convocação para teste escrito em ${updates.eventoLocal || 'Instalações SERNIC'} para ${updates.eventoData || 'data a definir'}.`;
+    novaFaseAtual = 3; // Avança para a Fase 3 (Teste Escrito)
+  } else if (finalStatus === 'Aprovado no Teste Escrito' || finalStatus === 'Aprovada no Teste Escrito') {
+    novaEtapa = isFem ? '3ª Fase: Aprovada no Teste Escrito' : '3ª Fase: Aprovado no Teste Escrito';
+    descEtapa = updates.parecer || `Aprovado com nota de ${updates.notaExameEscrito || updates.notaFinal || '14.0'} valores no teste escrito.`;
+    novaFaseAtual = 4; // Avança para a Fase 4 (Entrevista Profissional)
+  } else if (finalStatus === 'Reprovado no Teste Escrito' || finalStatus === 'Reprovada no Teste Escrito') {
+    novaEtapa = isFem ? '3ª Fase: Reprovada no Teste Escrito' : '3ª Fase: Reprovado no Teste Escrito';
+    descEtapa = updates.motivoExclusao || `Reprovação no teste escrito com ${updates.notaExameEscrito || '8.0'} valores (< 10.0 valores).`;
+    novaFaseAtual = 3;
+  } else if (finalStatus === 'Convocado para Entrevista Profissional' || finalStatus === 'Convocada para Entrevista Profissional' || finalStatus === 'Entrevista Profissional') {
+    novaEtapa = isFem ? 'Convocada para Entrevista Profissional' : 'Convocado para Entrevista Profissional';
+    descEtapa = updates.parecer || `Entrevista agendada em ${updates.eventoLocal || 'Instalações SERNIC'} para ${updates.eventoData || 'data a definir'}.`;
+    novaFaseAtual = 4; // Fase 4
+  } else if (finalStatus === 'Admitido' || finalStatus === 'Admitida' || finalStatus === 'Aprovada') {
+    novaEtapa = isFem ? '4ª Fase: Candidata Admitida (Vaga Efetiva)' : '4ª Fase: Candidato Admitido (Vaga Efetiva)';
     descEtapa = `Aprovado na Entrevista com nota de ${updates.notaFinal || '18.0'} valores. Selecionado para provimento efetivo da vaga.`;
-    novaFaseAtual = 3;
-  } else if (updates.status === 'Aprovado (Suplente)' || updates.status === 'Aprovada (Suplente)') {
-    novaEtapa = isFem ? '3ª Fase: Aprovada como Suplente (Reserva)' : '3ª Fase: Aprovado como Suplente (Reserva)';
+    novaFaseAtual = 4;
+  } else if (finalStatus === 'Aprovado (Suplente)' || finalStatus === 'Aprovada (Suplente)') {
+    novaEtapa = isFem ? '4ª Fase: Aprovada como Suplente (Reserva)' : '4ª Fase: Aprovado como Suplente (Reserva)';
     descEtapa = `Aprovado na Entrevista com nota de ${updates.notaFinal || '14.0'} valores. Integrado na lista de reserva / suplente.`;
-    novaFaseAtual = 3;
-  } else if (updates.status === 'Excluído na Análise Documental' || updates.status === 'Excluída na Análise Documental') {
-    novaEtapa = isFem ? '1ª Fase: Excluída na Análise Documental' : '1ª Fase: Excluído na Análise Documental';
-    descEtapa = updates.motivoExclusao || updates.parecer || 'Exclusão por falta de documentos ou inconformidade regulamentar.';
+    novaFaseAtual = 4;
+  } else if (finalStatus === 'Excluído na Análise Documental' || finalStatus === 'Excluída na Análise Documental' || finalStatus === 'Reprovado na Análise Documental' || finalStatus === 'Reprovada na Análise Documental') {
+    novaEtapa = isFem ? '1ª Fase: Reprovada na Análise Documental' : '1ª Fase: Reprovado na Análise Documental';
+    descEtapa = updates.motivoExclusao || updates.parecer || 'Exclusão por inconformidade com os requisitos do Edital.';
     novaFaseAtual = 1;
-  } else if (updates.status === 'Excluído na Entrevista' || updates.status === 'Excluída na Entrevista') {
-    novaEtapa = isFem ? '2ª Fase: Excluída na Entrevista Profissional' : '2ª Fase: Excluído na Entrevista Profissional';
-    descEtapa = updates.motivoExclusao || `Reprovado com nota de ${updates.notaFinal || '8.0'} valores (inferior ao mínimo exigido de 10.0 valores).`;
-    novaFaseAtual = 2;
-  } else if (updates.status === 'Excluído' || updates.status === 'Excluída') {
+  } else if (finalStatus === 'Excluído na Entrevista' || finalStatus === 'Excluída na Entrevista' || finalStatus === 'Reprovado na Entrevista' || finalStatus === 'Reprovada na Entrevista') {
+    novaEtapa = isFem ? '4ª Fase: Reprovada na Entrevista Profissional' : '4ª Fase: Reprovado na Entrevista Profissional';
+    descEtapa = updates.motivoExclusao || `Reprovado na entrevista com nota de ${updates.notaFinal || '8.0'} valores (< 10.0 valores).`;
+    novaFaseAtual = 4;
+  } else if (finalStatus === 'Excluído' || finalStatus === 'Excluída') {
     novaEtapa = isFem ? 'Candidata Excluída' : 'Candidatura Excluída';
     descEtapa = updates.motivoExclusao || updates.parecer || 'Não cumpre os requisitos do concurso.';
-    novaFaseAtual = current.faseAtual === 2 ? 2 : 1;
-  } else if (updates.status === 'Em Análise Documental' || updates.status === 'Em análise') {
+  } else if (finalStatus === 'Em Análise Documental' || finalStatus === 'Em análise') {
     novaEtapa = '1ª Fase: Análise de Documentos';
     descEtapa = 'Documentos a serem verificados.';
     novaFaseAtual = 1;
@@ -1818,17 +1853,41 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
     descricao: descEtapa
   });
 
-  const finalStatus = updates.status || current.status;
+  // Regra de Homologação e Publicação:
+  // Se for Júri (Perfil Usuário), NÃO publica nas contas dos candidatos. Fica pendente de homologação pelo Administrador Principal.
+  const homologadoPrincipal = isPrincipalOrSuper ? true : Boolean(current.homologadoPrincipal);
+  const publicadoAoCandidato = isPrincipalOrSuper ? true : Boolean(current.publicadoAoCandidato);
 
-  // Gestão do Perfil do Homologador Oficial (admitidoPor)
+  let parecerJuriPendente = current.parecerJuriPendente || null;
+  if (isJuriUser) {
+    parecerJuriPendente = {
+      operador: operadorNome,
+      cargo: operadorCargo,
+      perfil: operadorPerfil,
+      data: dateFormatted,
+      statusProposto: finalStatus,
+      faseAtualProposta: novaFaseAtual,
+      parecer: updates.parecer || '',
+      motivoExclusao: updates.motivoExclusao || null,
+      notaExameEscrito: updates.notaExameEscrito || null,
+      notaFinal: updates.notaFinal || null,
+      eventoLocal: updates.eventoLocal || null,
+      eventoData: updates.eventoData || null,
+      haveraExameEscrito: updates.haveraExameEscrito || null
+    };
+  } else if (isPrincipalOrSuper) {
+    parecerJuriPendente = null; // Homologado e concluído
+  }
+
   const isAdmissao = (
     finalStatus.includes('Admitid') ||
     finalStatus === 'Entrevista Profissional' ||
+    finalStatus.includes('Convocad') ||
     finalStatus.includes('Suplente')
   );
 
   let admitidoPorInfo = current.admitidoPor || null;
-  if (isAdmissao) {
+  if (isPrincipalOrSuper && isAdmissao) {
     admitidoPorInfo = updates.admitidoPor || {
       nome: operadorNome,
       cargo: operadorCargo,
@@ -1837,8 +1896,8 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
       dataHomologacao: new Date().toLocaleDateString('pt-MZ') + ' às ' + new Date().toLocaleTimeString('pt-MZ', { hour: '2-digit', minute: '2-digit' }),
       timestamp: nowStr
     };
-  } else if (finalStatus.includes('Excluíd') || finalStatus === 'Em Análise Documental') {
-    admitidoPorInfo = null;
+  } else if (finalStatus.includes('Excluíd') || finalStatus.includes('Reprovad') || finalStatus === 'Em Análise Documental') {
+    if (isPrincipalOrSuper) admitidoPorInfo = null;
   }
 
   const updatedCandidate = {
@@ -1848,40 +1907,27 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
     faseAtual: novaFaseAtual,
     historico: novoHistorico,
     admitidoPor: admitidoPorInfo,
+    homologadoPrincipal,
+    publicadoAoCandidato,
+    parecerJuriPendente,
     deliberacaoJuri: {
       decisao: finalStatus,
       dataDeliberacao: nowStr,
       operador: operadorNome,
       motivoExclusao: updates.motivoExclusao || null,
-      notaFinal: updates.notaFinal || null,
-      parecer: updates.parecer || current.deliberacaoJuri?.parecer || ''
+      notaExameEscrito: updates.notaExameEscrito || current.deliberacaoJuri?.notaExameEscrito || null,
+      notaFinal: updates.notaFinal || current.deliberacaoJuri?.notaFinal || null,
+      parecer: updates.parecer || current.deliberacaoJuri?.parecer || '',
+      homologadoPorPrincipal: isPrincipalOrSuper
     },
     detalhesFase: {
       ...current.detalhesFase,
-      titulo: (finalStatus === 'Admitido na Análise Documental' || finalStatus === 'Admitida na Análise Documental' || finalStatus === 'Entrevista Profissional')
-        ? (isFem ? '1ª Fase: Admitida na Análise Documental (Convocada p/ Entrevista)' : '1ª Fase: Admitido na Análise Documental (Convocado p/ Entrevista)')
-        : finalStatus === 'Admitido' || finalStatus === 'Admitida'
-        ? (isFem ? '3ª Fase: Candidata Admitida na Vaga' : '3ª Fase: Candidato Admitido na Vaga')
-        : finalStatus === 'Aprovado (Suplente)' || finalStatus === 'Aprovada (Suplente)'
-        ? (isFem ? '3ª Fase: Aprovada como Suplente (Lista de Reserva)' : '3ª Fase: Aprovado como Suplente (Lista de Reserva)')
-        : finalStatus === 'Excluído na Análise Documental' || finalStatus === 'Excluída na Análise Documental'
-        ? (isFem ? '1ª Fase: Excluída na Análise Documental' : '1ª Fase: Excluído na Análise Documental')
-        : finalStatus === 'Excluído na Entrevista' || finalStatus === 'Excluída na Entrevista'
-        ? (isFem ? '2ª Fase: Excluída na Entrevista Profissional (< 10 val)' : '2ª Fase: Excluído na Entrevista Profissional (< 10 val)')
-        : finalStatus === 'Excluído' || finalStatus === 'Excluída'
-        ? (isFem ? 'Candidata Não Aprovada no Concurso' : 'Candidato Não Aprovado no Concurso')
-        : '1ª Fase: Análise de Documentos em Curso',
+      titulo: novaEtapa,
       dataEvento: updates.eventoData || current.detalhesFase?.dataEvento || 'Conforme Edital Publicado',
       local: updates.eventoLocal || current.detalhesFase?.local || 'Instalações do SERNIC',
       observacoes: updates.observacoes || current.detalhesFase?.observacoes || '',
       motivoExclusao: updates.motivoExclusao || current.detalhesFase?.motivoExclusao || null,
-      mensagemComissao: updates.parecer || (
-        (finalStatus === 'Entrevista Profissional' || finalStatus === 'Admitido na Análise Documental' || finalStatus === 'Admitida na Análise Documental')
-          ? (isFem 
-              ? 'Parabéns! A sua candidatura foi ADMITIDA na 1ª Fase de Avaliação Documental. Foi formalmente convocada para a 2ª Fase: Entrevista Profissional perante a Comissão de Júri no local e data indicados.' 
-              : 'Parabéns! A sua candidatura foi ADMITIDA na 1ª Fase de Avaliação Documental. Foi formalmente convocado para a 2ª Fase: Entrevista Profissional perante a Comissão de Júri no local e data indicados.')
-          : current.detalhesFase?.mensagemComissao || ''
-      )
+      mensagemComissao: updates.parecer || current.detalhesFase?.mensagemComissao || ''
     }
   };
 
@@ -1890,15 +1936,82 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
 
   // Registar na auditoria
   addStoredAuditoria({
-    acao: 'Avaliação de Candidato',
+    acao: isJuriUser ? 'Parecer do Júri Registado' : 'Homologação Oficial de Avaliação',
     candidato: `${current.nomeCompleto} (${current.codigoCandidatura})`,
     estadoAnterior: current.status,
     novoEstado: finalStatus,
-    motivo: updates.motivoExclusao || updates.parecer || `Decisão gravada (${finalStatus})`,
+    motivo: isJuriUser ? 'Parecer técnico submetido pelo Júri (Aguarda homologação)' : (updates.motivoExclusao || updates.parecer || `Decisão homologada (${finalStatus})`),
     operador: operadorNome
   });
 
   return updatedCandidate;
+}
+
+export function homologarEPublicarCandidatura(codigo, operador = 'Administrador Principal') {
+  const list = getStoredCandidaturas();
+  const index = list.findIndex(c => c.codigoCandidatura === codigo);
+  if (index === -1) return null;
+  const current = list[index];
+  const operadorNome = typeof operador === 'object' ? (operador.name || 'Administrador Principal') : operador;
+  const operadorCargo = typeof operador === 'object' ? (operador.cargo || 'Administrador Principal / Direcção Central DRH') : 'Administrador Principal';
+
+  const nowStr = new Date().toISOString();
+  const updated = {
+    ...current,
+    homologadoPrincipal: true,
+    publicadoAoCandidato: true,
+    parecerJuriPendente: null,
+    admitidoPor: {
+      nome: operadorNome,
+      cargo: operadorCargo,
+      despacho: `DSP-HOM-DRH-2026/${current.numeroCandidato || '00001'}`,
+      dataHomologacao: new Date().toLocaleDateString('pt-MZ') + ' às ' + new Date().toLocaleTimeString('pt-MZ', { hour: '2-digit', minute: '2-digit' }),
+      timestamp: nowStr
+    }
+  };
+
+  list[index] = updated;
+  saveStoredCandidaturas(list);
+  addStoredAuditoria({
+    acao: 'Homologação e Publicação Oficial',
+    candidato: `${current.nomeCompleto} (${codigo})`,
+    estadoAnterior: 'Pendente de Homologação',
+    novoEstado: current.status,
+    motivo: 'Decisão homologada pelo Administrador Principal e disponibilizada para consulta na conta do candidato',
+    operador: operadorNome
+  });
+
+  return updated;
+}
+
+export function homologarEPublicarTodasCandidaturas(operador = 'Administrador Principal') {
+  const list = getStoredCandidaturas();
+  const operadorNome = typeof operador === 'object' ? (operador.name || 'Administrador Principal') : operador;
+  const nowStr = new Date().toISOString();
+  let count = 0;
+
+  const updatedList = list.map(c => {
+    if (!c.homologadoPrincipal && c.status !== 'Em Análise Documental' && c.status !== 'Submetida') {
+      count++;
+      return {
+        ...c,
+        homologadoPrincipal: true,
+        publicadoAoCandidato: true,
+        parecerJuriPendente: null,
+        admitidoPor: {
+          nome: operadorNome,
+          cargo: 'Administrador Principal / Direcção Central DRH',
+          despacho: `DSP-HOM-GERAL-2026/${c.numeroCandidato || '00001'}`,
+          dataHomologacao: new Date().toLocaleDateString('pt-MZ') + ' às ' + new Date().toLocaleTimeString('pt-MZ', { hour: '2-digit', minute: '2-digit' }),
+          timestamp: nowStr
+        }
+      };
+    }
+    return c;
+  });
+
+  saveStoredCandidaturas(updatedList);
+  return count;
 }
 
 export function deleteStoredCandidatura(codigo, operador = 'Comissão de Júri SERNIC') {

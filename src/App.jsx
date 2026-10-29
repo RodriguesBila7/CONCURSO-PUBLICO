@@ -113,7 +113,14 @@ export default function App() {
   // Toast feedback
   const [toast, setToast] = useState(null);
 
-  const isGestorUser = (u) => Boolean(u && (u.role === 'admin' || u.role === 'gestor'));
+  const isGestorUser = (u) => Boolean(u && (
+    u.role === 'admin' || 
+    u.role === 'gestor' || 
+    u.role === 'super_admin' || 
+    u.role === 'admin_principal' || 
+    u.role === 'juri' || 
+    u.role === 'usuario'
+  ));
 
   const showToast = (type, message) => {
     setToast({ type, message });

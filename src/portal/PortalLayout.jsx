@@ -76,7 +76,12 @@ export default function PortalLayout({
   };
 
   const cleanPath = (currentPath || '').split('?')[0].split('#')[0];
-  const isGestorUser = currentUser?.role === 'admin' || currentUser?.role === 'gestor';
+  const isGestorUser = currentUser?.role === 'admin' || 
+                       currentUser?.role === 'gestor' || 
+                       currentUser?.role === 'super_admin' || 
+                       currentUser?.role === 'admin_principal' || 
+                       currentUser?.role === 'juri' || 
+                       currentUser?.role === 'usuario';
   const isGestorRoute = isGestorUser && (
                         cleanPath === '/portal-gestor' ||
                         cleanPath === '/portal-recrutamento/gestor' ||
@@ -263,7 +268,12 @@ export default function PortalLayout({
                     {currentUser.name ? currentUser.name.split(' ')[0] : 'Utilizador'}
                   </span>
                   <span style={{ fontSize: '0.68rem', opacity: 0.8 }}>
-                    {currentUser.authProvider === 'google' ? 'Google Account' : (currentUser.nuit || (currentUser.role === 'admin' ? 'Gestor DRH' : 'Candidato'))}
+                    {currentUser.authProvider === 'google' 
+                      ? 'Google Account' 
+                      : (currentUser.role === 'super_admin' ? 'Super Administrador' :
+                         currentUser.role === 'admin_principal' ? 'Administrador Principal' :
+                         currentUser.role === 'juri' || currentUser.role === 'usuario' ? 'Comissão de Júri' :
+                         (currentUser.nuit || (currentUser.role === 'admin' ? 'Gestor DRH' : 'Candidato')))}
                   </span>
                 </div>
               </div>
