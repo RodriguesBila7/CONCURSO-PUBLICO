@@ -2543,7 +2543,7 @@ textarea::placeholder,
   background-color: var(--portal-footer-bg);
   color: var(--portal-footer-text);
   border-top: 4px solid var(--portal-gold);
-  padding: 3.5rem 2.5rem 1.8rem 2.5rem;
+  padding: 1.5rem 2.5rem 1.4rem 2.5rem;
   margin-top: auto;
   width: 100%;
   box-sizing: border-box;
@@ -2554,16 +2554,16 @@ textarea::placeholder,
   margin: 0 auto;
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
-  gap: 3rem;
-  padding-bottom: 2rem;
+  gap: 2rem;
+  padding-bottom: 0.9rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .portal-footer-col h4 {
   color: #ffffff;
-  font-size: 0.98rem;
+  font-size: 0.94rem;
   font-weight: 800;
-  margin-bottom: 1rem;
+  margin-bottom: 0.45rem;
   letter-spacing: 0.02em;
   display: flex;
   align-items: center;
@@ -2571,20 +2571,21 @@ textarea::placeholder,
 }
 
 .portal-footer-col p {
-  font-size: 0.85rem;
-  line-height: 1.6;
-  margin-bottom: 0.6rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  margin-bottom: 0.3rem;
 }
 
 .portal-footer-bottom {
   max-width: 1560px;
-  margin: 1.5rem auto 0 auto;
+  margin: 0.85rem auto 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 0.78rem;
   flex-wrap: wrap;
   gap: 1rem;
+  padding-bottom: 0.25rem;
 }
 
 /* ========================================================
@@ -10529,7 +10530,7 @@ html.portal-modo-simplificado * {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 3.5rem 1.5rem;
+  padding: 2.2rem 1.5rem;
   width: 100%;
   box-sizing: border-box;
 }
@@ -10554,14 +10555,18 @@ html.portal-modo-simplificado * {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 1.15rem;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
   border-right: 4px solid var(--sernic-red);
 }
 
 .gestor-login-logo {
-  width: 84px;
-  height: 84px;
+  width: 115px;
+  height: 115px;
   object-fit: contain;
+  margin: 0 auto 0.25rem auto;
+  display: block;
 }
 
 .gestor-login-kicker {
@@ -10570,27 +10575,40 @@ html.portal-modo-simplificado * {
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #fbbf24;
+  text-align: center;
+  display: block;
+  width: 100%;
 }
 
 .gestor-login-brand h1 {
   font-size: 2.2rem;
   color: #ffffff;
   line-height: 1.18;
+  text-align: center;
+  margin: 0;
+  width: 100%;
 }
 
 .gestor-login-brand p {
   font-size: 0.98rem;
-  line-height: 1.65;
+  line-height: 1.6;
   color: #cbd5e1;
+  text-align: center;
+  max-width: 480px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .gestor-login-funcoes {
   list-style: none;
   display: grid;
   gap: 0.85rem;
-  margin-top: 0.8rem;
+  margin: 0.8rem auto 0 auto;
   padding-top: 0;
   border-top: none;
+  width: 100%;
+  max-width: 440px;
+  text-align: left;
 }
 
 .gestor-login-funcoes li {
