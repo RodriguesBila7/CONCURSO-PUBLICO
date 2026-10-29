@@ -46,6 +46,8 @@ export default function DraggableSubAba({
   // Flag global para suprimir o evento de clique que o browser dispara
   // imediatamente após soltar o botão do rato (mouseup) ao arrastar ou redimensionar.
   const suppressClickRef = useRef(false);
+  const dragRafRef = useRef(null);
+  const resizeRafRef = useRef(null);
 
   // Iniciar Arraste / Mover
   const handleDragStart = useCallback((e) => {
@@ -65,7 +67,9 @@ export default function DraggableSubAba({
       posX: position.x,
       posY: position.y,
       rectLeft: rect.left / zoom,
-      rectTop: rect.top / zoom
+      rectTop: rect.top / zoom,
+      lastX: position.x,
+      lastY: position.y
     };
   }, [position]);
 
@@ -156,7 +160,7 @@ export default function DraggableSubAba({
     };
   }, []);
 
-  // Ouvintes globais para Arraste / Mover
+  // Ouvintes globais para Arraste / Mover com alta suavidade (requestAnimationFrame)
   useEffect(() => {
     if (!isDragging) return;
 
@@ -167,23 +171,27 @@ export default function DraggableSubAba({
       const dx = (e.clientX - dragStartRef.current.mouseX) / zoom;
       const dy = (e.clientY - dragStartRef.current.mouseY) / zoom;
 
-      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
         hasMoved = true;
       }
 
       const { posX, posY } = dragStartRef.current;
-      const newX = posX + dx;
-      const newY = posY + dy;
+      const newX = Math.round(posX + dx);
+      const newY = Math.round(posY + dy);
 
       dragStartRef.current.lastX = newX;
       dragStartRef.current.lastY = newY;
 
-      if (cardRef.current) {
-        cardRef.current.style.transform = `translate3d(${newX}px, ${newY}px, 0)`;
-      }
+      if (dragRafRef.current) cancelAnimationFrame(dragRafRef.current);
+      dragRafRef.current = requestAnimationFrame(() => {
+        if (cardRef.current) {
+          cardRef.current.style.transform = `translate3d(${newX}px, ${newY}px, 0)`;
+        }
+      });
     };
 
     const onMouseUp = () => {
+      if (dragRafRef.current) cancelAnimationFrame(dragRafRef.current);
       setIsDragging(false);
       if (hasMoved) {
         suppressClickRef.current = true;
@@ -200,10 +208,11 @@ export default function DraggableSubAba({
       }
     };
 
-    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mousemove', onMouseMove, { passive: true });
     window.addEventListener('mouseup', onMouseUp);
     window.addEventListener('blur', onMouseUp);
     return () => {
+      if (dragRafRef.current) cancelAnimationFrame(dragRafRef.current);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
       window.removeEventListener('blur', onMouseUp);
@@ -249,23 +258,26 @@ export default function DraggableSubAba({
       const newPosX = posX + (deltaW / 2);
       const newPosY = posY + (deltaH / 2);
 
-      // Actualização imediata no elemento DOM para máximo desempenho sem travamento
-      if (cardRef.current) {
-        cardRef.current.style.setProperty('width', `${newW}px`, 'important');
-        cardRef.current.style.setProperty('max-width', `${newW}px`, 'important');
-        cardRef.current.style.setProperty('height', `${newH}px`, 'important');
-        cardRef.current.style.setProperty('min-height', `${newH}px`, 'important');
-        cardRef.current.style.setProperty('max-height', `${newH}px`, 'important');
-        cardRef.current.style.transform = `translate3d(${newPosX}px, ${newPosY}px, 0)`;
-      }
-
       resizeStartRef.current.lastW = newW;
       resizeStartRef.current.lastH = newH;
       resizeStartRef.current.lastPosX = newPosX;
       resizeStartRef.current.lastPosY = newPosY;
+
+      if (resizeRafRef.current) cancelAnimationFrame(resizeRafRef.current);
+      resizeRafRef.current = requestAnimationFrame(() => {
+        if (cardRef.current) {
+          cardRef.current.style.setProperty('width', `${newW}px`, 'important');
+          cardRef.current.style.setProperty('max-width', `${newW}px`, 'important');
+          cardRef.current.style.setProperty('height', `${newH}px`, 'important');
+          cardRef.current.style.setProperty('min-height', `${newH}px`, 'important');
+          cardRef.current.style.setProperty('max-height', `${newH}px`, 'important');
+          cardRef.current.style.transform = `translate3d(${newPosX}px, ${newPosY}px, 0)`;
+        }
+      });
     };
 
     const onMouseUp = () => {
+      if (resizeRafRef.current) cancelAnimationFrame(resizeRafRef.current);
       setIsResizing(false);
       if (hasMoved) {
         suppressClickRef.current = true;
@@ -286,10 +298,11 @@ export default function DraggableSubAba({
       }
     };
 
-    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mousemove', onMouseMove, { passive: true });
     window.addEventListener('mouseup', onMouseUp);
     window.addEventListener('blur', onMouseUp);
     return () => {
+      if (resizeRafRef.current) cancelAnimationFrame(resizeRafRef.current);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
       window.removeEventListener('blur', onMouseUp);

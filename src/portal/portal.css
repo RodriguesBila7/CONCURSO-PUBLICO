@@ -4977,12 +4977,25 @@ textarea::placeholder,
   animation: portalModalSlideIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
+.modal-content-card,
+.gestor-modal-card,
+.comprovativo-print-modal,
+.definicoes-modal,
+.dossier-modal,
+.novo-edital-modal,
+.pauta-timbrada-modal,
+.doc-preview-modal,
+.security-modal-card {
+  transition: none !important;
+}
+
 .modal-content-card.is-dragging,
 .gestor-modal-card.is-dragging,
-.is-dragging {
+.is-dragging,
+.is-resizing {
   animation: none !important;
   transition: none !important;
-  will-change: transform !important;
+  will-change: transform, width, height !important;
 }
 
 @keyframes portalModalSlideIn {
