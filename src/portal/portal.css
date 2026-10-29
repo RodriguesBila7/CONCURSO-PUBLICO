@@ -5076,14 +5076,28 @@ textarea::placeholder,
   background-color: rgba(245, 158, 11, 0.18);
 }
 
-.is-resizing {
+.is-resizing,
+.is-resizing * {
   user-select: none !important;
   cursor: se-resize !important;
+}
+
+.is-resizing {
   transition: none !important;
 }
 
-.is-dragging {
+.is-resizing .sub-aba-corner-handle {
+  transition: none !important;
+  transform: none !important;
+}
+
+.is-dragging,
+.is-dragging * {
   user-select: none !important;
+  cursor: grabbing !important;
+}
+
+.is-dragging {
   transition: none !important;
 }
 

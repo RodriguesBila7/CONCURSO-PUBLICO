@@ -6302,7 +6302,7 @@ export default function GestorPortalModule({
           MODAL 2: PRÉ-VISUALIZAÇÃO DE DOCUMENTO OFICIAL
           ======================================================== */}
       {previewDoc && typeof document !== 'undefined' && createPortal(
-        <div className="gestor-modal-overlay fadeIn" style={{ zIndex: 1200 }} onClick={() => setPreviewDoc(null)}>
+        <div className="gestor-modal-overlay fadeIn" style={{ zIndex: 1200 }} onClick={(e) => { if (e.target === e.currentTarget) setPreviewDoc(null); }}>
           <DraggableSubAba className="gestor-modal-card doc-preview-modal" moveHandleLabel="Mover Visualização">
             <div className="dossier-modal-header">
               <div>
@@ -6370,7 +6370,7 @@ export default function GestorPortalModule({
           MODAL 3: PUBLICAR NOVO EDITAL OFICIAL
           ======================================================== */}
       {isNovoEditalModalOpen && typeof document !== 'undefined' && createPortal(
-        <div className="gestor-modal-overlay fadeIn" onClick={() => setIsNovoEditalModalOpen(false)}>
+        <div className="gestor-modal-overlay fadeIn" onClick={(e) => { if (e.target === e.currentTarget) setIsNovoEditalModalOpen(false); }}>
           <DraggableSubAba className="gestor-modal-card novo-edital-modal" moveHandleLabel="Mover Novo Edital">
             <div className="dossier-modal-header">
               <div>
@@ -6463,7 +6463,7 @@ export default function GestorPortalModule({
           MODAL 4: VISUALIZAÇÃO E IMPRESSÃO DE EDITAL TIMBRADO
           ======================================================== */}
       {selectedPautaPrint && typeof document !== 'undefined' && createPortal(
-        <div className="gestor-modal-overlay fadeIn" onClick={() => setSelectedPautaPrint(null)}>
+        <div className="gestor-modal-overlay fadeIn" onClick={(e) => { if (e.target === e.currentTarget) setSelectedPautaPrint(null); }}>
           <DraggableSubAba className="gestor-modal-card pauta-timbrada-modal" moveHandleLabel="Mover Pauta Oficial">
             <div className="dossier-modal-header">
               <div>
@@ -6581,7 +6581,7 @@ export default function GestorPortalModule({
           MODAL DE CURSO (HOMOLOGAR NOVO OU EDITAR)
           ======================================================== */}
       {isCursoModalOpen && typeof document !== 'undefined' && createPortal(
-        <div className="gestor-modal-overlay fadeIn" onClick={() => setIsCursoModalOpen(false)}>
+        <div className="gestor-modal-overlay fadeIn" onClick={(e) => { if (e.target === e.currentTarget) setIsCursoModalOpen(false); }}>
           <DraggableSubAba 
             className="gestor-modal-card definicoes-modal" 
             moveHandleLabel="Mover Especialidade"
@@ -6691,7 +6691,7 @@ export default function GestorPortalModule({
           MODAL DE LOCAL DE TESTES (CADASTRAR NOVO OU EDITAR)
           ======================================================== */}
       {isLocalModalOpen && typeof document !== 'undefined' && createPortal(
-        <div className="gestor-modal-overlay fadeIn" onClick={() => setIsLocalModalOpen(false)}>
+        <div className="gestor-modal-overlay fadeIn" onClick={(e) => { if (e.target === e.currentTarget) setIsLocalModalOpen(false); }}>
           <DraggableSubAba 
             className="gestor-modal-card definicoes-modal" 
             moveHandleLabel="Mover Local de Prova"
@@ -6824,7 +6824,7 @@ export default function GestorPortalModule({
           MODAL DE PALETA DE CORES & TEMAS (HOMOLOGAR NOVA OU EDITAR)
           ======================================================== */}
       {isPaletaModalOpen && typeof document !== 'undefined' && createPortal(
-        <div className="gestor-modal-overlay fadeIn" onClick={() => setIsPaletaModalOpen(false)}>
+        <div className="gestor-modal-overlay fadeIn" onClick={(e) => { if (e.target === e.currentTarget) setIsPaletaModalOpen(false); }}>
           <DraggableSubAba 
             className="gestor-modal-card definicoes-modal" 
             moveHandleLabel="Mover Paleta de Cores"
