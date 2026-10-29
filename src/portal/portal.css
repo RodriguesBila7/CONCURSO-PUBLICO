@@ -5026,7 +5026,7 @@ textarea::placeholder,
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.65rem 1.2rem;
+  padding: 0.45rem 0.9rem;
   margin: 0 !important;
   width: 100% !important;
   box-sizing: border-box !important;
@@ -5056,32 +5056,34 @@ textarea::placeholder,
   background-color: rgba(195, 32, 38, 0.12);
 }
 
-.sub-aba-move-pill {
+.sub-aba-drag-handle-indicator {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  background-color: #ffffff;
-  color: var(--portal-navy, #0f2042);
-  border: 1px solid var(--portal-border, #cbd5e1);
-  padding: 0.25rem 0.65rem;
-  border-radius: 999px;
-  font-size: 0.76rem;
-  font-weight: 800;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  justify-content: center;
+  color: var(--portal-text-muted, #94a3b8);
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
   pointer-events: none;
 }
 
-.portal-theme-preto .sub-aba-move-pill {
-  background-color: #1a2538;
+.sub-aba-drag-bar:hover .sub-aba-drag-handle-indicator {
+  color: var(--portal-navy, #0f2042);
+}
+
+.portal-theme-preto .sub-aba-drag-handle-indicator {
+  color: #64748b;
+}
+
+.portal-theme-preto .sub-aba-drag-bar:hover .sub-aba-drag-handle-indicator {
   color: #f8fafc;
-  border-color: #334764;
+}
+
+.sub-aba-move-pill {
+  display: none !important;
 }
 
 .sub-aba-drag-hint {
-  font-size: 0.72rem;
-  color: var(--portal-text-muted, #94a3b8);
-  font-weight: 600;
-  pointer-events: none;
+  display: none !important;
 }
 
 .sub-aba-header-close-btn {

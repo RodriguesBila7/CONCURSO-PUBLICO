@@ -317,8 +317,8 @@ export default function DraggableSubAba({
   const cardStyle = {
     ...style,
     transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
-    ...(size.width ? { width: `${size.width}px`, maxWidth: `${size.width}px` } : {}),
-    ...(size.height ? { height: `${size.height}px`, minHeight: `${size.height}px`, maxHeight: `${size.height}px` } : {}),
+    ...(size.width ? { width: `${size.width}px !important`, maxWidth: `${size.width}px !important` } : {}),
+    ...(size.height ? { height: `${size.height}px !important`, minHeight: `${size.height}px !important`, maxHeight: `${size.height}px !important` } : {}),
     position: 'relative',
     userSelect: (isDragging || isResizing) ? 'none' : 'auto',
     cursor: isDragging ? 'grabbing' : (isResizing ? 'se-resize' : 'default')
@@ -345,14 +345,12 @@ export default function DraggableSubAba({
           className="sub-aba-drag-bar" 
           onMouseDown={handleDragStart}
           onDoubleClick={handleResetPosition}
-          title="Clique e arraste para mover a sub-aba pela tela (Duplo-clique para recentralizar)"
+          title="Clique e arraste para mover"
         >
-          <div className="sub-aba-move-pill">
-            <Move size={13} />
-            <span>{moveHandleLabel}</span>
+          <div className="sub-aba-drag-handle-indicator">
+            <Move size={14} />
           </div>
-          <div className="sub-aba-drag-controls no-drag" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <span className="sub-aba-drag-hint">Arraste para mover • Duplo-clique p/ centralizar</span>
+          <div className="sub-aba-drag-controls no-drag">
             {onClose && (
               <button
                 type="button"
