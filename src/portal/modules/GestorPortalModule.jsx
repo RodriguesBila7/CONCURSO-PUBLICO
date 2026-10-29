@@ -7848,8 +7848,7 @@ export default function GestorPortalModule({
         >
           <DraggableSubAba
             className="gestor-modal-card definicoes-modal confirm-delete-sub-aba"
-            style={{ width: 'min(620px, 94vw)', maxWidth: 'min(620px, 94vw)' }}
-            moveHandleLabel="Mover Confirmação de Revogação"
+            style={{ width: 'min(840px, 96vw)', maxWidth: 'min(840px, 96vw)' }}
             onClose={() => setPerfilToDelete(null)}
           >
             {/* CABEÇALHO INSTITUCIONAL TIMBRADO SERNIC */}
@@ -8254,8 +8253,7 @@ export default function GestorPortalModule({
         >
           <DraggableSubAba 
             className="gestor-modal-card security-modal-card" 
-            style={{ width: 'min(520px, 95vw)', maxWidth: '520px' }}
-            moveHandleLabel="Mover Autorização de Segurança"
+            style={{ width: 'min(840px, 96vw)', maxWidth: 'min(840px, 96vw)' }}
             onClose={() => {
               setIsModalResetGeralOpen(false);
               setSenhaResetGeral('');
@@ -8381,8 +8379,7 @@ export default function GestorPortalModule({
         >
           <DraggableSubAba 
             className="gestor-modal-card security-modal-card" 
-            style={{ width: 'min(500px, 95vw)', maxWidth: '500px' }}
-            moveHandleLabel="Mover Confirmação"
+            style={{ width: 'min(840px, 96vw)', maxWidth: 'min(840px, 96vw)' }}
             onClose={() => setCandidatoParaReporIndividual(null)}
           >
             <div className="dossier-modal-header" style={{ borderBottom: '1px solid rgba(217, 119, 6, 0.25)', background: 'linear-gradient(135deg, rgba(217, 119, 6, 0.08) 0%, rgba(15, 32, 66, 0.04) 100%)' }}>
@@ -8465,8 +8462,7 @@ export default function GestorPortalModule({
         >
           <DraggableSubAba 
             className="gestor-modal-card security-modal-card" 
-            style={{ width: 'min(500px, 95vw)', maxWidth: '500px' }}
-            moveHandleLabel="Mover Eliminação"
+            style={{ width: 'min(840px, 96vw)', maxWidth: 'min(840px, 96vw)' }}
             onClose={() => setCandidatoParaEliminar(null)}
           >
             <div className="dossier-modal-header" style={{ borderBottom: '1px solid rgba(220, 38, 38, 0.25)', background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.08) 0%, rgba(15, 32, 66, 0.04) 100%)' }}>
@@ -8585,8 +8581,7 @@ export default function GestorPortalModule({
         >
           <DraggableSubAba 
             className="gestor-modal-card security-modal-card" 
-            style={{ width: 'min(550px, 95vw)', maxWidth: '550px' }}
-            moveHandleLabel="Mover Confirmação de Homologação"
+            style={{ width: 'min(840px, 96vw)', maxWidth: 'min(840px, 96vw)' }}
             onClose={() => setConfirmHomologacao1aFaseModal(null)}
           >
             <div className="dossier-modal-header" style={{ borderBottom: '1px solid rgba(22, 101, 52, 0.25)', background: 'linear-gradient(135deg, rgba(22, 101, 52, 0.08) 0%, rgba(15, 32, 66, 0.05) 100%)' }}>

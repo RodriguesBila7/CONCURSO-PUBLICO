@@ -5027,8 +5027,9 @@ textarea::placeholder,
 .novo-edital-modal { width: min(860px, 96vw); height: min(680px, 92vh); max-height: 94vh; }
 .pauta-timbrada-modal { width: min(1040px, 96vw); height: min(740px, 92vh); max-height: 94vh; }
 .doc-preview-modal { width: min(900px, 96vw); height: min(680px, 92vh); max-height: 94vh; }
-.definicoes-modal { width: min(800px, 96vw); height: min(640px, 92vh); max-height: 94vh; }
+.definicoes-modal { width: min(840px, 96vw); height: min(680px, 92vh); max-height: 94vh; }
 .comprovativo-print-modal { width: min(980px, 96vw); height: min(720px, 92vh); max-height: 94vh; }
+.security-modal-card { width: min(840px, 96vw) !important; max-width: min(840px, 96vw) !important; min-height: min(480px, 80vh); }
 
 /* ========================================================
    CONTROLO DE MOVIMENTO E EXTENSÃO DE REDIMENSIONAMENTO (SUB-ABAS)
@@ -7166,11 +7167,11 @@ textarea::placeholder,
 }
 
 .confirm-delete-sub-aba {
-  max-width: 580px !important;
-  width: min(580px, 94vw) !important;
+  max-width: min(840px, 96vw) !important;
+  width: min(840px, 96vw) !important;
   height: auto !important;
-  min-height: unset !important;
-  max-height: 90vh !important;
+  min-height: min(480px, 75vh) !important;
+  max-height: 92vh !important;
   border: 1px solid rgba(195, 32, 38, 0.3) !important;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22), 0 0 0 1px rgba(195, 32, 38, 0.15) !important;
 }
