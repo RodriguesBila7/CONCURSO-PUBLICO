@@ -10916,6 +10916,143 @@ html.portal-modo-simplificado * {
 
 .gestor-login-links button:hover { color: var(--sernic-red); }
 
+/* Autofill fix para Modo Escuro em todos os inputs */
+.portal-theme-preto input:-webkit-autofill,
+.portal-theme-preto input:-webkit-autofill:hover, 
+.portal-theme-preto input:-webkit-autofill:focus,
+.portal-theme-preto input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #121a28 inset !important;
+  -webkit-text-fill-color: #f8fafc !important;
+  caret-color: #f8fafc !important;
+  border-color: #2a3b52 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Modo Escuro na Área de Gestão e Júri */
+.portal-theme-preto .gestor-login-shell {
+  background: #162032;
+  border-color: #26364d;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+}
+
+.portal-theme-preto .gestor-login-brand {
+  background: #0d1728;
+  border-right: 4px solid var(--sernic-red);
+}
+
+.portal-theme-preto .gestor-login-card {
+  background: #162032;
+}
+
+.gestor-quick-creds-box {
+  margin-top: 1.25rem;
+  padding: 0.9rem 1rem;
+  background: rgba(15, 32, 66, 0.04);
+  border-radius: 8px;
+  border: 1px solid var(--portal-border);
+}
+
+.portal-theme-preto .gestor-quick-creds-box {
+  background: rgba(19, 28, 43, 0.7);
+  border-color: #26364d;
+}
+
+.gestor-quick-creds-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #c59b27;
+}
+
+.portal-theme-preto .gestor-quick-creds-title {
+  color: #fbbf24;
+}
+
+.gestor-quick-chips-grid {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.gestor-quick-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.42rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+/* Chip Superadmin */
+.gestor-quick-chip.chip-superadmin {
+  background: rgba(30, 41, 59, 0.08);
+  border: 1px solid #1e293b;
+  color: #0f172a;
+}
+
+.gestor-quick-chip.chip-superadmin:hover {
+  background: rgba(30, 41, 59, 0.16);
+}
+
+.portal-theme-preto .gestor-quick-chip.chip-superadmin {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+}
+
+.portal-theme-preto .gestor-quick-chip.chip-superadmin:hover {
+  background: rgba(56, 189, 248, 0.22);
+}
+
+/* Chip Principal (DRH) */
+.gestor-quick-chip.chip-principal {
+  background: rgba(195, 32, 38, 0.08);
+  border: 1px solid #c32026;
+  color: #c32026;
+}
+
+.gestor-quick-chip.chip-principal:hover {
+  background: rgba(195, 32, 38, 0.16);
+}
+
+.portal-theme-preto .gestor-quick-chip.chip-principal {
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #f87171;
+}
+
+.portal-theme-preto .gestor-quick-chip.chip-principal:hover {
+  background: rgba(239, 68, 68, 0.24);
+}
+
+/* Chip Júri */
+.gestor-quick-chip.chip-juri {
+  background: rgba(15, 32, 66, 0.08);
+  border: 1px solid #0f2042;
+  color: #0f2042;
+}
+
+.gestor-quick-chip.chip-juri:hover {
+  background: rgba(15, 32, 66, 0.16);
+}
+
+.portal-theme-preto .gestor-quick-chip.chip-juri {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+}
+
+.portal-theme-preto .gestor-quick-chip.chip-juri:hover {
+  background: rgba(245, 158, 11, 0.22);
+}
+
 @media (max-width: 960px) {
   .gestor-login-shell {
     grid-template-columns: 1fr;

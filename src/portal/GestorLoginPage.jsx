@@ -11,7 +11,9 @@ import {
   Users,
   ClipboardCheck,
   FileText,
-  History
+  History,
+  Sun,
+  Moon
 } from 'lucide-react';
 import sernicLogo from '../assets/sernic-logo.png';
 import { apiFetch, setSessionToken } from './api';
@@ -32,19 +34,29 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [theme] = useState(() => {
+  const [theme, setTheme] = useState(() => {
     try {
-      return localStorage.getItem('sernic_portal_theme') || 'claro';
+      return localStorage.getItem('sernic_portal_theme') || 'preto';
     } catch {
-      return 'claro';
+      return 'preto';
     }
   });
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'preto' ? 'claro' : 'preto';
+    setTheme(nextTheme);
+    try {
+      localStorage.setItem('sernic_portal_theme', nextTheme);
+    } catch {}
+  };
 
   useEffect(() => {
     const bg = theme === 'preto' ? '#0f172a' : '#f3f4f6';
     document.documentElement.style.setProperty('--dynamic-bg', bg);
     document.documentElement.style.backgroundColor = bg;
     document.body.style.backgroundColor = bg;
+    document.body.classList.remove('portal-theme-claro', 'portal-theme-preto');
+    document.body.classList.add(`portal-theme-${theme}`);
   }, [theme]);
 
   const CREDENCIAIS_OFICIAIS = [
@@ -148,6 +160,34 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
 
   return (
     <div className={`portal-container portal-theme-${theme} gestor-login-page`}>
+      {/* BOTÃO DE ALTERNÂNCIA DE TEMA (MODO CLARO / ESCURO) */}
+      <div style={{ position: 'absolute', top: '1.25rem', right: '1.5rem', zIndex: 40 }}>
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="portal-theme-toggle-btn"
+          title={theme === 'preto' ? 'Mudar para Modo Claro' : 'Mudar para Modo Escuro'}
+          aria-label="Alternar tema de cores"
+          style={{ 
+            display: 'inline-flex', 
+            alignItems: 'center', 
+            gap: '0.5rem', 
+            padding: '0.45rem 0.95rem', 
+            borderRadius: '999px',
+            background: 'var(--portal-card-bg)',
+            border: '1px solid var(--portal-border)',
+            color: 'var(--portal-text-main)',
+            fontSize: '0.84rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            boxShadow: '0 4px 14px rgba(0,0,0,0.15)'
+          }}
+        >
+          {theme === 'preto' ? <Sun size={17} style={{ color: '#fbbf24' }} /> : <Moon size={17} style={{ color: '#0f2042' }} />}
+          <span>{theme === 'preto' ? 'Modo Claro' : 'Modo Escuro'}</span>
+        </button>
+      </div>
+
       {/* MARCAS DE ÁGUA OFICIAIS DO LOGÓTIPO SERNIC NO FUNDO */}
       <div className="portal-page-watermark-bg" aria-hidden="true">
         <img src={sernicLogo} alt="" className="portal-page-watermark-img" />
@@ -232,35 +272,32 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
             </button>
 
             {/* ATALHOS DE ACESSO RÁPIDO AOS 3 PERFIS OFICIAIS */}
-            <div className="gestor-quick-creds-box" style={{ marginTop: '1.25rem', padding: '0.9rem', background: 'rgba(15, 32, 66, 0.04)', borderRadius: '8px', border: '1px solid var(--portal-border)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem', fontSize: '0.78rem', fontWeight: 700, color: '#c59b27' }}>
+            <div className="gestor-quick-creds-box">
+              <div className="gestor-quick-creds-title">
                 <ShieldCheck size={14} />
                 <span>Perfis Oficiais Homologados (Clique para preencher):</span>
               </div>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div className="gestor-quick-chips-grid">
                 <button
                   type="button"
-                  className="gestor-quick-chip"
+                  className="gestor-quick-chip chip-superadmin"
                   onClick={() => handleQuickFill('superadmin', 'admin123')}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.75rem', borderRadius: '6px', border: '1px solid #1e293b', background: 'rgba(30, 41, 59, 0.08)', color: '#0f172a', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
                   title="Super Administrador: Técnico responsável pelo sistema"
                 >
                   <span>Super Administrador (Técnico)</span>
                 </button>
                 <button
                   type="button"
-                  className="gestor-quick-chip"
+                  className="gestor-quick-chip chip-principal"
                   onClick={() => handleQuickFill('123922328', 'buenaverte7')}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.75rem', borderRadius: '6px', border: '1px solid #c32026', background: 'rgba(195, 32, 38, 0.08)', color: '#c32026', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
                   title="Administrador Principal: Homologação e publicação oficial aos candidatos"
                 >
                   <span>Administrador Principal (DRH)</span>
                 </button>
                 <button
                   type="button"
-                  className="gestor-quick-chip"
+                  className="gestor-quick-chip chip-juri"
                   onClick={() => handleQuickFill('juri', 'admin123')}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.75rem', borderRadius: '6px', border: '1px solid #0f2042', background: 'rgba(15, 32, 66, 0.08)', color: '#0f2042', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
                   title="Usuário: Membro do Júri de Seleção (parecer não publica directamente)"
                 >
                   <span>Usuário (Júri de Seleção)</span>
