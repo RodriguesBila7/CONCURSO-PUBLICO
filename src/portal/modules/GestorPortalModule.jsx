@@ -441,6 +441,11 @@ export default function GestorPortalModule({
   const [paginaInscritos, setPaginaInscritos] = useState(1);
   const ITENS_POR_PAGINA_INSCRITOS = 20;
 
+  // Estados de Paginação e Pesquisa do Livro de Auditoria
+  const [paginaAuditoria, setPaginaAuditoria] = useState(1);
+  const [itensPorPaginaAuditoria, setItensPorPaginaAuditoria] = useState(10);
+  const [buscaAuditoria, setBuscaAuditoria] = useState('');
+
   // Handlers de filtros com reinicialização automática para a 1ª página
   const handleBuscaInscritoChange = (val) => {
     setBuscaInscrito(val);
@@ -1240,6 +1245,33 @@ export default function GestorPortalModule({
       setPaginaInscritos(totalPaginasInscritos);
     }
   }, [totalPaginasInscritos, paginaInscritos]);
+
+  // Paginação e Filtragem do Livro de Auditoria
+  const filteredAuditoria = useMemo(() => {
+    if (!buscaAuditoria.trim()) return auditoria || [];
+    const q = buscaAuditoria.toLowerCase();
+    return (auditoria || []).filter(item => 
+      (item.id && String(item.id).toLowerCase().includes(q)) ||
+      (item.operador && String(item.operador).toLowerCase().includes(q)) ||
+      (item.acao && String(item.acao).toLowerCase().includes(q)) ||
+      (item.candidato && String(item.candidato).toLowerCase().includes(q)) ||
+      (item.motivo && String(item.motivo).toLowerCase().includes(q)) ||
+      (item.dataHora && String(item.dataHora).toLowerCase().includes(q))
+    );
+  }, [auditoria, buscaAuditoria]);
+
+  const totalPaginasAuditoria = Math.max(1, Math.ceil(filteredAuditoria.length / itensPorPaginaAuditoria));
+
+  const paginatedAuditoria = useMemo(() => {
+    const inicio = (paginaAuditoria - 1) * itensPorPaginaAuditoria;
+    return filteredAuditoria.slice(inicio, inicio + itensPorPaginaAuditoria);
+  }, [filteredAuditoria, paginaAuditoria, itensPorPaginaAuditoria]);
+
+  useEffect(() => {
+    if (paginaAuditoria > totalPaginasAuditoria) {
+      setPaginaAuditoria(totalPaginasAuditoria);
+    }
+  }, [totalPaginasAuditoria, paginaAuditoria]);
 
   // ========================================================
   // FILTRAGEM DO MÓDULO "AVALIAÇÃO DOS CANDIDATOS" (MODO FILTRO COM UNICIDADE ESTRITA)
@@ -4681,14 +4713,40 @@ export default function GestorPortalModule({
               <h3>Histórico e Registo de Atividades</h3>
               <p>Todas as decisões, avaliações e publicações ficam guardadas com data, hora e responsável.</p>
             </div>
-            <button
-              type="button"
-              className="gestor-btn-outline"
-              onClick={() => window.print()}
-            >
-              <Printer size={15} />
-              <span>Imprimir Livro de Atas</span>
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Search size={15} style={{ position: 'absolute', left: '0.75rem', color: 'var(--portal-text-muted)', pointerEvents: 'none' }} />
+                <input
+                  type="text"
+                  placeholder="Pesquisar registo..."
+                  value={buscaAuditoria}
+                  onChange={(e) => {
+                    setBuscaAuditoria(e.target.value);
+                    setPaginaAuditoria(1);
+                  }}
+                  style={{
+                    height: '38px',
+                    paddingLeft: '2.2rem',
+                    paddingRight: '0.75rem',
+                    fontSize: '0.84rem',
+                    borderRadius: '8px',
+                    border: '1px solid var(--portal-border)',
+                    background: 'var(--portal-card-bg)',
+                    color: 'var(--portal-text-main)',
+                    outline: 'none',
+                    minWidth: '220px'
+                  }}
+                />
+              </div>
+              <button
+                type="button"
+                className="gestor-btn-outline"
+                onClick={() => window.print()}
+              >
+                <Printer size={15} />
+                <span>Imprimir Livro de Atas</span>
+              </button>
+            </div>
           </div>
 
           <div className="auditoria-table-wrap">
@@ -4705,23 +4763,134 @@ export default function GestorPortalModule({
                 </tr>
               </thead>
               <tbody>
-                {auditoria.map(item => (
-                  <tr key={item.id}>
-                    <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#c32026' }}>{item.id}</td>
-                    <td>{item.dataHora}</td>
-                    <td><strong>{item.operador}</strong></td>
-                    <td><span className="auditoria-tag">{item.acao}</span></td>
-                    <td>{item.candidato}</td>
-                    <td>
-                      <span className="old-state">{item.estadoAnterior}</span>
-                      <span className="arrow-state">→</span>
-                      <span className="new-state">{item.novoEstado}</span>
+                {paginatedAuditoria.length > 0 ? (
+                  paginatedAuditoria.map(item => (
+                    <tr key={item.id}>
+                      <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#c32026' }}>{item.id}</td>
+                      <td>{item.dataHora}</td>
+                      <td><strong>{item.operador}</strong></td>
+                      <td><span className="auditoria-tag">{item.acao}</span></td>
+                      <td>{item.candidato}</td>
+                      <td>
+                        <span className="old-state">{item.estadoAnterior}</span>
+                        <span className="arrow-state">→</span>
+                        <span className="new-state">{item.novoEstado}</span>
+                      </td>
+                      <td style={{ fontSize: '0.85rem' }}>{item.motivo}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--portal-text-muted)' }}>
+                      Nenhum registo de auditoria encontrado.
                     </td>
-                    <td style={{ fontSize: '0.85rem' }}>{item.motivo}</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
+
+            {/* BARRA DE PAGINAÇÃO OFICIAL DO LIVRO DE AUDITORIA */}
+            {filteredAuditoria.length > 0 && (
+              <div className="gestor-pagination-wrapper">
+                <div className="gestor-pagination-info">
+                  <span>
+                    A exibir <strong>{(paginaAuditoria - 1) * itensPorPaginaAuditoria + 1}</strong> a <strong>{Math.min(paginaAuditoria * itensPorPaginaAuditoria, filteredAuditoria.length)}</strong> de <strong>{filteredAuditoria.length}</strong> registos (Página <strong>{paginaAuditoria}</strong> de <strong>{totalPaginasAuditoria}</strong>)
+                  </span>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', marginLeft: '0.5rem' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--portal-text-muted)' }}>Por página:</span>
+                    <select
+                      value={itensPorPaginaAuditoria}
+                      onChange={(e) => {
+                        setItensPorPaginaAuditoria(Number(e.target.value));
+                        setPaginaAuditoria(1);
+                      }}
+                      style={{
+                        padding: '0.2rem 0.45rem',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        borderRadius: '6px',
+                        border: '1px solid var(--portal-border)',
+                        background: 'var(--portal-card-bg)',
+                        color: 'var(--portal-text-main)',
+                        cursor: 'pointer',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={15}>15</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="gestor-pagination-controls">
+                  <button
+                    type="button"
+                    className="gestor-page-btn"
+                    onClick={() => setPaginaAuditoria(1)}
+                    disabled={paginaAuditoria === 1}
+                    title="Primeira Página"
+                  >
+                    « Primeira
+                  </button>
+                  <button
+                    type="button"
+                    className="gestor-page-btn"
+                    onClick={() => setPaginaAuditoria(p => Math.max(1, p - 1))}
+                    disabled={paginaAuditoria === 1}
+                    title="Página Anterior"
+                  >
+                    ‹ Anterior
+                  </button>
+
+                  {/* Botões numéricos de páginas com janela inteligente */}
+                  {Array.from({ length: totalPaginasAuditoria }, (_, i) => i + 1)
+                    .filter(pageNum => 
+                      totalPaginasAuditoria <= 7 ||
+                      pageNum === 1 || 
+                      pageNum === totalPaginasAuditoria || 
+                      Math.abs(pageNum - paginaAuditoria) <= 1
+                    )
+                    .map((pageNum, idx, arr) => {
+                      const prev = arr[idx - 1];
+                      const showEllipsis = prev && pageNum - prev > 1;
+                      return (
+                        <React.Fragment key={pageNum}>
+                          {showEllipsis && <span style={{ padding: '0 4px', color: 'var(--portal-text-muted)' }}>...</span>}
+                          <button
+                            type="button"
+                            className={`gestor-page-btn ${paginaAuditoria === pageNum ? 'active' : ''}`}
+                            onClick={() => setPaginaAuditoria(pageNum)}
+                          >
+                            {pageNum}
+                          </button>
+                        </React.Fragment>
+                      );
+                    })}
+
+                  <button
+                    type="button"
+                    className="gestor-page-btn"
+                    onClick={() => setPaginaAuditoria(p => Math.min(totalPaginasAuditoria, p + 1))}
+                    disabled={paginaAuditoria === totalPaginasAuditoria}
+                    title="Página Seguinte"
+                  >
+                    Seguinte ›
+                  </button>
+                  <button
+                    type="button"
+                    className="gestor-page-btn"
+                    onClick={() => setPaginaAuditoria(totalPaginasAuditoria)}
+                    disabled={paginaAuditoria === totalPaginasAuditoria}
+                    title="Última Página"
+                  >
+                    Última »
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
