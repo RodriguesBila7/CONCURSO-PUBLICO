@@ -1567,16 +1567,7 @@ export default function LoginModule({
             </div>
 
             {/* CARD DE IDENTIDADE GOOGLE CERTIFICADA */}
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '1rem', 
-              padding: '0.9rem 1.2rem', 
-              backgroundColor: 'rgba(66, 133, 244, 0.08)', 
-              border: '1px solid rgba(66, 133, 244, 0.25)', 
-              borderRadius: '12px', 
-              marginBottom: '1.5rem' 
-            }}>
+            <div className="google-identity-card">
               <div style={{ width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, backgroundColor: '#1a73e8', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800 }}>
                 {googleProfileData.picture ? (
                   <img src={googleProfileData.picture} alt={googleProfileData.name} referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -1587,7 +1578,7 @@ export default function LoginModule({
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                   <strong style={{ fontSize: '0.92rem', color: 'var(--portal-text-main)' }}>{googleProfileData.name}</strong>
-                  <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#166534', backgroundColor: '#dcfce7', padding: '0.15rem 0.5rem', borderRadius: '9999px', border: '1px solid #86efac' }}>
+                  <span className="google-verified-tag">
                     ✓ E-mail Google Verificado (Sem Senha)
                   </span>
                 </div>
@@ -1723,18 +1714,9 @@ export default function LoginModule({
 
             {/* AVISO DO CÓDIGO GERADO */}
             {sentVerificationCode && (
-              <div style={{ 
-                marginBottom: '1.4rem', 
-                padding: '0.9rem 1.2rem', 
-                backgroundColor: 'rgba(34, 197, 94, 0.08)', 
-                color: '#15803d', 
-                border: '1px solid rgba(34, 197, 94, 0.25)', 
-                borderRadius: '10px', 
-                fontSize: '0.84rem', 
-                textAlign: 'center' 
-              }}>
+              <div className="google-code-notice">
                 <div>Código de segurança enviado: <strong style={{ fontSize: '1.15rem', letterSpacing: '0.15em', display: 'inline-block', margin: '0 0.4rem' }}>{sentVerificationCode}</strong></div>
-                <div style={{ fontSize: '0.74rem', color: '#166534', marginTop: '0.2rem' }}>Código válido por 15 minutos para homologação da sua conta.</div>
+                <div style={{ fontSize: '0.74rem', opacity: 0.85, marginTop: '0.2rem' }}>Código válido por 15 minutos para homologação da sua conta.</div>
               </div>
             )}
 

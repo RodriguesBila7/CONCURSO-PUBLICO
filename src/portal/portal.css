@@ -7647,18 +7647,87 @@ textarea::placeholder,
   box-shadow: 0 6px 16px rgba(26, 115, 232, 0.2);
 }
 
-.portal-theme-preto .btn-google-auth {
-  background-color: #1e293b;
-  color: #f1f5f9;
-  border-color: #334155;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+/* Modo Escuro Total para Botão Google (Login, Registo e Recuperação) */
+.portal-theme-preto .btn-google-auth,
+.portal-theme-preto .btn-google-auth.btn-google-register,
+body.portal-theme-preto .btn-google-auth,
+body.portal-theme-preto .btn-google-auth.btn-google-register,
+[data-theme='dark'] .btn-google-auth,
+.dark .btn-google-auth {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #334155 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
 }
 
-.portal-theme-preto .btn-google-auth:hover {
-  background-color: #273549;
-  border-color: #60a5fa;
-  box-shadow: 0 4px 14px rgba(96, 165, 250, 0.25);
-  color: #93c5fd;
+.portal-theme-preto .btn-google-auth:hover,
+.portal-theme-preto .btn-google-auth.btn-google-register:hover,
+body.portal-theme-preto .btn-google-auth:hover,
+body.portal-theme-preto .btn-google-auth.btn-google-register:hover,
+[data-theme='dark'] .btn-google-auth:hover,
+.dark .btn-google-auth:hover {
+  background: #273549 !important;
+  border-color: #60a5fa !important;
+  box-shadow: 0 4px 14px rgba(96, 165, 250, 0.25) !important;
+  color: #93c5fd !important;
+}
+
+.portal-theme-preto .btn-google-auth:active,
+.portal-theme-preto .btn-google-auth.btn-google-register:active {
+  background: #182234 !important;
+}
+
+/* Classes para cards de identificação e confirmação Google */
+.google-identity-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1.2rem;
+  background-color: rgba(66, 133, 244, 0.08);
+  border: 1px solid rgba(66, 133, 244, 0.25);
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.portal-theme-preto .google-identity-card,
+body.portal-theme-preto .google-identity-card {
+  background-color: rgba(30, 41, 59, 0.75);
+  border-color: rgba(96, 165, 250, 0.35);
+}
+
+.google-verified-tag {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #166534;
+  background-color: #dcfce7;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid #86efac;
+}
+
+.portal-theme-preto .google-verified-tag,
+body.portal-theme-preto .google-verified-tag {
+  color: #86efac;
+  background-color: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.google-code-notice {
+  margin-bottom: 1.4rem;
+  padding: 0.9rem 1.2rem;
+  background-color: rgba(34, 197, 94, 0.08);
+  color: #15803d;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  border-radius: 10px;
+  font-size: 0.84rem;
+  text-align: center;
+}
+
+.portal-theme-preto .google-code-notice,
+body.portal-theme-preto .google-code-notice {
+  background-color: rgba(34, 197, 94, 0.12);
+  color: #86efac;
+  border-color: rgba(34, 197, 94, 0.25);
 }
 
 .auth-or-divider {
