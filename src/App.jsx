@@ -609,25 +609,6 @@ export default function App() {
               <span>Cadastrar / Entrar com Google</span>
             </button>
           </div>
-
-          {/* Links secundários */}
-          <div className="login-secondary-links">
-            <button
-              type="button"
-              className="link-secondary-btn"
-              onClick={() => setIsRequestModalOpen(true)}
-            >
-              {t.btn_request}
-            </button>
-            <span className="link-secondary-dot">•</span>
-            <button
-              type="button"
-              className="link-secondary-btn"
-              onClick={() => setIsForgotModalOpen(true)}
-            >
-              {t.btn_forgot}
-            </button>
-          </div>
         </div>
       </main>
 
