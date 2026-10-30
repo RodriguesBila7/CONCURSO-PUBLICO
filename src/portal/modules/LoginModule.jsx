@@ -59,6 +59,9 @@ const GoogleIcon = ({ size = 20 }) => (
   </svg>
 );
 
+// Identificador de Cliente Oficial Google OAuth 2.0 (Google Cloud Console)
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '229936381403-mv01f156evsld892af1735a7vvijjalg.apps.googleusercontent.com';
+
 // Contas Google Pré-sugeridas para login e teste rápido
 const GOOGLE_PRESET_ACCOUNTS = [
   {
@@ -232,8 +235,92 @@ export default function LoginModule({
   };
 
   // ========================================================
-  // AUTENTICAÇÃO / REGISTO COM CONTA GOOGLE
+  // AUTENTICAÇÃO / REGISTO REAL COM CONTA GOOGLE (OAuth 2.0)
   // ========================================================
+  const triggerRealGoogleAuth = () => {
+    setLoginError('');
+    setGoogleLoading(true);
+
+    const executeTokenFlow = () => {
+      try {
+        if (!window.google?.accounts?.oauth2) {
+          throw new Error('Serviço Google Identity Services não disponível.');
+        }
+
+        const client = window.google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope: 'openid email profile',
+          callback: async (tokenResponse) => {
+            if (tokenResponse.error) {
+              setGoogleLoading(false);
+              if (tokenResponse.error !== 'access_denied') {
+                setLoginError(`Erro na validação da conta Google: ${tokenResponse.error}`);
+              }
+              return;
+            }
+
+            try {
+              // Obter perfil oficial e certificado da conta Google escolhida
+              const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: {
+                  Authorization: `Bearer ${tokenResponse.access_token}`
+                }
+              });
+
+              if (!userInfoRes.ok) {
+                throw new Error('Falha ao recuperar dados da conta Google.');
+              }
+
+              const profile = await userInfoRes.json();
+
+              // Conectar o candidato com os dados certificados da Google
+              await handleGoogleAuthAction({
+                name: profile.name || profile.email.split('@')[0],
+                email: profile.email,
+                picture: profile.picture,
+                sub: profile.sub,
+                initial: (profile.name ? profile.name.charAt(0) : 'G').toUpperCase()
+              });
+            } catch (err) {
+              console.error('Erro ao ler perfil da Google:', err);
+              setGoogleLoading(false);
+              setLoginError('Não foi possível verificar os dados da sua conta Google. Tente novamente.');
+            }
+          },
+          error_callback: (err) => {
+            setGoogleLoading(false);
+            console.warn('Confirmação Google cancelada ou interrompida:', err);
+          }
+        });
+
+        // Solicita escolha de conta e confirmação real oficial na janela nativa da Google
+        client.requestAccessToken({ prompt: 'select_account' });
+      } catch (err) {
+        console.error('Falha ao iniciar cliente Google:', err);
+        setGoogleLoading(false);
+        setIsGoogleModalOpen(true);
+      }
+    };
+
+    if (window.google?.accounts?.oauth2) {
+      executeTokenFlow();
+    } else {
+      // Carregar dinamicamente se o script ainda não tiver sido inicializado
+      let attempts = 0;
+      const interval = setInterval(() => {
+        attempts++;
+        if (window.google?.accounts?.oauth2) {
+          clearInterval(interval);
+          executeTokenFlow();
+        } else if (attempts > 15) {
+          clearInterval(interval);
+          setGoogleLoading(false);
+          setIsGoogleModalOpen(true);
+        }
+      }, 150);
+    }
+  };
+
   const handleGoogleAuthAction = async (account) => {
     setGoogleLoading(true);
     setLoginError('');
@@ -251,8 +338,12 @@ export default function LoginModule({
       const data = await res.json();
 
       if (data.success && data.user) {
+        if (data.token) {
+          setSessionToken(data.token);
+        }
         const authedUser = {
           ...data.user,
+          picture: account.picture || data.user.picture,
           authProvider: 'google',
           googleVerified: true,
           initial: account.initial || (account.name ? account.name.charAt(0).toUpperCase() : 'G'),
@@ -279,6 +370,7 @@ export default function LoginModule({
       const googleUser = {
         name: account.name,
         email: account.email,
+        picture: account.picture,
         nuit: account.nuit || ('10' + Math.floor(1000000 + Math.random() * 9000000)),
         bi: account.bi || ('110' + Math.floor(100000000 + Math.random() * 900000000) + 'M'),
         telefone: account.telefone || '+258 84 920 1823',
@@ -295,7 +387,7 @@ export default function LoginModule({
       setGoogleLoading(false);
       setIsGoogleModalOpen(false);
       if (onNotify) onNotify('success', `Conta Google (${account.email}) conectada com sucesso! Bem-vindo(a), ${account.name}!`);
-    }, 500);
+    }, 400);
   };
 
   const handleCustomGoogleSubmit = (e) => {
@@ -345,21 +437,31 @@ export default function LoginModule({
                 justifyContent: 'center', 
                 fontSize: '1.3rem', 
                 fontWeight: 900,
-                position: 'relative'
+                position: 'relative',
+                overflow: 'hidden'
               }}>
-                {currentUser.name ? currentUser.name.charAt(0) : 'C'}
+                {currentUser.picture ? (
+                  <img
+                    src={currentUser.picture}
+                    alt={currentUser.name}
+                    referrerPolicy="no-referrer"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  currentUser.name ? currentUser.name.charAt(0) : 'C'
+                )}
                 {currentUser.authProvider === 'google' && (
                   <span style={{ 
                     position: 'absolute', 
-                    bottom: '-2px', 
-                    right: '-2px', 
+                    bottom: '0', 
+                    right: '0', 
                     background: '#ffffff', 
                     borderRadius: '50%', 
                     padding: '2px', 
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'center',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
                   }}>
                     <GoogleIcon size={12} />
                   </span>
@@ -717,14 +819,11 @@ export default function LoginModule({
               <button
                 type="button"
                 className="btn-google-auth"
-                onClick={() => {
-                  setLoginError('');
-                  setShowCustomGoogle(false);
-                  setIsGoogleModalOpen(true);
-                }}
+                disabled={googleLoading}
+                onClick={triggerRealGoogleAuth}
               >
                 <GoogleIcon />
-                <span>Continuar com o Google</span>
+                <span>{googleLoading ? 'A confirmar com a Google...' : 'Continuar com o Google'}</span>
               </button>
 
               <div className="auth-or-divider">
@@ -817,14 +916,11 @@ export default function LoginModule({
               <button
                 type="button"
                 className="btn-google-auth btn-google-register"
-                onClick={() => {
-                  setRegErrors({});
-                  setShowCustomGoogle(false);
-                  setIsGoogleModalOpen(true);
-                }}
+                disabled={googleLoading}
+                onClick={triggerRealGoogleAuth}
               >
                 <GoogleIcon />
-                <span>Cadastrar com Conta Google (Acesso Imediato)</span>
+                <span>{googleLoading ? 'A confirmar com a Google...' : 'Cadastrar com Conta Google (Acesso Imediato)'}</span>
               </button>
 
               <div className="auth-or-divider">
@@ -1165,6 +1261,23 @@ export default function LoginModule({
               {/* LISTA DE CONTAS GOOGLE RECONHECIDAS */}
               {!showCustomGoogle ? (
                 <div className="google-accounts-list">
+                  <button
+                    type="button"
+                    className="btn-auth-primary"
+                    style={{ marginBottom: '1rem', background: '#1a73e8' }}
+                    onClick={() => {
+                      setIsGoogleModalOpen(false);
+                      triggerRealGoogleAuth();
+                    }}
+                  >
+                    <GoogleIcon size={18} />
+                    <span>Abrir Confirmação Oficial da Google</span>
+                  </button>
+
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--portal-text-muted)', marginBottom: '0.5rem', textAlign: 'center' }}>
+                    OU SELECIONE UMA CONTA DE TESTE LOCAL
+                  </div>
+
                   {GOOGLE_PRESET_ACCOUNTS.map((acc) => (
                     <button
                       key={acc.id}
