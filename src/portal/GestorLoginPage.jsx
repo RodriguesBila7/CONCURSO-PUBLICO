@@ -36,9 +36,9 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
 
   const [theme, setTheme] = useState(() => {
     try {
-      return localStorage.getItem('sernic_portal_theme') || 'preto';
+      return localStorage.getItem('sernic_portal_theme') || 'claro';
     } catch {
-      return 'preto';
+      return 'claro';
     }
   });
 
