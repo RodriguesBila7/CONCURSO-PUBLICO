@@ -2182,23 +2182,24 @@
   justify-content: center;
   align-items: center;
   width: 100%;
-  padding: 1rem 0 3.5rem 0;
+  padding: 1.5rem 1rem 3.5rem 1rem;
   position: relative;
   z-index: 2;
   background: transparent;
   border: none;
   box-shadow: none;
+  box-sizing: border-box;
 }
 
 .auth-wrapper-card {
   width: 100%;
-  max-width: 560px;
+  max-width: min(980px, 96vw);
   min-height: 480px;
   margin: 0 auto;
   background-color: var(--portal-card-bg);
   border: 1px solid var(--portal-border);
   border-radius: var(--radius-lg);
-  padding: 2.5rem 3rem;
+  padding: 2.5rem clamp(1.5rem, 4vw, 3.5rem);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
   position: relative;
   z-index: 2;

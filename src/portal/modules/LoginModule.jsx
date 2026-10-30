@@ -805,7 +805,7 @@ export default function LoginModule({
 
         {/* ABA 1: INICIAR SESSÃO */}
         {authTab === 'login' && (
-          <form onSubmit={handleLogin}>
+          <form onSubmit={handleLogin} style={{ maxWidth: '680px', margin: '0 auto', width: '100%' }}>
             <div className="auth-header-block">
               <span className="auth-header-badge">Autenticação Oficial</span>
               <h3 className="auth-header-title">Área do Candidato</h3>
@@ -902,7 +902,7 @@ export default function LoginModule({
 
         {/* ABA 2: CRIAR CONTA */}
         {authTab === 'register' && (
-          <form onSubmit={handleRegister}>
+          <form onSubmit={handleRegister} style={{ maxWidth: '840px', margin: '0 auto', width: '100%' }}>
             <div className="auth-header-block">
               <span className="auth-header-badge">Novo Registo</span>
               <h3 className="auth-header-title">Criar Conta de Candidato</h3>
@@ -1147,7 +1147,7 @@ export default function LoginModule({
 
         {/* ABA 3: RECUPERAR SENHA */}
         {authTab === 'forgot' && (
-          <div>
+          <div style={{ maxWidth: '680px', margin: '0 auto', width: '100%' }}>
             <div className="auth-header-block">
               <div className="auth-icon-circle">
                 <KeyRound size={24} />
