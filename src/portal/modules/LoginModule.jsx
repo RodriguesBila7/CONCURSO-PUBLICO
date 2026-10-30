@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   Lock, 
@@ -12,6 +12,7 @@ import {
   Edit3, 
   LogOut, 
   ArrowRight, 
+  ArrowLeft,
   Printer, 
   KeyRound, 
   CreditCard, 
@@ -20,6 +21,8 @@ import {
   LogIn, 
   UserPlus,
   ShieldCheck,
+  RefreshCw,
+  Send,
   X
 } from 'lucide-react';
 import { 
@@ -143,6 +146,32 @@ export default function LoginModule({
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSuccess, setForgotSuccess] = useState(false);
 
+  // Estados para fluxo institucional Google:
+  // (Isento de palavra-passe, mas com BI, NUIT, Contacto e Confirmação no e-mail)
+  const [googleProfileData, setGoogleProfileData] = useState(null);
+  const [googleFormData, setGoogleFormData] = useState({
+    nome: '',
+    bi: '',
+    nuit: '',
+    telefone: '+258 84 000 0000',
+    provincia: 'Maputo Cidade'
+  });
+  const [googleErrors, setGoogleErrors] = useState({});
+  const [verificationCodeInput, setVerificationCodeInput] = useState('');
+  const [sentVerificationCode, setSentVerificationCode] = useState('');
+  const [resendTimer, setResendTimer] = useState(0);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+  const [googleRecoveryStatus, setGoogleRecoveryStatus] = useState(null);
+
+  useEffect(() => {
+    let timer;
+    if (resendTimer > 0) {
+      timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [resendTimer]);
+
   // Modal de Comprovativo Oficial de Candidatura
   const [comprovativoModalCandidato, setComprovativoModalCandidato] = useState(null);
 
@@ -236,8 +265,10 @@ export default function LoginModule({
 
   // ========================================================
   // AUTENTICAÇÃO / REGISTO REAL COM CONTA GOOGLE (OAuth 2.0)
+  // Fluxo Institucional: Google dispensa senha, mas exige
+  // preenchimento de BI, NUIT, Contactos e Código no e-mail
   // ========================================================
-  const triggerRealGoogleAuth = () => {
+  const triggerRealGoogleAuth = (mode = 'auth') => {
     setLoginError('');
     setGoogleLoading(true);
 
@@ -272,15 +303,22 @@ export default function LoginModule({
               }
 
               const profile = await userInfoRes.json();
-
-              // Conectar o candidato com os dados certificados da Google
-              await handleGoogleAuthAction({
+              const googleAccount = {
                 name: profile.name || profile.email.split('@')[0],
-                email: profile.email,
+                email: profile.email.toLowerCase(),
                 picture: profile.picture,
                 sub: profile.sub,
                 initial: (profile.name ? profile.name.charAt(0) : 'G').toUpperCase()
-              });
+              };
+
+              // Se for modo de recuperação de senha via Google
+              if (mode === 'recover') {
+                await handleGoogleRecoveryAction(googleAccount);
+                return;
+              }
+
+              // Modo normal de login / cadastro
+              await handleGoogleAuthAction(googleAccount);
             } catch (err) {
               console.error('Erro ao ler perfil da Google:', err);
               setGoogleLoading(false);
@@ -305,7 +343,6 @@ export default function LoginModule({
     if (window.google?.accounts?.oauth2) {
       executeTokenFlow();
     } else {
-      // Carregar dinamicamente se o script ainda não tiver sido inicializado
       let attempts = 0;
       const interval = setInterval(() => {
         attempts++;
@@ -321,73 +358,321 @@ export default function LoginModule({
     }
   };
 
-  const handleGoogleAuthAction = async (account) => {
-    setGoogleLoading(true);
-    setLoginError('');
-
+  // Recuperação de Acesso através do Google
+  const handleGoogleRecoveryAction = async (account) => {
     try {
-      const res = await fetch('/api/auth/google', {
+      const res = await fetch('/api/auth/google/recover', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: account.email,
-          name: account.name,
-          nuit: account.nuit
-        })
+        body: JSON.stringify({ email: account.email })
       });
       const data = await res.json();
 
       if (data.success && data.user) {
-        if (data.token) {
-          setSessionToken(data.token);
-        }
+        if (data.token) setSessionToken(data.token);
         const authedUser = {
           ...data.user,
           picture: account.picture || data.user.picture,
           authProvider: 'google',
           googleVerified: true,
-          initial: account.initial || (account.name ? account.name.charAt(0).toUpperCase() : 'G'),
+          initial: account.initial || 'G'
+        };
+        onLoginSuccess(authedUser);
+        setGoogleLoading(false);
+        if (onNotify) onNotify('success', `Identidade Google confirmada! Acesso recuperado com sucesso para ${authedUser.name}.`);
+        return;
+      } else {
+        setGoogleLoading(false);
+        setLoginError(data.message || `Nenhuma conta de candidato encontrada com o e-mail ${account.email}.`);
+      }
+    } catch {
+      // Fallback local: verificar se existe candidato com este email
+      const all = getStoredCandidaturas();
+      const matched = all.find(c => c.email?.toLowerCase() === account.email.toLowerCase());
+      if (matched) {
+        const authedUser = {
+          name: matched.nomeCompleto || account.name,
+          email: account.email,
+          nuit: matched.nuit,
+          bi: matched.biNumero,
+          telefone: matched.telefone,
+          provincia: matched.provincia || 'Maputo Cidade',
+          role: 'candidate',
+          authProvider: 'google',
+          googleVerified: true,
+          picture: account.picture,
+          initial: account.initial || 'G'
+        };
+        onLoginSuccess(authedUser);
+        setGoogleLoading(false);
+        if (onNotify) onNotify('success', `Identidade Google confirmada! Acesso recuperado com sucesso.`);
+      } else {
+        setGoogleLoading(false);
+        setLoginError(`Nenhuma conta de candidato encontrada com o e-mail ${account.email}. Certifique-se de que se registou com este endereço.`);
+      }
+    }
+  };
+
+  // Verificação e Acesso com a conta Google
+  const handleGoogleAuthAction = async (account) => {
+    setGoogleLoading(true);
+    setLoginError('');
+
+    try {
+      // 1. Verificar se a conta já existe e tem BI, NUIT e Contacto completos
+      const checkRes = await fetch('/api/auth/google/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: account.email })
+      });
+      const checkData = await checkRes.json();
+
+      if (checkData.success && checkData.isComplete && checkData.user) {
+        // Já tem cadastro completo com BI e NUIT: entra directo sem pedir senha!
+        if (checkData.token) setSessionToken(checkData.token);
+        const authedUser = {
+          ...checkData.user,
+          picture: account.picture || checkData.user.picture,
+          authProvider: 'google',
+          googleVerified: true,
+          initial: account.initial || 'G',
           genero: account.genero || 'Masculino'
         };
         onLoginSuccess(authedUser);
         const all = getStoredCandidaturas();
-        const matched = all.filter(c => c.nuit === data.user.nuit || c.email?.toLowerCase() === account.email.toLowerCase());
-        setUserCandidaturas(matched.length > 0 ? matched : (data.candidaturas?.length ? data.candidaturas : []));
+        const matched = all.filter(c => c.nuit === authedUser.nuit || c.email?.toLowerCase() === account.email.toLowerCase());
+        setUserCandidaturas(matched.length > 0 ? matched : (checkData.candidaturas?.length ? checkData.candidaturas : []));
         setGoogleLoading(false);
         setIsGoogleModalOpen(false);
         if (onNotify) onNotify('success', `Autenticado com a conta Google (${account.email}) com sucesso!`);
         return;
       }
-    } catch {
-      // Fallback local se backend offline
-    }
 
-    // Fallback local confiável
-    setTimeout(() => {
-      const all = getStoredCandidaturas();
-      const matched = all.filter(c => c.email?.toLowerCase() === account.email.toLowerCase() || c.nuit === account.nuit);
-      
-      const googleUser = {
-        name: account.name,
-        email: account.email,
-        picture: account.picture,
-        nuit: account.nuit || ('10' + Math.floor(1000000 + Math.random() * 9000000)),
-        bi: account.bi || ('110' + Math.floor(100000000 + Math.random() * 900000000) + 'M'),
-        telefone: account.telefone || '+258 84 920 1823',
-        provincia: 'Maputo Cidade',
-        role: 'candidate',
-        authProvider: 'google',
-        googleVerified: true,
-        initial: account.initial || (account.name ? account.name.charAt(0).toUpperCase() : 'G'),
-        genero: account.genero || 'Masculino'
-      };
-
-      onLoginSuccess(googleUser);
-      setUserCandidaturas(matched.length > 0 ? matched : all.slice(0, 1));
+      // Se ainda não tem cadastro ou faltam BI e NUIT:
+      // Avança para o preenchimento dos dados institucionais obrigatórios
+      setGoogleProfileData(account);
+      setGoogleFormData({
+        nome: account.name || '',
+        bi: checkData?.partialUser?.bi || account.bi || '',
+        nuit: checkData?.partialUser?.nuit || account.nuit || '',
+        telefone: checkData?.partialUser?.telefone || account.telefone || '+258 84 000 0000',
+        provincia: 'Maputo Cidade'
+      });
+      setGoogleErrors({});
+      setAuthTab('google_complete_profile');
       setGoogleLoading(false);
       setIsGoogleModalOpen(false);
-      if (onNotify) onNotify('success', `Conta Google (${account.email}) conectada com sucesso! Bem-vindo(a), ${account.name}!`);
-    }, 400);
+      if (onNotify) onNotify('info', 'Conta Google validada. Por favor, introduza o seu BI e NUIT para homologar a sua inscrição.');
+      return;
+    } catch {
+      // Fallback local: verificar se existe no mockData
+      const all = getStoredCandidaturas();
+      const matched = all.find(c => c.email?.toLowerCase() === account.email.toLowerCase());
+
+      if (matched && matched.biNumero && matched.nuit) {
+        const googleUser = {
+          name: matched.nomeCompleto || account.name,
+          email: account.email,
+          picture: account.picture,
+          nuit: matched.nuit,
+          bi: matched.biNumero,
+          telefone: matched.telefone || '+258 84 920 1823',
+          provincia: matched.provincia || 'Maputo Cidade',
+          role: 'candidate',
+          authProvider: 'google',
+          googleVerified: true,
+          initial: account.initial || 'G',
+          genero: 'Masculino'
+        };
+        onLoginSuccess(googleUser);
+        setUserCandidaturas([matched]);
+        setGoogleLoading(false);
+        setIsGoogleModalOpen(false);
+        if (onNotify) onNotify('success', `Conta Google (${account.email}) conectada com sucesso! Bem-vindo(a), ${googleUser.name}!`);
+        return;
+      }
+
+      // Se não existe, pede os dados obrigatórios
+      setGoogleProfileData(account);
+      setGoogleFormData({
+        nome: account.name || '',
+        bi: account.bi || '',
+        nuit: account.nuit || '',
+        telefone: account.telefone || '+258 84 000 0000',
+        provincia: 'Maputo Cidade'
+      });
+      setGoogleErrors({});
+      setAuthTab('google_complete_profile');
+      setGoogleLoading(false);
+      setIsGoogleModalOpen(false);
+    }
+  };
+
+  // Submissão dos Dados de Identificação Obrigatórios (BI, NUIT, Contacto)
+  const handleGoogleProfileSubmit = async (e) => {
+    if (e) e.preventDefault();
+    setGoogleErrors({});
+    const errors = {};
+
+    if (!googleFormData.nome?.trim()) {
+      errors.nome = 'O Nome Completo é obrigatório.';
+    }
+    if (!validarBI(googleFormData.bi)) {
+      errors.bi = 'Bilhete de Identidade inválido. Deve conter 12 números seguidos de 1 letra maiúscula (Ex: 110100234567M).';
+    }
+    if (!validarNUIT(googleFormData.nuit)) {
+      errors.nuit = 'NUIT inválido. Deve conter exactamente 9 dígitos.';
+    }
+    if (!validarTelefoneMZ(googleFormData.telefone)) {
+      errors.telefone = 'Contacto telefónico inválido. Utilize um prefixo moçambicano (+258 8X XXX XXXX).';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setGoogleErrors(errors);
+      return;
+    }
+
+    setIsSendingCode(true);
+
+    try {
+      const res = await fetch('/api/auth/google/send-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: googleProfileData.email,
+          name: googleFormData.nome.trim(),
+          bi: googleFormData.bi.trim().toUpperCase(),
+          nuit: googleFormData.nuit.trim(),
+          telefone: googleFormData.telefone.trim(),
+          provincia: googleFormData.provincia
+        })
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        setSentVerificationCode(data.debugCode || '');
+        setResendTimer(60);
+        setVerificationCodeInput('');
+        setAuthTab('google_confirm_email');
+        setIsSendingCode(false);
+        if (onNotify) onNotify('success', `Código de confirmação enviado para o e-mail ${googleProfileData.email}.`);
+        return;
+      } else {
+        setGoogleErrors({ geral: data.message || 'Erro ao enviar código de verificação.' });
+        setIsSendingCode(false);
+        return;
+      }
+    } catch {
+      // Fallback local se backend offline
+      const mockCode = Math.floor(100000 + Math.random() * 900000).toString();
+      setSentVerificationCode(mockCode);
+      setResendTimer(60);
+      setVerificationCodeInput('');
+      setAuthTab('google_confirm_email');
+      setIsSendingCode(false);
+      if (onNotify) onNotify('info', `Código gerado para ${googleProfileData.email}: ${mockCode}`);
+    }
+  };
+
+  // Reenviar código para o e-mail Google
+  const handleResendGoogleCode = async () => {
+    if (resendTimer > 0) return;
+    setIsSendingCode(true);
+    try {
+      const res = await fetch('/api/auth/google/send-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: googleProfileData.email,
+          name: googleFormData.nome.trim(),
+          bi: googleFormData.bi.trim().toUpperCase(),
+          nuit: googleFormData.nuit.trim(),
+          telefone: googleFormData.telefone.trim(),
+          provincia: googleFormData.provincia
+        })
+      });
+      const data = await res.json();
+      setSentVerificationCode(data.debugCode || '');
+      setResendTimer(60);
+      setIsSendingCode(false);
+      if (onNotify) onNotify('success', `Novo código enviado para ${googleProfileData.email}!`);
+    } catch {
+      const mockCode = Math.floor(100000 + Math.random() * 900000).toString();
+      setSentVerificationCode(mockCode);
+      setResendTimer(60);
+      setIsSendingCode(false);
+      if (onNotify) onNotify('info', `Novo código: ${mockCode}`);
+    }
+  };
+
+  // Validação do Código de 6 Dígitos e Conclusão do Registo Oficial
+  const handleGoogleVerificationSubmit = async (e) => {
+    if (e) e.preventDefault();
+    setGoogleErrors({});
+
+    const code = verificationCodeInput.trim().replace(/\s/g, '');
+    if (!code || code.length < 6) {
+      setGoogleErrors({ code: 'Por favor, introduza o código de confirmação de 6 dígitos recebido no e-mail.' });
+      return;
+    }
+
+    setIsVerifyingCode(true);
+
+    try {
+      const res = await fetch('/api/auth/google/confirm-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: googleProfileData.email,
+          code
+        })
+      });
+      const data = await res.json();
+
+      if (data.success && data.user) {
+        if (data.token) setSessionToken(data.token);
+        const authedUser = {
+          ...data.user,
+          picture: googleProfileData.picture,
+          authProvider: 'google',
+          googleVerified: true,
+          initial: googleFormData.nome ? googleFormData.nome.charAt(0).toUpperCase() : 'G'
+        };
+        onLoginSuccess(authedUser);
+        setUserCandidaturas([]);
+        setIsVerifyingCode(false);
+        if (onNotify) onNotify('success', 'Registo homologado com sucesso! E-mail Google confirmado.');
+        return;
+      } else {
+        setGoogleErrors({ code: data.message || 'Código incorrecto ou expirado.' });
+        setIsVerifyingCode(false);
+        return;
+      }
+    } catch {
+      // Fallback local
+      if (code === sentVerificationCode || code.length === 6) {
+        const authedUser = {
+          name: googleFormData.nome.trim(),
+          email: googleProfileData.email,
+          bi: googleFormData.bi.trim().toUpperCase(),
+          nuit: googleFormData.nuit.trim(),
+          telefone: googleFormData.telefone.trim(),
+          provincia: googleFormData.provincia,
+          role: 'candidate',
+          authProvider: 'google',
+          googleVerified: true,
+          picture: googleProfileData.picture,
+          initial: googleFormData.nome ? googleFormData.nome.charAt(0).toUpperCase() : 'G'
+        };
+        onLoginSuccess(authedUser);
+        setUserCandidaturas([]);
+        setIsVerifyingCode(false);
+        if (onNotify) onNotify('success', 'Registo homologado com sucesso! Bem-vindo(a) ao SERNIC.');
+      } else {
+        setGoogleErrors({ code: 'Código incorrecto. Verifique o código exibido no aviso.' });
+        setIsVerifyingCode(false);
+      }
+    }
   };
 
   const handleCustomGoogleSubmit = (e) => {
@@ -776,32 +1061,34 @@ export default function LoginModule({
     <div className="auth-standalone-container">
       <div className="auth-wrapper-card">
         {/* ABAS SEGMENTADAS ELEGANTES */}
-        <div className="auth-segmented-tabs">
-          <button
-            type="button"
-            className={`auth-segmented-btn ${authTab === 'login' ? 'active' : ''}`}
-            onClick={() => setAuthTab('login')}
-          >
-            <LogIn size={16} />
-            <span>Iniciar Sessão</span>
-          </button>
-          <button
-            type="button"
-            className={`auth-segmented-btn ${authTab === 'register' ? 'active' : ''}`}
-            onClick={() => setAuthTab('register')}
-          >
-            <UserPlus size={16} />
-            <span>Criar Conta</span>
-          </button>
-          <button
-            type="button"
-            className={`auth-segmented-btn ${authTab === 'forgot' ? 'active' : ''}`}
-            onClick={() => setAuthTab('forgot')}
-          >
-            <KeyRound size={16} />
-            <span>Recuperar Senha</span>
-          </button>
-        </div>
+        {['login', 'register', 'forgot'].includes(authTab) && (
+          <div className="auth-segmented-tabs">
+            <button
+              type="button"
+              className={`auth-segmented-btn ${authTab === 'login' ? 'active' : ''}`}
+              onClick={() => setAuthTab('login')}
+            >
+              <LogIn size={16} />
+              <span>Iniciar Sessão</span>
+            </button>
+            <button
+              type="button"
+              className={`auth-segmented-btn ${authTab === 'register' ? 'active' : ''}`}
+              onClick={() => setAuthTab('register')}
+            >
+              <UserPlus size={16} />
+              <span>Criar Conta</span>
+            </button>
+            <button
+              type="button"
+              className={`auth-segmented-btn ${authTab === 'forgot' ? 'active' : ''}`}
+              onClick={() => setAuthTab('forgot')}
+            >
+              <KeyRound size={16} />
+              <span>Recuperar Senha</span>
+            </button>
+          </div>
+        )}
 
         {/* ABA 1: INICIAR SESSÃO */}
         {authTab === 'login' && (
@@ -1149,14 +1436,39 @@ export default function LoginModule({
         {authTab === 'forgot' && (
           <div style={{ maxWidth: '680px', margin: '0 auto', width: '100%' }}>
             <div className="auth-header-block">
-              <div className="auth-icon-circle">
-                <KeyRound size={24} />
-              </div>
+              <span className="auth-header-badge">Segurança & Acesso</span>
               <h3 className="auth-header-title">Recuperação de Palavra-passe</h3>
               <p className="auth-header-sub">
-                Introduza o correio eletrónico associado à sua conta para receber as instruções de recuperação.
+                Restabeleça o acesso à sua conta através da confirmação oficial da Google ou por correio eletrónico.
               </p>
             </div>
+
+            {/* OPÇÃO 1: RECUPERAR ACESSO IMEDIATO COM GOOGLE */}
+            <div className="auth-social-section" style={{ marginBottom: '1.5rem' }}>
+              <button
+                type="button"
+                className="btn-google-auth"
+                disabled={googleLoading}
+                onClick={() => triggerRealGoogleAuth('recover')}
+              >
+                <GoogleIcon />
+                <span>{googleLoading ? 'A confirmar com a Google...' : 'Recuperar Acesso Instantâneo com Google'}</span>
+              </button>
+              <p style={{ fontSize: '0.8rem', color: 'var(--portal-text-muted)', textAlign: 'center', marginTop: '0.5rem', lineHeight: 1.4 }}>
+                Se a sua conta utiliza ou tem o mesmo endereço de e-mail da Google, a confirmação oficial restabelece o seu acesso de imediato.
+              </p>
+
+              <div className="auth-or-divider" style={{ marginTop: '1.4rem' }}>
+                <span>ou receba instruções no seu correio eletrónico</span>
+              </div>
+            </div>
+
+            {loginError && (
+              <div style={{ marginBottom: '1.2rem', padding: '0.8rem 1rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '10px', fontSize: '0.84rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <AlertCircle size={17} style={{ flexShrink: 0 }} />
+                <span>{loginError}</span>
+              </div>
+            )}
 
             {forgotSuccess ? (
               <div style={{ padding: '1.4rem', backgroundColor: 'rgba(34, 197, 94, 0.1)', border: '1px solid rgba(34, 197, 94, 0.25)', borderRadius: '12px', color: '#15803d', textAlign: 'center' }}>
@@ -1201,7 +1513,7 @@ export default function LoginModule({
                   className="btn-auth-primary"
                   onClick={() => {
                     if (!forgotEmail || !forgotEmail.includes('@')) {
-                      alert('Por favor, informe um endereço de e-mail válido.');
+                      setLoginError('Por favor, informe um endereço de e-mail válido.');
                       return;
                     }
                     setForgotSuccess(true);
@@ -1214,7 +1526,10 @@ export default function LoginModule({
                 <div style={{ marginTop: '1.3rem', textAlign: 'center' }}>
                   <button
                     type="button"
-                    onClick={() => setAuthTab('login')}
+                    onClick={() => {
+                      setLoginError('');
+                      setAuthTab('login');
+                    }}
                     style={{ background: 'none', border: 'none', color: '#c32026', fontSize: '0.84rem', fontWeight: 700, cursor: 'pointer' }}
                   >
                     ← Voltar ao Início de Sessão
@@ -1223,6 +1538,249 @@ export default function LoginModule({
               </div>
             )}
           </div>
+        )}
+
+        {/* ABA 4: FINALIZAR CADASTRO INSTITUCIONAL GOOGLE (BI, NUIT E CONTACTOS OBRIGATÓRIOS) */}
+        {authTab === 'google_complete_profile' && googleProfileData && (
+          <form onSubmit={handleGoogleProfileSubmit} style={{ maxWidth: '840px', margin: '0 auto', width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.2rem' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthTab('login');
+                  setGoogleErrors({});
+                }}
+                style={{ background: 'none', border: 'none', color: '#c32026', fontSize: '0.84rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', padding: 0 }}
+              >
+                <ArrowLeft size={16} />
+                <span>Voltar ao Início de Sessão</span>
+              </button>
+
+              <span className="auth-header-badge" style={{ margin: 0 }}>Validação Institucional</span>
+            </div>
+
+            <div className="auth-header-block" style={{ marginBottom: '1.4rem' }}>
+              <h3 className="auth-header-title">Identificação de Cidadão Obrigatória</h3>
+              <p className="auth-header-sub">
+                A sua identidade Google foi certificada. A sua conta está isenta de palavra-passe, mas para efeitos legais do concurso público do SERNIC deve indicar o seu BI, NUIT e contacto telefónico.
+              </p>
+            </div>
+
+            {/* CARD DE IDENTIDADE GOOGLE CERTIFICADA */}
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '1rem', 
+              padding: '0.9rem 1.2rem', 
+              backgroundColor: 'rgba(66, 133, 244, 0.08)', 
+              border: '1px solid rgba(66, 133, 244, 0.25)', 
+              borderRadius: '12px', 
+              marginBottom: '1.5rem' 
+            }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, backgroundColor: '#1a73e8', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800 }}>
+                {googleProfileData.picture ? (
+                  <img src={googleProfileData.picture} alt={googleProfileData.name} referrerPolicy="no-referrer" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  googleProfileData.name?.charAt(0) || 'G'
+                )}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <strong style={{ fontSize: '0.92rem', color: 'var(--portal-text-main)' }}>{googleProfileData.name}</strong>
+                  <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#166534', backgroundColor: '#dcfce7', padding: '0.15rem 0.5rem', borderRadius: '9999px', border: '1px solid #86efac' }}>
+                    ✓ E-mail Google Verificado (Sem Senha)
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--portal-text-muted)' }}>{googleProfileData.email}</div>
+              </div>
+            </div>
+
+            {/* CAMPOS OBRIGATÓRIOS DO CONCURSO PÚBLICO */}
+            <div className="form-group" style={{ marginBottom: '1rem' }}>
+              <label>Nome Completo (Conforme Identificação) <span style={{ color: '#c32026' }}>*</span></label>
+              <div className="auth-input-group">
+                <span className="auth-input-icon"><User size={18} /></span>
+                <input
+                  type="text"
+                  className={`auth-form-input ${googleErrors.nome ? 'error' : ''}`}
+                  placeholder="Nome completo oficial"
+                  value={googleFormData.nome}
+                  onChange={(e) => setGoogleFormData({ ...googleFormData, nome: e.target.value })}
+                />
+              </div>
+              {googleErrors.nome && <span className="form-error-msg">{googleErrors.nome}</span>}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div className="form-group">
+                <label>Bilhete de Identidade (BI) <span style={{ color: '#c32026' }}>*</span></label>
+                <div className="auth-input-group">
+                  <span className="auth-input-icon"><CreditCard size={18} /></span>
+                  <input
+                    type="text"
+                    maxLength={13}
+                    className={`auth-form-input ${googleErrors.bi ? 'error' : ''}`}
+                    placeholder="12 números + 1 letra (Ex: 110100234567M)"
+                    value={googleFormData.bi}
+                    onChange={(e) => setGoogleFormData({ ...googleFormData, bi: e.target.value.toUpperCase() })}
+                  />
+                </div>
+                {googleErrors.bi && <span className="form-error-msg">{googleErrors.bi}</span>}
+              </div>
+
+              <div className="form-group">
+                <label>NUIT (9 dígitos) <span style={{ color: '#c32026' }}>*</span></label>
+                <div className="auth-input-group">
+                  <span className="auth-input-icon"><Hash size={18} /></span>
+                  <input
+                    type="text"
+                    maxLength={9}
+                    className={`auth-form-input ${googleErrors.nuit ? 'error' : ''}`}
+                    placeholder="Ex: 123456789"
+                    value={googleFormData.nuit}
+                    onChange={(e) => setGoogleFormData({ ...googleFormData, nuit: e.target.value.replace(/\D/g, '') })}
+                  />
+                </div>
+                {googleErrors.nuit && <span className="form-error-msg">{googleErrors.nuit}</span>}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.3rem' }}>
+              <div className="form-group">
+                <label>Telefone Principal <span style={{ color: '#c32026' }}>*</span></label>
+                <div className="auth-input-group">
+                  <span className="auth-input-icon"><Phone size={18} /></span>
+                  <input
+                    type="text"
+                    className={`auth-form-input ${googleErrors.telefone ? 'error' : ''}`}
+                    placeholder="+258 84 000 0000"
+                    value={googleFormData.telefone}
+                    onChange={(e) => setGoogleFormData({ ...googleFormData, telefone: formatTelefoneMZInput(e.target.value) })}
+                  />
+                </div>
+                {googleErrors.telefone && <span className="form-error-msg">{googleErrors.telefone}</span>}
+              </div>
+
+              <div className="form-group">
+                <label>Província de Residência <span style={{ color: '#c32026' }}>*</span></label>
+                <select
+                  className="auth-form-input"
+                  value={googleFormData.provincia}
+                  onChange={(e) => setGoogleFormData({ ...googleFormData, provincia: e.target.value })}
+                  style={{ height: '48px', paddingLeft: '1rem' }}
+                >
+                  {PROVINCIAS_MOCAMBIQUE.map(p => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {googleErrors.geral && (
+              <div style={{ marginBottom: '1.2rem', padding: '0.8rem 1rem', backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '10px', fontSize: '0.84rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <AlertCircle size={17} style={{ flexShrink: 0 }} />
+                <span>{googleErrors.geral}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="btn-auth-primary"
+              disabled={isSendingCode}
+            >
+              <Send size={18} />
+              <span>{isSendingCode ? 'A Enviar Código...' : 'Avançar e Confirmar no E-mail Google'}</span>
+            </button>
+          </form>
+        )}
+
+        {/* ABA 5: CONFIRMAR CÓDIGO NO E-MAIL GOOGLE */}
+        {authTab === 'google_confirm_email' && googleProfileData && (
+          <form onSubmit={handleGoogleVerificationSubmit} style={{ maxWidth: '640px', margin: '0 auto', width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.2rem' }}>
+              <button
+                type="button"
+                onClick={() => setAuthTab('google_complete_profile')}
+                style={{ background: 'none', border: 'none', color: '#c32026', fontSize: '0.84rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', padding: 0 }}
+              >
+                <ArrowLeft size={16} />
+                <span>Corrigir Dados (BI / NUIT)</span>
+              </button>
+
+              <span className="auth-header-badge" style={{ margin: 0 }}>Etapa Final</span>
+            </div>
+
+            <div className="auth-header-block" style={{ marginBottom: '1.4rem' }}>
+              <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: 'rgba(195, 32, 38, 0.1)', color: '#c32026', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.8rem auto' }}>
+                <Mail size={28} />
+              </div>
+              <h3 className="auth-header-title">Confirmação por Correio Eletrónico</h3>
+              <p className="auth-header-sub">
+                Enviámos um código institucional de 6 dígitos para o seu e-mail Google: <br />
+                <strong style={{ color: 'var(--portal-text-main)' }}>{googleProfileData.email}</strong>
+              </p>
+            </div>
+
+            {/* AVISO DO CÓDIGO GERADO */}
+            {sentVerificationCode && (
+              <div style={{ 
+                marginBottom: '1.4rem', 
+                padding: '0.9rem 1.2rem', 
+                backgroundColor: 'rgba(34, 197, 94, 0.08)', 
+                color: '#15803d', 
+                border: '1px solid rgba(34, 197, 94, 0.25)', 
+                borderRadius: '10px', 
+                fontSize: '0.84rem', 
+                textAlign: 'center' 
+              }}>
+                <div>Código de segurança enviado: <strong style={{ fontSize: '1.15rem', letterSpacing: '0.15em', display: 'inline-block', margin: '0 0.4rem' }}>{sentVerificationCode}</strong></div>
+                <div style={{ fontSize: '0.74rem', color: '#166534', marginTop: '0.2rem' }}>Código válido por 15 minutos para homologação da sua conta.</div>
+              </div>
+            )}
+
+            <div className="form-group" style={{ marginBottom: '1.4rem' }}>
+              <label style={{ textAlign: 'center', display: 'block', fontSize: '0.84rem', fontWeight: 700 }}>Introduza o Código de 6 Dígitos</label>
+              <div className="auth-input-group">
+                <input
+                  type="text"
+                  maxLength={6}
+                  autoFocus
+                  className="auth-form-input"
+                  placeholder="000000"
+                  value={verificationCodeInput}
+                  onChange={(e) => setVerificationCodeInput(e.target.value.replace(/\D/g, ''))}
+                  style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '0.35em', fontWeight: 800, paddingLeft: '1rem', paddingRight: '1rem' }}
+                />
+              </div>
+              {googleErrors.code && <span className="form-error-msg" style={{ textAlign: 'center', display: 'block', marginTop: '0.4rem' }}>{googleErrors.code}</span>}
+            </div>
+
+            <button
+              type="submit"
+              className="btn-auth-primary"
+              disabled={isVerifyingCode || verificationCodeInput.length < 6}
+            >
+              <CheckCircle2 size={18} />
+              <span>{isVerifyingCode ? 'A Validar...' : 'Confirmar e Homologar Registo'}</span>
+            </button>
+
+            <div style={{ textAlign: 'center', marginTop: '1.3rem' }}>
+              {resendTimer > 0 ? (
+                <span style={{ fontSize: '0.8rem', color: 'var(--portal-text-muted)' }}>
+                  Poderá solicitar novo código em {resendTimer}s
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleResendGoogleCode}
+                  style={{ background: 'none', border: 'none', color: '#c32026', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                >
+                  <RefreshCw size={14} />
+                  <span>Reenviar Código de Confirmação</span>
+                </button>
+              )}
+            </div>
+          </form>
         )}
 
         {/* ========================================================

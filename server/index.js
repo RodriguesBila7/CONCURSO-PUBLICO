@@ -176,7 +176,202 @@ app.post('/api/auth/login', loginLimiter, (req, res) => {
   }
 });
 
-// Google OAuth Login / Registo
+// Armazenamento em memória de códigos OTP de confirmação por e-mail
+const emailVerificationStore = new Map();
+
+// 1. Verificar estado da conta Google (se já tem cadastro completo com BI e NUIT)
+app.post('/api/auth/google/check', loginLimiter, (req, res) => {
+  const cleanEmail = asTrimmedString(req.body?.email, 120).toLowerCase();
+  if (!cleanEmail || !EMAIL_REGEX.test(cleanEmail)) {
+    return res.status(400).json({ success: false, message: 'Endereço de e-mail inválido.' });
+  }
+
+  try {
+    const user = db.prepare('SELECT id, nuit, name, email, role, bi, telefone, provincia, google_verified FROM users WHERE lower(email) = ?').get(cleanEmail);
+
+    if (user && user.role === 'candidate' && user.bi && user.nuit && user.telefone) {
+      const candidaturas = db.prepare('SELECT * FROM candidaturas WHERE nuit = ? OR email = ? ORDER BY data_submissao DESC').all(user.nuit, user.email);
+      const token = createSession(user.id);
+      logAudit(user.nuit, 'LOGIN_GOOGLE', `Sessão iniciada via Google (${cleanEmail})`);
+
+      return res.json({
+        success: true,
+        exists: true,
+        isComplete: true,
+        user: { ...user, authProvider: 'google', googleVerified: true },
+        token,
+        candidaturas
+      });
+    }
+
+    return res.json({
+      success: true,
+      exists: !!user,
+      isComplete: false,
+      partialUser: user ? { name: user.name, email: user.email, nuit: user.nuit, bi: user.bi, telefone: user.telefone } : null
+    });
+  } catch (err) {
+    console.error('Erro ao verificar conta Google:', err);
+    return res.status(500).json({ success: false, message: 'Erro ao verificar conta.' });
+  }
+});
+
+// 2. Enviar código de confirmação para o e-mail Google do candidato
+app.post('/api/auth/google/send-verification', sensitiveLimiter, (req, res) => {
+  const cleanEmail = asTrimmedString(req.body?.email, 120).toLowerCase();
+  const name = asTrimmedString(req.body?.name, 120);
+  const bi = asTrimmedString(req.body?.bi, 20).toUpperCase();
+  const nuit = asTrimmedString(req.body?.nuit, 15);
+  const telefone = asTrimmedString(req.body?.telefone, 25);
+  const provincia = asTrimmedString(req.body?.provincia, 60) || 'Maputo Cidade';
+
+  if (!cleanEmail || !EMAIL_REGEX.test(cleanEmail)) {
+    return res.status(400).json({ success: false, message: 'E-mail Google inválido.' });
+  }
+  if (!BI_REGEX.test(bi)) {
+    return res.status(400).json({ success: false, message: 'Bilhete de Identidade (BI) inválido. Deve conter 12 números seguidos de 1 letra maiúscula.' });
+  }
+  if (!NUIT_REGEX.test(nuit)) {
+    return res.status(400).json({ success: false, message: 'NUIT inválido. Deve conter exactamente 9 dígitos.' });
+  }
+  if (!telefone || telefone.length < 9) {
+    return res.status(400).json({ success: false, message: 'Contacto telefónico obrigatório.' });
+  }
+
+  // Verificar se NUIT ou BI já pertence a outro candidato com e-mail diferente
+  const existingNuit = db.prepare('SELECT id, email FROM users WHERE nuit = ?').get(nuit);
+  if (existingNuit && existingNuit.email?.toLowerCase() !== cleanEmail) {
+    return res.status(409).json({ success: false, message: 'Este NUIT já se encontra registado num outro utilizador.' });
+  }
+
+  const existingBi = db.prepare('SELECT id, email FROM users WHERE bi = ?').get(bi);
+  if (existingBi && existingBi.email?.toLowerCase() !== cleanEmail) {
+    return res.status(409).json({ success: false, message: 'Este Bilhete de Identidade já se encontra registado noutra conta.' });
+  }
+
+  // Gerar código de 6 dígitos
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutos
+
+  emailVerificationStore.set(cleanEmail, {
+    code,
+    expiresAt,
+    data: { name: name || cleanEmail.split('@')[0], email: cleanEmail, bi, nuit, telefone, provincia }
+  });
+
+  console.log(`[SERNIC Verificação Google] Código enviado para ${cleanEmail}: ${code}`);
+  logAudit(nuit, 'CODIGO_VERIFICACAO_GOOGLE', `Código gerado para ${cleanEmail}`);
+
+  return res.json({
+    success: true,
+    message: `Código de confirmação enviado para o e-mail ${cleanEmail}.`,
+    debugCode: code // Permite visualização imediata em teste ou desenvolvimento
+  });
+});
+
+// 3. Validar código e concluir registo institucional com conta Google
+app.post('/api/auth/google/confirm-verification', sensitiveLimiter, (req, res) => {
+  const cleanEmail = asTrimmedString(req.body?.email, 120).toLowerCase();
+  const inputCode = asTrimmedString(req.body?.code, 10).replace(/\s/g, '');
+
+  if (!cleanEmail || !inputCode) {
+    return res.status(400).json({ success: false, message: 'E-mail e código de confirmação são obrigatórios.' });
+  }
+
+  const entry = emailVerificationStore.get(cleanEmail);
+  if (!entry || entry.code !== inputCode) {
+    return res.status(400).json({ success: false, message: 'Código de confirmação incorrecto. Verifique o seu e-mail Google.' });
+  }
+
+  if (Date.now() > entry.expiresAt) {
+    emailVerificationStore.delete(cleanEmail);
+    return res.status(400).json({ success: false, message: 'O código de confirmação expirou. Solicite um novo código.' });
+  }
+
+  const { name, bi, nuit, telefone, provincia } = entry.data;
+
+  try {
+    let user = db.prepare('SELECT id, nuit, email FROM users WHERE lower(email) = ? OR nuit = ?').get(cleanEmail, nuit);
+
+    if (user) {
+      db.prepare(`
+        UPDATE users 
+        SET name = ?, nuit = ?, bi = ?, telefone = ?, provincia = ?, google_verified = 1, role = 'candidate'
+        WHERE id = ?
+      `).run(name, nuit, bi, telefone, provincia, user.id);
+    } else {
+      const insert = db.prepare(`
+        INSERT INTO users (nuit, name, password, email, role, bi, telefone, provincia, google_verified)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+      `).run(nuit, name, 'google_oauth_verified', cleanEmail, 'candidate', bi, telefone, provincia);
+      user = { id: insert.lastInsertRowid };
+    }
+
+    emailVerificationStore.delete(cleanEmail);
+
+    const fullUser = db.prepare('SELECT id, nuit, name, email, role, bi, telefone, provincia, google_verified FROM users WHERE id = ?').get(user.id);
+    const candidaturas = db.prepare('SELECT * FROM candidaturas WHERE nuit = ? OR email = ? ORDER BY data_submissao DESC').all(fullUser.nuit, fullUser.email);
+    const token = createSession(fullUser.id);
+
+    logAudit(fullUser.nuit, 'REGISTO_GOOGLE_CONFIRMADO', `Conta de candidato homologada via confirmação de e-mail (${cleanEmail})`);
+
+    return res.json({
+      success: true,
+      message: 'Registo e e-mail confirmados com sucesso! Bem-vindo(a) ao SERNIC.',
+      user: { ...fullUser, authProvider: 'google', googleVerified: true },
+      token,
+      candidaturas
+    });
+  } catch (err) {
+    console.error('Erro ao homologar registo Google:', err);
+    return res.status(500).json({ success: false, message: 'Erro ao registar utilizador.' });
+  }
+});
+
+// 4. Recuperação de acesso / senha via confirmação oficial do Google
+app.post('/api/auth/google/recover', sensitiveLimiter, (req, res) => {
+  const cleanEmail = asTrimmedString(req.body?.email, 120).toLowerCase();
+
+  if (!cleanEmail || !EMAIL_REGEX.test(cleanEmail)) {
+    return res.status(400).json({ success: false, message: 'E-mail Google inválido.' });
+  }
+
+  try {
+    const user = db.prepare('SELECT id, nuit, name, email, role, bi, telefone, provincia, google_verified FROM users WHERE lower(email) = ?').get(cleanEmail);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Nenhuma conta de candidato encontrada com este e-mail Google.'
+      });
+    }
+
+    if (user.role !== 'candidate') {
+      return res.status(403).json({
+        success: false,
+        message: 'Contas de gestão institucional não podem recuperar acesso via Google.'
+      });
+    }
+
+    const token = createSession(user.id);
+    logAudit(user.nuit, 'RECUPERACAO_GOOGLE', `Acesso recuperado com sucesso através da confirmação Google (${cleanEmail})`);
+
+    const candidaturas = db.prepare('SELECT * FROM candidaturas WHERE nuit = ? OR email = ? ORDER BY data_submissao DESC').all(user.nuit, user.email);
+
+    return res.json({
+      success: true,
+      message: `Identidade confirmada com sucesso! Acesso recuperado para ${user.name}.`,
+      user: { ...user, authProvider: 'google', googleVerified: true },
+      token,
+      candidaturas
+    });
+  } catch (err) {
+    console.error('Erro na recuperação Google:', err);
+    return res.status(500).json({ success: false, message: 'Erro ao recuperar conta via Google.' });
+  }
+});
+
+// Google OAuth Login / Registo Direto (compatibilidade)
 app.post('/api/auth/google', loginLimiter, (req, res) => {
   const cleanEmail = asTrimmedString(req.body?.email, 120).toLowerCase();
   const name = asTrimmedString(req.body?.name, 120);

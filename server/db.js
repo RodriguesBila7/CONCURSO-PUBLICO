@@ -21,9 +21,21 @@ db.exec(`
     password TEXT NOT NULL,
     email TEXT,
     role TEXT DEFAULT 'candidate',
+    bi TEXT,
+    telefone TEXT,
+    provincia TEXT,
+    google_verified INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
+`);
 
+// Garantir colunas adicionais para bases de dados já existentes
+try { db.exec("ALTER TABLE users ADD COLUMN bi TEXT;"); } catch (_) {}
+try { db.exec("ALTER TABLE users ADD COLUMN telefone TEXT;"); } catch (_) {}
+try { db.exec("ALTER TABLE users ADD COLUMN provincia TEXT;"); } catch (_) {}
+try { db.exec("ALTER TABLE users ADD COLUMN google_verified INTEGER DEFAULT 0;"); } catch (_) {}
+
+db.exec(`
   CREATE TABLE IF NOT EXISTS candidaturas (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     codigo_candidatura TEXT UNIQUE NOT NULL,
