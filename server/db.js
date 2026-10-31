@@ -170,40 +170,56 @@ if (countUsers.count === 0) {
   }
 }
 
-// Pre-seed a sample application if empty
+// Pre-seed 20 candidaturas oficiais no estado inicial de inscrição caso existam menos de 20
 const countCandidaturas = db.prepare('SELECT COUNT(*) as count FROM candidaturas').get();
-if (countCandidaturas.count === 0) {
+if (countCandidaturas.count < 20) {
   const insertCandidatura = db.prepare(`
-    INSERT INTO candidaturas (
-      codigo_candidatura, nuit, nome_completo, email, telefone, carreira, nivel_academico, bi_numero, status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT OR REPLACE INTO candidaturas (
+      codigo_candidatura, nuit, nome_completo, email, telefone, carreira, nivel_academico, bi_numero, status, data_submissao
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
-  insertCandidatura.run(
-    'SERNIC-2026-00849',
-    '100234567',
-    'Armando Carlos Mondlane',
-    'armando.carlos@concurso.mz',
-    '+258 84 123 4567',
-    'Investigador Criminal de 2ª Classe',
-    'Licenciatura em Direito / Ciências Policiais',
-    '110100234567M',
-    'Em Análise Documental'
-  );
+  const candidatosBase20 = [
+    { codigo: 'SERNIC-2026-00001', nome: 'Armando Carlos Mondlane', bi: '110100234567M', nuit: '100234567', tel: '+258 84 123 4567', email: 'armando.mondlane@gmail.com', carreira: 'Investigação Criminal', curso: 'Licenciatura em Direito e Ciências Criminais', dataSub: '2026-10-04 09:30:00' },
+    { codigo: 'SERNIC-2026-00002', nome: 'Maria Helena Nhantumbo', bi: '100200345678A', nuit: '100345678', tel: '+258 84 987 6543', email: 'maria.nhantumbo@outlook.com', carreira: 'Inteligência Digital e Cibercrime', curso: 'Licenciatura em Engenharia Informática e Telecomunicações', dataSub: '2026-10-05 14:15:00' },
+    { codigo: 'SERNIC-2026-00003', nome: 'Eusébio João Sitoe', bi: '120300456789B', nuit: '100876543', tel: '+258 82 456 7890', email: 'eusebio.sitoe@gmail.com', carreira: 'Investigação Criminal', curso: 'Licenciatura em Direito e Legislação Penal', dataSub: '2026-10-06 11:00:00' },
+    { codigo: 'SERNIC-2026-00004', nome: 'Fátima Zaida Abdala', bi: '030400567890C', nuit: '100456789', tel: '+258 86 345 6789', email: 'fatima.abdala@hotmail.com', carreira: 'Criminalística e Ciências Forenses', curso: 'Licenciatura em Química Forense e Balística', dataSub: '2026-10-07 08:45:00' },
+    { codigo: 'SERNIC-2026-00005', nome: 'Rogério Américo Chissano', bi: '110500678901D', nuit: '100987654', tel: '+258 87 234 5678', email: 'rogerio.chissano@gmail.com', carreira: 'Investigação Criminal', curso: 'Licenciatura em Ciências Policiais e Investigação Criminal', dataSub: '2026-10-08 10:10:00' },
+    { codigo: 'SERNIC-2026-00006', nome: 'Cecília Marta Manjate', bi: '100600789012E', nuit: '100567890', tel: '+258 84 876 5432', email: 'cecilia.manjate@gmail.com', carreira: 'Medicina Legal e Toxicologia Forense', curso: 'Licenciatura em Biologia e Bioquímica Clínica', dataSub: '2026-10-09 13:20:00' },
+    { codigo: 'SERNIC-2026-00007', nome: 'Celso Salvador Tembe', bi: '110700890123F', nuit: '100678901', tel: '+258 82 765 4321', email: 'celso.tembe@outlook.com', carreira: 'Investigação Criminal', curso: 'Licenciatura em Direito Público e Processual', dataSub: '2026-10-10 09:15:00' },
+    { codigo: 'SERNIC-2026-00008', nome: 'Amina Zainabo Mussa', bi: '040800901234G', nuit: '100789012', tel: '+258 84 654 3210', email: 'amina.mussa@gmail.com', carreira: 'Inteligência Digital e Cibercrime', curso: 'Licenciatura em Tecnologias de Informação e Criptografia', dataSub: '2026-10-11 15:40:00' },
+    { codigo: 'SERNIC-2026-00009', nome: 'Nelson Paulo Macamo', bi: '110900012345H', nuit: '100890123', tel: '+258 86 543 2109', email: 'nelson.macamo@yahoo.com', carreira: 'Criminalística e Ciências Forenses', curso: 'Licenciatura em Física Aplicada e Peritagem Balística', dataSub: '2026-10-12 11:25:00' },
+    { codigo: 'SERNIC-2026-00010', nome: 'Dulce Esperança Langa', bi: '101000123456I', nuit: '100901234', tel: '+258 87 432 1098', email: 'dulce.langa@gmail.com', carreira: 'Investigação Criminal', curso: 'Licenciatura em Criminologia e Segurança Pública', dataSub: '2026-10-13 10:00:00' },
+    { codigo: 'SERNIC-2026-00011', nome: 'Dr. Inácio Bernardo Cossa', bi: '111100234567J', nuit: '100012345', tel: '+258 84 321 0987', email: 'inacio.cossa@med.uem.mz', carreira: 'Medicina Legal e Toxicologia Forense', curso: 'Licenciatura em Medicina Geral e Patologia Forense', dataSub: '2026-10-14 08:30:00' },
+    { codigo: 'SERNIC-2026-00012', nome: 'Sónia Patrícia Mabunda', bi: '101200345678K', nuit: '100123456', tel: '+258 82 210 9876', email: 'sonia.mabunda@gmail.com', carreira: 'Investigação Criminal', curso: 'Licenciatura em Direito Forense e Direitos Fundamentais', dataSub: '2026-10-15 12:00:00' },
+    { codigo: 'SERNIC-2026-00013', nome: 'Alberto Zacarias Guambe', bi: '111300456789L', nuit: '100234560', tel: '+258 84 109 8765', email: 'alberto.guambe@gmail.com', carreira: 'Investigação Criminal', curso: 'Licenciatura em Sociologia e Investigação Criminal', dataSub: '2026-10-16 14:50:00' },
+    { codigo: 'SERNIC-2026-00014', nome: 'Vanessa Beatriz Chauque', bi: '101400567890M', nuit: '100345670', tel: '+258 86 098 7654', email: 'vanessa.chauque@isctem.ac.mz', carreira: 'Inteligência Digital e Cibercrime', curso: 'Licenciatura em Segurança Informática e Computação Forense', dataSub: '2026-10-17 09:40:00' },
+    { codigo: 'SERNIC-2026-00015', nome: 'Tomás Gabriel Muthemba', bi: '111500678901N', nuit: '100456780', tel: '+258 87 987 6540', email: 'tomas.muthemba@gmail.com', carreira: 'Investigação Criminal', curso: 'Licenciatura em Administração Pública e Criminologia', dataSub: '2026-10-18 11:10:00' },
+    { codigo: 'SERNIC-2026-00016', nome: 'Tânia Celeste Macuácua', bi: '101600789012O', nuit: '100567891', tel: '+258 84 876 5430', email: 'tania.macuacua@gmail.com', carreira: 'Medicina Legal e Toxicologia Forense', curso: 'Licenciatura em Análises Clínicas e Toxicologia Forense', dataSub: '2026-10-19 13:30:00' },
+    { codigo: 'SERNIC-2026-00017', nome: 'Hipólito Manuel Mabote', bi: '111700890123P', nuit: '100678902', tel: '+258 82 765 4320', email: 'hipolito.mabote@outlook.com', carreira: 'Criminalística e Ciências Forenses', curso: 'Licenciatura em Ciências Forenses e Identificação Dactiloscópica', dataSub: '2026-10-20 10:45:00' },
+    { codigo: 'SERNIC-2026-00018', nome: 'Elsa Carina Chirindza', bi: '101800901234Q', nuit: '100789013', tel: '+258 84 654 3219', email: 'elsa.chirindza@gmail.com', carreira: 'Investigação Criminal', curso: 'Licenciatura em Direito Processual Penal', dataSub: '2026-10-21 09:00:00' },
+    { codigo: 'SERNIC-2026-00019', nome: 'Jaime Osvaldo Bila', bi: '111900012345R', nuit: '100890124', tel: '+258 86 543 2108', email: 'jaime.bila@ucm.ac.mz', carreira: 'Investigação Criminal', curso: 'Licenciatura em Direito e Investigação Forense', dataSub: '2026-10-22 14:10:00' },
+    { codigo: 'SERNIC-2026-00020', nome: 'Leila Zainab Daúde', bi: '032000123456S', nuit: '100901235', tel: '+258 87 432 1097', email: 'leila.daude@unilurio.ac.mz', carreira: 'Inteligência Digital e Cibercrime', curso: 'Licenciatura em Engenharia Informática e Defesa de Redes', dataSub: '2026-10-23 11:35:00' }
+  ];
 
-  insertCandidatura.run(
-    'SERNIC-2026-00122',
-    '100345678',
-    'Maria Helena Nhantumbo',
-    'm.nhantumbo@concurso.mz',
-    '+258 84 987 6543',
-    'Especialista em Cibersegurança e Crimes Cibernéticos',
-    'Licenciatura em Engenharia Informática',
-    '100200345678A',
-    'Em Análise Documental'
-  );
+  db.transaction(() => {
+    for (const c of candidatosBase20) {
+      insertCandidatura.run(
+        c.codigo,
+        c.nuit,
+        c.nome,
+        c.email,
+        c.tel,
+        c.carreira,
+        c.curso,
+        c.bi,
+        'Em Análise Documental',
+        c.dataSub
+      );
+    }
+  })();
 
-  console.log('[SQLite] Candidaturas de demonstração registadas (Em Análise Documental).');
+  console.log('[SQLite] 20 Candidaturas oficiais de demonstração inseridas na fase inicial (Em Análise Documental).');
 }
 
 // Pre-seed vagas if empty
