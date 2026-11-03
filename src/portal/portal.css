@@ -11134,6 +11134,27 @@ html.portal-modo-simplificado * {
   background: rgba(239, 68, 68, 0.24);
 }
 
+/* Chip Administrador do Júri */
+.gestor-quick-chip.chip-admin-juri {
+  background: rgba(180, 83, 9, 0.09);
+  border: 1px solid #b45309;
+  color: #b45309;
+}
+
+.gestor-quick-chip.chip-admin-juri:hover {
+  background: rgba(180, 83, 9, 0.18);
+}
+
+.portal-theme-preto .gestor-quick-chip.chip-admin-juri {
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: #fcd34d;
+}
+
+.portal-theme-preto .gestor-quick-chip.chip-admin-juri:hover {
+  background: rgba(245, 158, 11, 0.28);
+}
+
 /* Chip Júri */
 .gestor-quick-chip.chip-juri {
   background: rgba(15, 32, 66, 0.08);

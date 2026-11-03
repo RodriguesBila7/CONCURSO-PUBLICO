@@ -530,7 +530,7 @@ export default function ConsultaModule() {
                             Processo em Instrução Técnica pela Comissão de Júri
                           </h4>
                           <p style={{ fontSize: '0.92rem', color: 'var(--portal-text-muted)', lineHeight: 1.6, margin: 0 }}>
-                            A sua candidatura encontra-se em fase de análise e instrução pela Comissão de Júri. Os resultados e pareceres técnicos estarão oficialmente disponíveis para consulta nesta conta após a homologação definitiva da Direcção de Recursos Humanos (Administrador Principal).
+                            A sua candidatura encontra-se em fase de análise e instrução pela Comissão de Júri. Os resultados e pareceres técnicos estarão oficialmente disponíveis para consulta nesta conta após a homologação final do Administrador do Júri e publicação do Director Geral e Director Geral Adjunto (DG-DGA).
                           </p>
                         </div>
                       ) : (

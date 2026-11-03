@@ -125,7 +125,10 @@ import {
   saveStoredAcessibilidade,
   LOCAIS_DIRECCOES_PROVINCIAIS,
   homologarEPublicarCandidatura,
-  homologarEPublicarTodasCandidaturas
+  homologarEPublicarTodasCandidaturas,
+  getJanelaJuriInfo,
+  homologarFinalAdministradorJuri,
+  homologarFinalAdministradorJuriTodas
 } from '../mockData';
 import sernicLogo from '../../assets/sernic-logo.png';
 import DraggableSubAba from '../components/DraggableSubAba';
@@ -515,7 +518,11 @@ export default function GestorPortalModule({
   // ========================================================
   const userRole = currentUser?.role || 'admin';
   const isJuriUser = userRole === 'juri' || userRole === 'usuario';
-  const isPrincipalOrSuper = userRole === 'admin_principal' || userRole === 'super_admin' || userRole === 'admin' || userRole === 'gestor';
+  const isAdminJuri = userRole === 'admin_juri';
+  const isPrincipal = userRole === 'admin_principal';
+  const isSuperAdmin = userRole === 'super_admin';
+  const isPrincipalOrSuper = isPrincipal || isSuperAdmin || userRole === 'admin' || userRole === 'gestor';
+  const canHomologarFinal = isAdminJuri || isPrincipal || isSuperAdmin;
 
   const [deliberandoCandidato, setDeliberandoCandidato] = useState(null);
   const [novoEstado, setNovoEstado] = useState('Aprovado na Análise Documental');
@@ -590,13 +597,18 @@ export default function GestorPortalModule({
   const executeSaveDeliberacao = (candidato, updates, operador = currentUser) => {
     const opRole = operador?.role || userRole;
     const operadorObj = {
-      name: operador?.name || (opRole === 'juri' ? 'Membro da Comissão de Júri' : 'Dr. Alberto Chissano'),
-      cargo: operador?.cargo || (opRole === 'juri' ? 'Vogal da Comissão de Júri' : 'Presidente do Júri de Seleção'),
-      perfil: operador?.perfil || (opRole === 'juri' ? 'Comissão de Júri SERNIC' : 'Administrador Principal DRH'),
+      name: operador?.name || (opRole === 'juri' ? 'Dr. Alberto Chissano' : opRole === 'admin_juri' ? 'Dr. Pascoal Manuel Machava' : 'Director Geral e Director Geral Adjunto (DG-DGA)'),
+      cargo: operador?.cargo || (opRole === 'juri' ? 'Usuário (Membro da Comissão de Júri de Selecção)' : opRole === 'admin_juri' ? 'Administrador do Júri' : 'Director Geral e Director Geral Adjunto (DG-DGA)'),
+      perfil: operador?.perfil || (opRole === 'juri' ? 'Usuário (Júri de Selecção)' : opRole === 'admin_juri' ? 'Administrador do Júri' : 'Administrador Principal (DG-DGA)'),
       role: opRole
     };
 
     const updated = updateStoredCandidatura(candidato.codigoCandidatura, updates, operadorObj);
+    if (updated?.bloqueadoRegulamentar) {
+      if (onNotify) onNotify('error', updated.mensagemBloqueio || 'Operação bloqueada pelo regulamento do concurso.');
+      return null;
+    }
+
     if (updated) {
       reloadData();
 
@@ -623,9 +635,11 @@ export default function GestorPortalModule({
 
       if (onNotify) {
         if (opRole === 'juri' || opRole === 'usuario') {
-          onNotify('info', `Parecer do Júri registado para ${candidato.nomeCompleto}! Aguarda homologação do Administrador Principal para publicação oficial.`);
+          onNotify('info', `Parecer do Júri registado para ${candidato.nomeCompleto}! Dispõe de 5 dias para verificação/retificação antes da Homologação Final do Administrador do Júri.`);
+        } else if (opRole === 'admin_juri') {
+          onNotify('success', `Homologação Final concluída pelo Administrador do Júri! Resultados blindados para ${candidato.nomeCompleto}.`);
         } else {
-          onNotify('success', `Decisão homologada e publicada oficialmente! ${candidato.nomeCompleto} encaminhado(a) para a pasta de "${nomePasta}".`);
+          onNotify('success', `Decisão homologada pelo Administrador Principal (DG-DGA)! ${candidato.nomeCompleto} encaminhado(a) para "${nomePasta}".`);
         }
       }
     }
@@ -1581,6 +1595,18 @@ export default function GestorPortalModule({
           parecer: parecerJuri || `Reprovado na Entrevista Profissional com ${notaFinal} valores: ${motivoFinal || 'Inaptidão técnica'}.`
         };
       }
+    }
+
+    if (isAdminJuri) {
+      updates.homologacaoFinalAdminJuri = {
+        concluida: true,
+        data: new Date().toISOString(),
+        dataExtenso: new Date().toLocaleDateString('pt-MZ') + ' às ' + new Date().toLocaleTimeString('pt-MZ', { hour: '2-digit', minute: '2-digit' }),
+        operador: currentUser?.name || 'Dr. Pascoal Manuel Machava',
+        cargo: currentUser?.cargo || 'Administrador do Júri',
+        despacho: `DSP-HOM-FINAL-JURI-2026/${deliberandoCandidato.numeroCandidato || '00001'}`
+      };
+      updates.trancadoDefinitivo = true;
     }
 
     executeSaveDeliberacao(deliberandoCandidato, updates, currentUser);
@@ -3385,6 +3411,29 @@ export default function GestorPortalModule({
               </div>
 
               <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                {isAdminJuri && (
+                  <button
+                    type="button"
+                    className="btn-deliberacao-primary-green"
+                    style={{ backgroundColor: '#b45309', borderColor: '#92400e' }}
+                    title="Conceder Homologação Final oficial do Administrador do Júri a todos os processos deliberados, blindando definitivamente os resultados contra alterações"
+                    onClick={() => {
+                      const count = homologarFinalAdministradorJuriTodas(currentUser);
+                      reloadData();
+                      if (onNotify) {
+                        if (count > 0) {
+                          onNotify('success', `${count} processo(s) com Homologação Final concluída pelo Administrador do Júri! Resultados blindados.`);
+                        } else {
+                          onNotify('info', 'Não existem deliberações pendentes de homologação final do Júri.');
+                        }
+                      }
+                    }}
+                  >
+                    <ShieldCheck size={14} />
+                    <span>Homologação Final do Júri (Blindar Todos)</span>
+                  </button>
+                )}
+
                 {isPrincipalOrSuper && (
                   <button
                     type="button"
@@ -3395,7 +3444,7 @@ export default function GestorPortalModule({
                       reloadData();
                       if (onNotify) {
                         if (count > 0) {
-                          onNotify('success', `${count} deliberação(ões) homologada(s) e publicada(s) oficialmente com sucesso!`);
+                          onNotify('success', `${count} deliberação(ões) homologada(s) e publicada(s) oficialmente pelo DG-DGA!`);
                         } else {
                           onNotify('info', 'Todas as candidaturas já se encontram homologadas e publicadas.');
                         }
@@ -3403,7 +3452,7 @@ export default function GestorPortalModule({
                     }}
                   >
                     <CheckCircle2 size={14} />
-                    <span>Homologar e Publicar Todos</span>
+                    <span>Homologar e Publicar Todos (DG-DGA)</span>
                   </button>
                 )}
 
@@ -3748,7 +3797,72 @@ export default function GestorPortalModule({
                     </div>
                   </div>
 
-                  {/* NOTIFICAÇÃO DE PARECER DO JÚRI AGUARDANDO HOMOLOGAÇÃO PELO ADMINISTRADOR PRINCIPAL */}
+                  {/* BANNER 1: HOMOLOGAÇÃO FINAL DO ADMINISTRADOR DO JÚRI CONCLUÍDA (RESULTADOS TRANCADOS) */}
+                  {(deliberandoCandidato.homologacaoFinalAdminJuri?.concluida || deliberandoCandidato.trancadoDefinitivo) && (
+                    <div className="deliberacao-parecer-pendente-banner" style={{ background: 'rgba(22, 163, 74, 0.08)', border: '1px solid #16a34a' }}>
+                      <div className="parecer-info">
+                        <span className="parecer-badge" style={{ background: '#16a34a', color: '#fff' }}>Homologação Final Concluída • Trancada</span>
+                        <p style={{ marginTop: '0.3rem', color: 'var(--portal-text-main)', fontSize: '0.86rem' }}>
+                          <strong>Processo Homologado em Definitivo:</strong> Homologação Final concedida por <strong>{deliberandoCandidato.homologacaoFinalAdminJuri?.operador || 'Dr. Pascoal Manuel Machava'}</strong> ({deliberandoCandidato.homologacaoFinalAdminJuri?.cargo || 'Administrador do Júri'}).
+                        </p>
+                        <p className="parecer-desc" style={{ color: 'var(--portal-text-muted)', fontSize: '0.78rem' }}>
+                          Despacho: <code>{deliberandoCandidato.homologacaoFinalAdminJuri?.despacho || 'DSP-HOM-FINAL-JURI-2026/00001'}</code> • Os resultados encontram-se permanentemente blindados contra trocas ou alterações.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* BANNER 2: JANELA REGULAMENTAR DE 5 DIAS DO JÚRI */}
+                  {!deliberandoCandidato.homologacaoFinalAdminJuri?.concluida && !deliberandoCandidato.trancadoDefinitivo && (() => {
+                    const janela = getJanelaJuriInfo(deliberandoCandidato);
+                    if (janela.status === 'janela_aberta') {
+                      return (
+                        <div className="deliberacao-parecer-info-banner" style={{ background: 'rgba(217, 119, 6, 0.08)', border: '1px solid #d97706', color: '#b45309' }}>
+                          <Clock size={16} color="#d97706" />
+                          <span><strong>Janela de Verificação do Júri (5 Dias):</strong> Restam <strong>{janela.diasRestantes} dia(s) e {janela.horasRestantes} hora(s)</strong> (até {janela.limiteFormatado}) para verificação ou rectificação antes do trancamento definitivo pelo Administrador do Júri.</span>
+                        </div>
+                      );
+                    }
+                    if (janela.status === 'prazo_expirado') {
+                      return (
+                        <div className="deliberacao-parecer-info-banner" style={{ background: 'rgba(220, 38, 38, 0.08)', border: '1px solid #dc2626', color: '#b91c1c' }}>
+                          <AlertTriangle size={16} color="#dc2626" />
+                          <span><strong>Prazo de 5 Dias Expirado:</strong> O período de verificação do Júri encerrou a {janela.limiteFormatado}. A deliberação está trancada para os membros do júri e aguarda a Homologação Final do Administrador do Júri.</span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+
+                  {/* BANNER 3: ACÇÃO DO ADMINISTRADOR DO JÚRI (HOMOLOGAÇÃO FINAL) */}
+                  {canHomologarFinal && !deliberandoCandidato.homologacaoFinalAdminJuri?.concluida && !deliberandoCandidato.trancadoDefinitivo && deliberandoCandidato.status !== 'Em Análise Documental' && (
+                    <div className="deliberacao-parecer-pendente-banner" style={{ background: 'rgba(180, 83, 9, 0.08)', border: '1px solid #b45309' }}>
+                      <div className="parecer-info">
+                        <span className="parecer-badge" style={{ background: '#b45309', color: '#fff' }}>Homologação Final Pendente</span>
+                        <p style={{ marginTop: '0.3rem', color: 'var(--portal-text-main)', fontSize: '0.86rem' }}>
+                          As homologações da Comissão de Júri foram concluídas. Como <strong>Administrador do Júri</strong>, pode agora conceder a Homologação Final para blindar os resultados em definitivo.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn-deliberacao-primary-green"
+                        style={{ backgroundColor: '#b45309', borderColor: '#92400e' }}
+                        onClick={() => {
+                          const res = homologarFinalAdministradorJuri(deliberandoCandidato.codigoCandidatura, currentUser);
+                          if (res) {
+                            reloadData();
+                            setDeliberandoCandidato(res);
+                            if (onNotify) onNotify('success', `Homologação Final concedida pelo Administrador do Júri para ${deliberandoCandidato.nomeCompleto}! Resultados blindados.`);
+                          }
+                        }}
+                      >
+                        <ShieldCheck size={16} />
+                        <span>Conceder Homologação Final (Blindar Resultados)</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* NOTIFICAÇÃO DE PARECER DO JÚRI AGUARDANDO HOMOLOGAÇÃO PELO ADMINISTRADOR PRINCIPAL (DG-DGA) */}
                   {deliberandoCandidato.parecerJuriPendente && isPrincipalOrSuper && (
                     <div className="deliberacao-parecer-pendente-banner">
                       <div className="parecer-info">
@@ -3770,12 +3884,12 @@ export default function GestorPortalModule({
                           if (res) {
                             reloadData();
                             setDeliberandoCandidato(res);
-                            if (onNotify) onNotify('success', `Decisão homologada e publicada oficialmente na conta de ${deliberandoCandidato.nomeCompleto}!`);
+                            if (onNotify) onNotify('success', `Decisão homologada pelo Administrador Principal (DG-DGA) e publicada na conta de ${deliberandoCandidato.nomeCompleto}!`);
                           }
                         }}
                       >
                         <CheckCircle2 size={16} />
-                        <span>Homologar e Publicar na Conta do Candidato</span>
+                        <span>Homologar e Publicar (DG-DGA)</span>
                       </button>
                     </div>
                   )}
@@ -3783,7 +3897,7 @@ export default function GestorPortalModule({
                   {deliberandoCandidato.parecerJuriPendente && isJuriUser && (
                     <div className="deliberacao-parecer-info-banner">
                       <Clock size={16} />
-                      <span>O parecer deste candidato foi registado com sucesso e aguarda homologação do Administrador Principal para publicação oficial.</span>
+                      <span>O parecer deste candidato foi registado com sucesso e aguarda homologação do Administrador do Júri / DG-DGA para publicação definitiva.</span>
                     </div>
                   )}
 
@@ -4264,35 +4378,100 @@ export default function GestorPortalModule({
                     {/* BOTÃO DE CONFIRMAÇÃO OFICIAL */}
                     <div className="deliberacao-submit-row">
                       <div className="deliberacao-auditor-info">
-                        <span>Operador: <strong>{currentUser?.name || 'Comissão Central de Júri'}</strong> ({isJuriUser ? 'Comissão de Júri' : currentUser?.role === 'super_admin' ? 'Super Administrador' : 'Administrador Principal'})</span>
+                        <span>Operador: <strong>{currentUser?.name || 'Comissão Central de Júri'}</strong> ({isJuriUser ? 'Usuário (Júri de Selecção)' : isAdminJuri ? 'Administrador do Júri' : isSuperAdmin ? 'Super Administrador (Técnico)' : 'Administrador Principal (DG-DGA)'})</span>
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.35rem' }}>
-                        {isJuriUser ? (
-                          <>
+                      {(() => {
+                        const isTrancado = Boolean(deliberandoCandidato.homologacaoFinalAdminJuri?.concluida || deliberandoCandidato.trancadoDefinitivo);
+                        const janelaJuri = getJanelaJuriInfo(deliberandoCandidato);
+
+                        if (isTrancado) {
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.35rem' }}>
+                              <button
+                                type="button"
+                                disabled
+                                className="btn-deliberacao-submit"
+                                style={{ backgroundColor: '#64748b', cursor: 'not-allowed', opacity: 0.7 }}
+                              >
+                                <Lock size={16} />
+                                <span>Resultados Homologados e Trancados em Definitivo</span>
+                              </button>
+                              <span style={{ fontSize: '0.74rem', color: '#16a34a', fontWeight: 600 }}>
+                                Homologação Final concluída pelo Administrador do Júri. Resultados blindados.
+                              </span>
+                            </div>
+                          );
+                        }
+
+                        if (isJuriUser) {
+                          if (janelaJuri.bloqueado) {
+                            return (
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.35rem' }}>
+                                <button
+                                  type="button"
+                                  disabled
+                                  className="btn-deliberacao-submit"
+                                  style={{ backgroundColor: '#64748b', cursor: 'not-allowed', opacity: 0.7 }}
+                                >
+                                  <Lock size={16} />
+                                  <span>Prazo de 5 Dias Expirado (Trancado)</span>
+                                </button>
+                                <span style={{ fontSize: '0.74rem', color: '#dc2626', fontWeight: 600 }}>
+                                  {janelaJuri.mensagem}
+                                </span>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.35rem' }}>
+                              <button
+                                type="submit"
+                                className="btn-deliberacao-submit"
+                                style={{ backgroundColor: '#0f2042' }}
+                              >
+                                <FileSignature size={16} />
+                                <span>Registar Parecer do Júri</span>
+                              </button>
+                              <span style={{ fontSize: '0.74rem', color: 'var(--portal-text-muted)' }}>
+                                * O Júri dispõe de 5 dias regulamentares para conferência/retificação antes da homologação final do Administrador do Júri.
+                              </span>
+                            </div>
+                          );
+                        }
+
+                        if (isAdminJuri) {
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.35rem' }}>
+                              <button
+                                type="submit"
+                                className="btn-deliberacao-submit"
+                                style={{ backgroundColor: '#b45309' }}
+                              >
+                                <Award size={16} />
+                                <span>Homologação Final do Administrador do Júri (Trancar)</span>
+                              </button>
+                              <span style={{ fontSize: '0.74rem', color: 'var(--portal-text-muted)' }}>
+                                * Concede a homologação final definitiva e tranca os resultados contra alterações.
+                              </span>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.35rem' }}>
                             <button
                               type="submit"
                               className="btn-deliberacao-submit"
-                              style={{ backgroundColor: '#0f2042' }}
+                              style={{ backgroundColor: '#c32026' }}
                             >
-                              <FileSignature size={16} />
-                              <span>Registar Parecer do Júri</span>
+                              <Award size={16} />
+                              <span>Homologar e Publicar Decisão Oficial (DG-DGA)</span>
                             </button>
-                            <span style={{ fontSize: '0.74rem', color: 'var(--portal-text-muted)' }}>
-                              * O parecer aguardará homologação do Administrador Principal para publicação oficial.
-                            </span>
-                          </>
-                        ) : (
-                          <button
-                            type="submit"
-                            className="btn-deliberacao-submit"
-                            style={{ backgroundColor: '#c32026' }}
-                          >
-                            <Award size={16} />
-                            <span>Homologar e Publicar Decisão Oficial</span>
-                          </button>
-                        )}
-                      </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </form>
                 </div>

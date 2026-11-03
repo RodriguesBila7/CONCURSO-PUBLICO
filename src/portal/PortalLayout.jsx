@@ -80,6 +80,7 @@ export default function PortalLayout({
                        currentUser?.role === 'gestor' || 
                        currentUser?.role === 'super_admin' || 
                        currentUser?.role === 'admin_principal' || 
+                       currentUser?.role === 'admin_juri' || 
                        currentUser?.role === 'juri' || 
                        currentUser?.role === 'usuario';
   const isGestorRoute = isGestorUser && (
@@ -270,10 +271,11 @@ export default function PortalLayout({
                   <span style={{ fontSize: '0.68rem', opacity: 0.8 }}>
                     {currentUser.authProvider === 'google' 
                       ? 'Google Account' 
-                      : (currentUser.role === 'super_admin' ? 'Super Administrador' :
-                         currentUser.role === 'admin_principal' ? 'Administrador Principal' :
-                         currentUser.role === 'juri' || currentUser.role === 'usuario' ? 'Comissão de Júri' :
-                         (currentUser.nuit || (currentUser.role === 'admin' ? 'Gestor DRH' : 'Candidato')))}
+                      : (currentUser.role === 'super_admin' ? 'Super Administrador (Técnico)' :
+                         currentUser.role === 'admin_principal' ? 'Administrador Principal (DG-DGA)' :
+                         currentUser.role === 'admin_juri' ? 'Administrador do Júri' :
+                         currentUser.role === 'juri' || currentUser.role === 'usuario' ? 'Usuário (Júri de Selecção)' :
+                         (currentUser.nuit || (currentUser.role === 'admin' ? 'Gestor' : 'Candidato')))}
                   </span>
                 </div>
               </div>
@@ -354,7 +356,13 @@ export default function PortalLayout({
               <button
                 type="button"
                 className={`portal-sidebar-btn ${isNavActive('/portal-recrutamento/candidatura') ? 'active' : ''}`}
-                onClick={() => navigate('/portal-recrutamento/candidatura')}
+                onClick={() => {
+                  if (!currentUser) {
+                    navigate('/portal-recrutamento/login');
+                  } else {
+                    navigate('/portal-recrutamento/candidatura');
+                  }
+                }}
                 title="Formulário de Inscrição Oficial"
               >
                 <FileText size={18} className="sidebar-btn-icon" />

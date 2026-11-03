@@ -169,10 +169,24 @@ export default function PortalHome({ navigate, vagasCount = 4, publishedListsCou
         {/* MÓDULO 2: CANDIDATURA */}
         <div 
           className="module-card-wrapper"
-          onClick={() => navigate('/portal-recrutamento/candidatura')}
+          onClick={() => {
+            if (!currentUser) {
+              navigate('/portal-recrutamento/login');
+            } else {
+              navigate('/portal-recrutamento/candidatura');
+            }
+          }}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => { if (e.key === 'Enter') navigate('/portal-recrutamento/candidatura'); }}
+          onKeyDown={(e) => { 
+            if (e.key === 'Enter') {
+              if (!currentUser) {
+                navigate('/portal-recrutamento/login');
+              } else {
+                navigate('/portal-recrutamento/candidatura');
+              }
+            }
+          }}
         >
           <div className="module-card-beam" aria-hidden="true" />
 

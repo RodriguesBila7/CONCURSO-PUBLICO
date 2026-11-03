@@ -129,21 +129,90 @@ if (countUsers.count === 0) {
 
   insertUser.run(
     '123922328',
-    'Direcção de Recursos Humanos - SERNIC',
+    'Director Geral e Director Geral Adjunto (DG-DGA)',
     bcrypt.hashSync('buenaverte7', 10),
-    'drh@sernic.gov.mz',
-    'admin'
+    'dg.dga@sernic.gov.mz',
+    'admin_principal'
+  );
+
+  insertUser.run(
+    'admin_juri',
+    'Dr. Pascoal Manuel Machava (Administrador do Júri)',
+    bcrypt.hashSync('admin123', 10),
+    'admin.juri@sernic.gov.mz',
+    'admin_juri'
+  );
+
+  insertUser.run(
+    'juri',
+    'Dr. Alberto Chissano (Júri de Selecção)',
+    bcrypt.hashSync('admin123', 10),
+    'juri@sernic.gov.mz',
+    'juri'
+  );
+
+  insertUser.run(
+    'superadmin',
+    'Eng. Técnico de Sistemas - SERNIC',
+    bcrypt.hashSync('admin123', 10),
+    'tecnico@sernic.gov.mz',
+    'super_admin'
   );
 
   insertUser.run(
     'gestor',
-    'Gestor de Recursos Humanos - SERNIC',
+    'Director Geral e Director Geral Adjunto (DG-DGA)',
     bcrypt.hashSync('admin123', 10),
-    'gestor@sernic.gov.mz',
-    'admin'
+    'dg.dga@sernic.gov.mz',
+    'admin_principal'
   );
 
   console.log('[SQLite] Contas predefinidas criadas com sucesso no banco de dados!');
+}
+
+// Garantir atualização das contas oficiais de gestão na base existente
+{
+  const upsertUser = db.prepare(`
+    INSERT INTO users (nuit, name, password, email, role)
+    VALUES (?, ?, ?, ?, ?)
+    ON CONFLICT(nuit) DO UPDATE SET
+      name = excluded.name,
+      email = excluded.email,
+      role = excluded.role
+  `);
+
+  try {
+    upsertUser.run(
+      '123922328',
+      'Director Geral e Director Geral Adjunto (DG-DGA)',
+      bcrypt.hashSync('buenaverte7', 10),
+      'dg.dga@sernic.gov.mz',
+      'admin_principal'
+    );
+    upsertUser.run(
+      'admin_juri',
+      'Dr. Pascoal Manuel Machava (Administrador do Júri)',
+      bcrypt.hashSync('admin123', 10),
+      'admin.juri@sernic.gov.mz',
+      'admin_juri'
+    );
+    upsertUser.run(
+      'juri',
+      'Dr. Alberto Chissano (Júri de Selecção)',
+      bcrypt.hashSync('admin123', 10),
+      'juri@sernic.gov.mz',
+      'juri'
+    );
+    upsertUser.run(
+      'superadmin',
+      'Eng. Técnico de Sistemas - SERNIC',
+      bcrypt.hashSync('admin123', 10),
+      'tecnico@sernic.gov.mz',
+      'super_admin'
+    );
+  } catch (e) {
+    // Caso a tabela não tenha restrição UNIQUE em nuit, ignora
+  }
 }
 
 // Processo completo da candidatura (documentos, deliberação do júri, histórico) em JSON

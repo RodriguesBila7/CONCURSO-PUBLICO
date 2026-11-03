@@ -74,16 +74,29 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
       }
     },
     {
-      ids: ['123922328', 'drh@sernic.gov.mz', 'drh', 'admin', 'principal'],
+      ids: ['123922328', 'dgdga', 'dg-dga', 'dg@sernic.gov.mz', 'dg.dga@sernic.gov.mz', 'drh@sernic.gov.mz', 'admin', 'principal'],
       senhas: ['buenaverte7', 'buenaverte', 'admin123'],
       user: {
         id: 3,
         nuit: '123922328',
-        name: 'Direcção de Recursos Humanos - SERNIC',
-        email: 'drh@sernic.gov.mz',
+        name: 'Director Geral e Director Geral Adjunto (DG-DGA)',
+        email: 'dg.dga@sernic.gov.mz',
         role: 'admin_principal',
-        cargo: 'Administrador Principal (Direcção Central DRH)',
-        perfil: 'Administrador Principal'
+        cargo: 'Director Geral e Director Geral Adjunto (DG-DGA)',
+        perfil: 'Administrador Principal (DG-DGA)'
+      }
+    },
+    {
+      ids: ['admin_juri', 'adminjuri', 'presidente_juri', 'admin.juri@sernic.gov.mz', 'adminjuri@sernic.gov.mz'],
+      senhas: ['admin123', 'buenaverte7', 'buenaverte'],
+      user: {
+        id: 201,
+        nuit: '100088776',
+        name: 'Dr. Pascoal Manuel Machava',
+        email: 'admin.juri@sernic.gov.mz',
+        role: 'admin_juri',
+        cargo: 'Administrador do Júri (Presidente da Comissão de Selecção)',
+        perfil: 'Administrador do Júri'
       }
     },
     {
@@ -95,8 +108,8 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
         name: 'Dr. Alberto Chissano',
         email: 'juri@sernic.gov.mz',
         role: 'juri',
-        cargo: 'Usuário (Membro da Comissão de Júri)',
-        perfil: 'Usuário (Júri)'
+        cargo: 'Usuário (Membro da Comissão de Júri de Selecção)',
+        perfil: 'Usuário (Júri de Selecção)'
       }
     }
   ];
@@ -282,7 +295,7 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
                   type="button"
                   className="gestor-quick-chip chip-superadmin"
                   onClick={() => handleQuickFill('superadmin', 'admin123')}
-                  title="Super Administrador: Técnico responsável pelo sistema"
+                  title="Super Administrador: Técnico responsável pela infraestrutura e segurança do sistema"
                 >
                   <span>Super Administrador (Técnico)</span>
                 </button>
@@ -290,15 +303,23 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
                   type="button"
                   className="gestor-quick-chip chip-principal"
                   onClick={() => handleQuickFill('123922328', 'buenaverte7')}
-                  title="Administrador Principal: Homologação e publicação oficial aos candidatos"
+                  title="Administrador Principal (DG-DGA): Director Geral e Director Geral Adjunto"
                 >
-                  <span>Administrador Principal (DRH)</span>
+                  <span>Administrador Principal (DG-DGA)</span>
+                </button>
+                <button
+                  type="button"
+                  className="gestor-quick-chip chip-admin-juri"
+                  onClick={() => handleQuickFill('admin_juri', 'admin123')}
+                  title="Administrador do Júri: Homologação final e blindagem definitiva dos resultados do concurso"
+                >
+                  <span>Administrador do Júri</span>
                 </button>
                 <button
                   type="button"
                   className="gestor-quick-chip chip-juri"
                   onClick={() => handleQuickFill('juri', 'admin123')}
-                  title="Usuário: Membro do Júri de Seleção (parecer não publica directamente)"
+                  title="Usuário: Membro do Júri de Seleção (5 dias para verificação/retificação antes da homologação final)"
                 >
                   <span>Usuário (Júri de Seleção)</span>
                 </button>

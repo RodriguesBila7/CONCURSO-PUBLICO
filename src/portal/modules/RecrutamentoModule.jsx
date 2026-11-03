@@ -320,7 +320,11 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
     if (onSelectVagaParaCandidatura) {
       onSelectVagaParaCandidatura(vaga);
     }
-    navigate('/portal-recrutamento/candidatura');
+    if (!currentUser) {
+      navigate('/portal-recrutamento/login');
+    } else {
+      navigate('/portal-recrutamento/candidatura');
+    }
   };
 
   return (
@@ -368,7 +372,13 @@ export default function RecrutamentoModule({ navigate, onSelectVagaParaCandidatu
           <button
             type="button"
             className="btn-vaga-candidatar"
-            onClick={() => navigate('/portal-recrutamento/candidatura')}
+            onClick={() => {
+              if (!currentUser) {
+                navigate('/portal-recrutamento/login');
+              } else {
+                navigate('/portal-recrutamento/candidatura');
+              }
+            }}
             style={{ width: 'auto', padding: '0.65rem 1.3rem' }}
           >
             <FileText size={18} />

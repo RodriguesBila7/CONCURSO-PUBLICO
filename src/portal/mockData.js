@@ -1528,6 +1528,77 @@ export const LOCAIS_DIRECCOES_PROVINCIAIS = {
   'Niassa': 'Delegação Provincial do SERNIC - Lichinga'
 };
 
+// ========================================================
+// JANELA REGULAMENTAR DO JÚRI (5 DIAS) E HOMOLOGAÇÃO FINAL
+// ========================================================
+
+/**
+ * Calcula o estado da janela de 5 dias concedida ao Júri de Selecção para verificação/retificação.
+ * Após os 5 dias ou após a Homologação Final do Administrador do Júri, o Júri fica bloqueado de efetuar alterações.
+ */
+export function getJanelaJuriInfo(candidato) {
+  if (!candidato) {
+    return { status: 'pendente', podeAlterarJuri: true, bloqueado: false, mensagem: 'Sem deliberação do Júri.' };
+  }
+
+  // 1. Caso o Administrador do Júri já tenha concedido a Homologação Final
+  if (candidato.homologacaoFinalAdminJuri?.concluida || candidato.trancadoDefinitivo) {
+    return {
+      status: 'trancado_final',
+      podeAlterarJuri: false,
+      bloqueado: true,
+      mensagem: 'Resultados homologados em definitivo pelo Administrador do Júri. Resultados blindados e inalteráveis.'
+    };
+  }
+
+  // 2. Caso a candidatura ainda esteja no estado inicial (não deliberada pelo júri)
+  const foiDeliberado = Boolean(
+    candidato.juriHomologadoEm || 
+    (candidato.status !== 'Em Análise Documental' && candidato.status !== 'Submetida' && candidato.status !== 'Em análise')
+  );
+
+  if (!foiDeliberado) {
+    return {
+      status: 'pendente',
+      podeAlterarJuri: true,
+      bloqueado: false,
+      mensagem: 'Candidatura a aguardar deliberação inicial da Comissão de Júri.'
+    };
+  }
+
+  // 3. Caso já tenha sido deliberada/homologada pelo Júri, computar a janela legal de 5 dias
+  const dataHomologacao = candidato.juriHomologadoEm || candidato.deliberacaoJuri?.dataDeliberacao || candidato.dataSubmissao || new Date().toISOString();
+  const tInicio = new Date(dataHomologacao).getTime();
+  const CINCO_DIAS_MS = 5 * 24 * 60 * 60 * 1000;
+  const tLimite = tInicio + CINCO_DIAS_MS;
+  const agora = Date.now();
+  const diffMs = tLimite - agora;
+
+  if (diffMs > 0) {
+    const diasRestantes = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+    const horasRestantes = Math.floor((diffMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+    return {
+      status: 'janela_aberta',
+      podeAlterarJuri: true,
+      bloqueado: false,
+      diasRestantes,
+      horasRestantes,
+      limiteISO: new Date(tLimite).toISOString(),
+      limiteFormatado: new Date(tLimite).toLocaleDateString('pt-MZ') + ' às ' + new Date(tLimite).toLocaleTimeString('pt-MZ', { hour: '2-digit', minute: '2-digit' }),
+      mensagem: `Janela de verificação do Júri aberta: ${diasRestantes} dia(s) e ${horasRestantes} hora(s) restantes para conferência ou alteração.`
+    };
+  } else {
+    return {
+      status: 'prazo_expirado',
+      podeAlterarJuri: false,
+      bloqueado: true,
+      limiteISO: new Date(tLimite).toISOString(),
+      limiteFormatado: new Date(tLimite).toLocaleDateString('pt-MZ') + ' às ' + new Date(tLimite).toLocaleTimeString('pt-MZ', { hour: '2-digit', minute: '2-digit' }),
+      mensagem: 'O prazo regulamentar de 5 dias para retificação pelo Júri expirou. O processo está trancado para a Comissão de Júri e aguarda a Homologação Final do Administrador do Júri.'
+    };
+  }
+}
+
 export function updateStoredCandidatura(codigo, updates, operador = 'Comissão de Júri SERNIC') {
   const list = getStoredCandidaturas();
   const index = list.findIndex(c => c.codigoCandidatura === codigo);
@@ -1539,11 +1610,27 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
 
   const operadorNome = typeof operador === 'object' ? (operador.name || 'Presidente do Júri') : operador;
   const operadorCargo = typeof operador === 'object' ? (operador.cargo || 'Presidente do Júri de Seleção') : 'Presidente do Júri de Seleção';
-  const operadorPerfil = typeof operador === 'object' ? (operador.perfil || operador.role || 'Gestor Autorizado DRH / SERNIC') : 'Gestor Autorizado DRH / SERNIC';
+  const operadorPerfil = typeof operador === 'object' ? (operador.perfil || operador.role || 'Gestor Autorizado') : 'Gestor Autorizado';
   const operadorRole = typeof operador === 'object' ? (operador.role || 'admin') : 'admin';
 
   const isJuriUser = operadorRole === 'juri' || operadorRole === 'usuario';
-  const isPrincipalOrSuper = operadorRole === 'admin_principal' || operadorRole === 'super_admin' || operadorRole === 'admin' || operadorRole === 'gestor';
+  const isAdminJuri = operadorRole === 'admin_juri';
+  const isPrincipal = operadorRole === 'admin_principal';
+  const isSuperAdmin = operadorRole === 'super_admin';
+  const isPrincipalOrSuper = isPrincipal || isSuperAdmin || operadorRole === 'admin' || operadorRole === 'gestor';
+
+  // Verificação estrita da Janela de 5 dias e Bloqueio Definitivo para Membros do Júri
+  if (isJuriUser) {
+    const janela = getJanelaJuriInfo(current);
+    if (janela.bloqueado) {
+      console.warn(`[Bloqueio Regulamentar] Tentativa de alteração recusada: ${janela.mensagem}`);
+      return {
+        ...current,
+        bloqueadoRegulamentar: true,
+        mensagemBloqueio: janela.mensagem
+      };
+    }
+  }
 
   // Novo histórico
   const novoHistorico = [...(current.historico || [])];
@@ -1607,9 +1694,9 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
   });
 
   // Regra de Homologação e Publicação:
-  // Se for Júri (Perfil Usuário), NÃO publica nas contas dos candidatos. Fica pendente de homologação pelo Administrador Principal.
-  const homologadoPrincipal = isPrincipalOrSuper ? true : Boolean(current.homologadoPrincipal);
-  const publicadoAoCandidato = isPrincipalOrSuper ? true : Boolean(current.publicadoAoCandidato);
+  // Se for Júri (Perfil Usuário), NÃO publica nas contas dos candidatos. Fica pendente de homologação pelo Administrador Principal (DG-DGA) e Administrador do Júri.
+  const homologadoPrincipal = (isPrincipalOrSuper || isAdminJuri) ? true : Boolean(current.homologadoPrincipal);
+  const publicadoAoCandidato = (isPrincipalOrSuper || isAdminJuri) ? true : Boolean(current.publicadoAoCandidato);
 
   let parecerJuriPendente = current.parecerJuriPendente || null;
   if (isJuriUser) {
@@ -1628,7 +1715,7 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
       eventoData: updates.eventoData || null,
       haveraExameEscrito: updates.haveraExameEscrito || null
     };
-  } else if (isPrincipalOrSuper) {
+  } else if (isPrincipalOrSuper || isAdminJuri) {
     parecerJuriPendente = null; // Homologado e concluído
   }
 
@@ -1640,18 +1727,21 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
   );
 
   let admitidoPorInfo = current.admitidoPor || null;
-  if (isPrincipalOrSuper && isAdmissao) {
+  if ((isPrincipalOrSuper || isAdminJuri) && isAdmissao) {
     admitidoPorInfo = updates.admitidoPor || {
       nome: operadorNome,
       cargo: operadorCargo,
       perfil: operadorPerfil,
-      despacho: `DSP-HOM-SERNIC-2026/${current.numeroCandidato || '00001'}`,
+      despacho: `DSP-HOM-DG-DGA-2026/${current.numeroCandidato || '00001'}`,
       dataHomologacao: new Date().toLocaleDateString('pt-MZ') + ' às ' + new Date().toLocaleTimeString('pt-MZ', { hour: '2-digit', minute: '2-digit' }),
       timestamp: nowStr
     };
   } else if (finalStatus.includes('Excluíd') || finalStatus.includes('Reprovad') || finalStatus === 'Em Análise Documental') {
-    if (isPrincipalOrSuper) admitidoPorInfo = null;
+    if (isPrincipalOrSuper || isAdminJuri) admitidoPorInfo = null;
   }
+
+  // Gravar data em que o Júri deliberou (início da contagem de 5 dias)
+  const juriHomologadoEm = current.juriHomologadoEm || (isJuriUser ? nowStr : (current.juriHomologadoEm || nowStr));
 
   const updatedCandidate = {
     ...current,
@@ -1663,6 +1753,7 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
     homologadoPrincipal,
     publicadoAoCandidato,
     parecerJuriPendente,
+    juriHomologadoEm,
     deliberacaoJuri: {
       decisao: finalStatus,
       dataDeliberacao: nowStr,
@@ -1671,7 +1762,7 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
       notaExameEscrito: updates.notaExameEscrito || current.deliberacaoJuri?.notaExameEscrito || null,
       notaFinal: updates.notaFinal || current.deliberacaoJuri?.notaFinal || null,
       parecer: updates.parecer || current.deliberacaoJuri?.parecer || '',
-      homologadoPorPrincipal: isPrincipalOrSuper
+      homologadoPorPrincipal: isPrincipalOrSuper || isAdminJuri
     },
     detalhesFase: {
       ...current.detalhesFase,
@@ -1693,20 +1784,125 @@ export function updateStoredCandidatura(codigo, updates, operador = 'Comissão d
     candidato: `${current.nomeCompleto} (${current.codigoCandidatura})`,
     estadoAnterior: current.status,
     novoEstado: finalStatus,
-    motivo: isJuriUser ? 'Parecer técnico submetido pelo Júri (Aguarda homologação)' : (updates.motivoExclusao || updates.parecer || `Decisão homologada (${finalStatus})`),
+    motivo: isJuriUser ? 'Parecer técnico submetido pelo Júri (Janela de 5 dias para retificação aberta)' : (updates.motivoExclusao || updates.parecer || `Decisão homologada (${finalStatus})`),
     operador: operadorNome
   });
 
   return updatedCandidate;
 }
 
-export function homologarEPublicarCandidatura(codigo, operador = 'Administrador Principal') {
+/**
+ * Homologação Final pelo Administrador do Júri:
+ * Após os membros do Júri (Usuários) terminarem e darem as suas homologações,
+ * o Administrador do Júri concede a Homologação Final, blindando e trancando
+ * permanentemente os resultados para evitar qualquer troca ou alteração.
+ */
+export function homologarFinalAdministradorJuri(codigo, operador = 'Administrador do Júri') {
   const list = getStoredCandidaturas();
   const index = list.findIndex(c => c.codigoCandidatura === codigo);
   if (index === -1) return null;
   const current = list[index];
-  const operadorNome = typeof operador === 'object' ? (operador.name || 'Administrador Principal') : operador;
-  const operadorCargo = typeof operador === 'object' ? (operador.cargo || 'Administrador Principal / Direcção Central DRH') : 'Administrador Principal';
+  const operadorNome = typeof operador === 'object' ? (operador.name || 'Dr. Pascoal Manuel Machava') : operador;
+  const operadorCargo = typeof operador === 'object' ? (operador.cargo || 'Administrador do Júri (Presidente da Comissão)') : 'Administrador do Júri';
+  const nowStr = new Date().toISOString();
+
+  const updated = {
+    ...current,
+    homologacaoFinalAdminJuri: {
+      concluida: true,
+      data: nowStr,
+      dataExtenso: new Date().toLocaleDateString('pt-MZ') + ' às ' + new Date().toLocaleTimeString('pt-MZ', { hour: '2-digit', minute: '2-digit' }),
+      operador: operadorNome,
+      cargo: operadorCargo,
+      despacho: `DSP-HOM-FINAL-JURI-2026/${current.numeroCandidato || '00001'}`
+    },
+    trancadoDefinitivo: true,
+    homologadoPrincipal: true,
+    publicadoAoCandidato: true,
+    parecerJuriPendente: null,
+    admitidoPor: {
+      nome: operadorNome,
+      cargo: operadorCargo,
+      despacho: `DSP-HOM-FINAL-JURI-2026/${current.numeroCandidato || '00001'}`,
+      dataHomologacao: new Date().toLocaleDateString('pt-MZ') + ' às ' + new Date().toLocaleTimeString('pt-MZ', { hour: '2-digit', minute: '2-digit' }),
+      timestamp: nowStr
+    }
+  };
+
+  list[index] = updated;
+  saveStoredCandidaturas(list);
+
+  addStoredAuditoria({
+    acao: 'Homologação Final do Administrador do Júri (Resultados Trancados)',
+    candidato: `${current.nomeCompleto} (${codigo})`,
+    estadoAnterior: current.status,
+    novoEstado: `${current.status} [HOMOLOGAÇÃO FINAL DEFINITIVA]`,
+    motivo: 'Homologação Final concedida pelo Administrador do Júri. Resultados blindados e permanentemente inalteráveis.',
+    operador: operadorNome
+  });
+
+  return updated;
+}
+
+/**
+ * Homologação Final em Lote pelo Administrador do Júri de todas as candidaturas deliberadas.
+ */
+export function homologarFinalAdministradorJuriTodas(operador = 'Administrador do Júri') {
+  const list = getStoredCandidaturas();
+  const operadorNome = typeof operador === 'object' ? (operador.name || 'Dr. Pascoal Manuel Machava') : operador;
+  const operadorCargo = typeof operador === 'object' ? (operador.cargo || 'Administrador do Júri (Presidente da Comissão)') : 'Administrador do Júri';
+  const nowStr = new Date().toISOString();
+  let count = 0;
+
+  const updatedList = list.map(c => {
+    if (!c.trancadoDefinitivo && c.status !== 'Em Análise Documental' && c.status !== 'Submetida') {
+      count++;
+      return {
+        ...c,
+        homologacaoFinalAdminJuri: {
+          concluida: true,
+          data: nowStr,
+          dataExtenso: new Date().toLocaleDateString('pt-MZ') + ' às ' + new Date().toLocaleTimeString('pt-MZ', { hour: '2-digit', minute: '2-digit' }),
+          operador: operadorNome,
+          cargo: operadorCargo,
+          despacho: `DSP-HOM-FINAL-JURI-2026/${c.numeroCandidato || '00001'}`
+        },
+        trancadoDefinitivo: true,
+        homologadoPrincipal: true,
+        publicadoAoCandidato: true,
+        parecerJuriPendente: null,
+        admitidoPor: {
+          nome: operadorNome,
+          cargo: operadorCargo,
+          despacho: `DSP-HOM-FINAL-JURI-2026/${c.numeroCandidato || '00001'}`,
+          dataHomologacao: new Date().toLocaleDateString('pt-MZ') + ' às ' + new Date().toLocaleTimeString('pt-MZ', { hour: '2-digit', minute: '2-digit' }),
+          timestamp: nowStr
+        }
+      };
+    }
+    return c;
+  });
+
+  saveStoredCandidaturas(updatedList);
+  addStoredAuditoria({
+    acao: 'Homologação Final em Lote pelo Administrador do Júri',
+    candidato: `${count} processo(s) deliberados pelo Júri`,
+    estadoAnterior: 'Deliberados pelo Júri',
+    novoEstado: 'Homologação Final Concluída e Trancada',
+    motivo: 'Homologação Final em lote concluída pelo Administrador do Júri. Resultados blindados contra alterações.',
+    operador: operadorNome
+  });
+
+  return count;
+}
+
+export function homologarEPublicarCandidatura(codigo, operador = 'Administrador Principal (DG-DGA)') {
+  const list = getStoredCandidaturas();
+  const index = list.findIndex(c => c.codigoCandidatura === codigo);
+  if (index === -1) return null;
+  const current = list[index];
+  const operadorNome = typeof operador === 'object' ? (operador.name || 'Director Geral e Director Geral Adjunto (DG-DGA)') : operador;
+  const operadorCargo = typeof operador === 'object' ? (operador.cargo || 'Director Geral e Director Geral Adjunto (DG-DGA)') : 'Administrador Principal (DG-DGA)';
 
   const nowStr = new Date().toISOString();
   const updated = {
@@ -1717,7 +1913,7 @@ export function homologarEPublicarCandidatura(codigo, operador = 'Administrador 
     admitidoPor: {
       nome: operadorNome,
       cargo: operadorCargo,
-      despacho: `DSP-HOM-DRH-2026/${current.numeroCandidato || '00001'}`,
+      despacho: `DSP-HOM-DG-DGA-2026/${current.numeroCandidato || '00001'}`,
       dataHomologacao: new Date().toLocaleDateString('pt-MZ') + ' às ' + new Date().toLocaleTimeString('pt-MZ', { hour: '2-digit', minute: '2-digit' }),
       timestamp: nowStr
     }
@@ -1726,20 +1922,20 @@ export function homologarEPublicarCandidatura(codigo, operador = 'Administrador 
   list[index] = updated;
   saveStoredCandidaturas(list);
   addStoredAuditoria({
-    acao: 'Homologação e Publicação Oficial',
+    acao: 'Homologação e Publicação Oficial (DG-DGA)',
     candidato: `${current.nomeCompleto} (${codigo})`,
     estadoAnterior: 'Pendente de Homologação',
     novoEstado: current.status,
-    motivo: 'Decisão homologada pelo Administrador Principal e disponibilizada para consulta na conta do candidato',
+    motivo: 'Decisão homologada pelo Administrador Principal (DG-DGA) e disponibilizada para consulta na conta do candidato',
     operador: operadorNome
   });
 
   return updated;
 }
 
-export function homologarEPublicarTodasCandidaturas(operador = 'Administrador Principal') {
+export function homologarEPublicarTodasCandidaturas(operador = 'Administrador Principal (DG-DGA)') {
   const list = getStoredCandidaturas();
-  const operadorNome = typeof operador === 'object' ? (operador.name || 'Administrador Principal') : operador;
+  const operadorNome = typeof operador === 'object' ? (operador.name || 'Director Geral e Director Geral Adjunto (DG-DGA)') : operador;
   const nowStr = new Date().toISOString();
   let count = 0;
 
@@ -1753,8 +1949,8 @@ export function homologarEPublicarTodasCandidaturas(operador = 'Administrador Pr
         parecerJuriPendente: null,
         admitidoPor: {
           nome: operadorNome,
-          cargo: 'Administrador Principal / Direcção Central DRH',
-          despacho: `DSP-HOM-GERAL-2026/${c.numeroCandidato || '00001'}`,
+          cargo: 'Director Geral e Director Geral Adjunto (DG-DGA)',
+          despacho: `DSP-HOM-DG-DGA-GERAL-2026/${c.numeroCandidato || '00001'}`,
           dataHomologacao: new Date().toLocaleDateString('pt-MZ') + ' às ' + new Date().toLocaleTimeString('pt-MZ', { hour: '2-digit', minute: '2-digit' }),
           timestamp: nowStr
         }
@@ -2480,13 +2676,13 @@ export function deleteStoredCarreira(id, operador = 'Direcção de Recursos Huma
 export const INITIAL_PERFIS_EQUIPA = [
   {
     id: 'PRF-01',
-    nome: 'Dr. Alberto Chissano',
-    cargo: 'Presidente do Júri de Seleção',
-    departamento: 'Comissão Central do Concurso - DRH',
-    email: 'alberto.chissano@sernic.gov.mz',
-    telefone: '+258 84 310 9980',
-    tipoPerfil: 'Administrador Geral',
-    descricaoPerfil: 'Coordenação executiva, homologações de atas e gestão plena do concurso.',
+    nome: 'Director Geral e Director Geral Adjunto (DG-DGA)',
+    cargo: 'Administrador Principal (DG-DGA)',
+    departamento: 'Direcção Geral do SERNIC',
+    email: 'dg.dga@sernic.gov.mz',
+    telefone: '+258 21 320 000',
+    tipoPerfil: 'Administrador Principal (DG-DGA)',
+    descricaoPerfil: 'Instância máxima de tutela, superintendência geral e homologação de editais do concurso.',
     estado: 'Activo',
     avatarCor: '#c32026',
     permissoes: {
@@ -2499,42 +2695,42 @@ export const INITIAL_PERFIS_EQUIPA = [
       gerirPerfisAcessos: true,
       reiniciarConcurso: true
     },
-    notaHumanizada: 'Membro responsável pela condução e assinatura dos editais oficiais.'
+    notaHumanizada: 'Direcção máxima responsável pela supervisão e homologação do concurso público nacional.'
   },
   {
     id: 'PRF-02',
-    nome: 'Dra. Maria Helena Tembe',
-    cargo: 'Vogal do Júri & Gestora de Recursos Humanos',
-    departamento: 'Divisão de Recursos Humanos - Maputo',
-    email: 'maria.tembe@sernic.gov.mz',
-    telefone: '+258 82 455 1200',
-    tipoPerfil: 'Gestora de Triagem Documental',
-    descricaoPerfil: 'Conferência detalhada de BI, NUIT, certificados e despiste de inconformidades.',
+    nome: 'Dr. Pascoal Manuel Machava',
+    cargo: 'Administrador do Júri (Presidente da Comissão de Selecção)',
+    departamento: 'Comissão Central do Concurso - DRH',
+    email: 'admin.juri@sernic.gov.mz',
+    telefone: '+258 84 310 9980',
+    tipoPerfil: 'Administrador do Júri',
+    descricaoPerfil: 'Homologação final definitiva e trancamento dos resultados deliberados pelos membros do júri.',
     estado: 'Activo',
-    avatarCor: '#0f2042',
+    avatarCor: '#b45309',
     permissoes: {
       visualizarCandidatos: true,
       deliberarFase1: true,
-      homologarFinal: false,
-      gerirVagasCarreiras: false,
+      homologarFinal: true,
+      gerirVagasCarreiras: true,
       publicarPautas: true,
       consultarAuditoria: true,
       gerirPerfisAcessos: false,
       reiniciarConcurso: false
     },
-    notaHumanizada: 'Foco na humanização do atendimento e análise rigorosa da elegibilidade dos candidatos.'
+    notaHumanizada: 'Responsável pela homologação final e blindagem irrevogável dos resultados dos júris.'
   },
   {
     id: 'PRF-03',
-    nome: 'Inspetor Chefe Carlos Manhique',
-    cargo: 'Chefe da Brigada de Avaliação Técnica',
-    departamento: 'Laboratório Central de Criminalística',
-    email: 'carlos.manhique@sernic.gov.mz',
-    telefone: '+258 87 912 3344',
-    tipoPerfil: 'Examinador Técnico & Psicotécnico',
-    descricaoPerfil: 'Avaliação dos exames teóricos, perícias laboratoriais e testes de aptidão técnica.',
+    nome: 'Dr. Alberto Chissano',
+    cargo: 'Usuário (Membro da Comissão de Júri de Selecção)',
+    departamento: 'Comissão Central do Concurso - DRH',
+    email: 'juri@sernic.gov.mz',
+    telefone: '+258 84 100 8899',
+    tipoPerfil: 'Usuário (Júri de Selecção)',
+    descricaoPerfil: 'Avaliação dos candidatos com prazo regulamentar de 5 dias para retificação.',
     estado: 'Activo',
-    avatarCor: '#1e3a8a',
+    avatarCor: '#0f2042',
     permissoes: {
       visualizarCandidatos: true,
       deliberarFase1: true,
@@ -2545,7 +2741,7 @@ export const INITIAL_PERFIS_EQUIPA = [
       gerirPerfisAcessos: false,
       reiniciarConcurso: false
     },
-    notaHumanizada: 'Apoio técnico e supervisão das provas de especialidade policial forense.'
+    notaHumanizada: 'Membro avaliador do Júri com tolerância de 5 dias para verificação de deliberações.'
   },
   {
     id: 'PRF-04',

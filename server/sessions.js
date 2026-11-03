@@ -7,7 +7,13 @@ const IDLE_TIMEOUT_MS = 60 * 60 * 1000;
 const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
 export function isGestorRole(role) {
-  return role === 'admin' || role === 'gestor';
+  return role === 'admin' || 
+         role === 'gestor' || 
+         role === 'admin_principal' || 
+         role === 'super_admin' || 
+         role === 'admin_juri' || 
+         role === 'juri' || 
+         role === 'usuario';
 }
 
 export function createSession(userId) {

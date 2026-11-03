@@ -89,6 +89,20 @@ export default function CandidaturaModule({
   currentUser, 
   onNotify 
 }) {
+  // Regra Obrigatória: Não é permitido preencher o formulário sem fazer login
+  useEffect(() => {
+    if (!currentUser) {
+      if (onNotify) {
+        onNotify('info', 'Para preencher o formulário de candidatura, deve primeiro iniciar sessão na sua conta.');
+      }
+      navigate('/portal-recrutamento/login');
+    }
+  }, [currentUser, navigate, onNotify]);
+
+  if (!currentUser) {
+    return null;
+  }
+
   // Stepper: 1: Pessoais, 2: Habilitações/Vaga, 3: Contactos, 4: Documentos, 5: Revisão
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -381,15 +395,19 @@ export default function CandidaturaModule({
       if (isPrazoExpirado) {
         newErrors.biDoc = `Submissão de documentos bloqueada: O prazo regulamentar expirou a ${formatarDataLimiteExtenso(vagaAtiva?.dataLimite)}.`;
       }
-      getDocumentosEmFalta(formData.docsAnexados).forEach(d => {
+      const emFalta = getDocumentosEmFalta(formData.docsAnexados);
+      emFalta.forEach(d => {
         if (!newErrors[d.key]) newErrors[d.key] = d.erro;
       });
+      if (emFalta.length > 0) {
+        newErrors.documentosGeral = 'O carregamento de todos os documentos de candidatura é obrigatório pelo regulamento do concurso.';
+      }
     }
 
     if (step === 5) {
       const emFalta = getDocumentosEmFalta(formData.docsAnexados);
       if (emFalta.length > 0) {
-        newErrors.declaracaoVeracidade = `Documentos obrigatórios em falta: ${emFalta.map(d => d.label).join(', ')}. Volte à Etapa 4 para os anexar.`;
+        newErrors.declaracaoVeracidade = `Documentos obrigatórios em falta: ${emFalta.map(d => d.label).join(', ')}. O carregamento de todos os documentos é obrigatório.`;
       }
       if (isPrazoExpirado) {
         newErrors.declaracaoVeracidade = `Submissão bloqueada pelo sistema: O prazo legal deste concurso expirou a ${formatarDataLimiteExtenso(vagaAtiva?.dataLimite)}.`;
@@ -427,7 +445,23 @@ export default function CandidaturaModule({
       return;
     }
 
-    if (!validateStep(5)) return;
+    // Validação estrita de todas as etapas (1 a 5)
+    const v1 = validateStep(1);
+    const v2 = validateStep(2);
+    const v3 = validateStep(3);
+    const v4 = validateStep(4);
+    const v5 = validateStep(5);
+
+    if (!v1 || !v2 || !v3 || !v4 || !v5) {
+      const emFalta = getDocumentosEmFalta(formData.docsAnexados);
+      if (emFalta.length > 0) {
+        setCurrentStep(4);
+        if (onNotify) onNotify('error', `O campo de adicionar documentos de candidatura é obrigatório. Em falta: ${emFalta.map(d => d.label).join(', ')}.`);
+      } else {
+        if (onNotify) onNotify('error', 'Por favor preencha todos os campos obrigatórios do formulário.');
+      }
+      return;
+    }
 
     // Dupla verificação de segurança contra repetições de candidatos
     const candidaturasExistentes = getStoredCandidaturas();
@@ -745,17 +779,17 @@ export default function CandidaturaModule({
           <span className="step-label">Habilitações</span>
         </div>
 
-        <div className={`stepper-step ${currentStep >= 3 ? 'active' : ''} ${currentStep > 3 ? 'completed' : ''}`} onClick={() => validateStep(2) && setCurrentStep(3)}>
+        <div className={`stepper-step ${currentStep >= 3 ? 'active' : ''} ${currentStep > 3 ? 'completed' : ''}`} onClick={() => validateStep(1) && validateStep(2) && setCurrentStep(3)}>
           <div className="step-circle">{currentStep > 3 ? '✓' : '3'}</div>
           <span className="step-label">Contactos</span>
         </div>
 
-        <div className={`stepper-step ${currentStep >= 4 ? 'active' : ''} ${currentStep > 4 ? 'completed' : ''}`} onClick={() => validateStep(3) && setCurrentStep(4)}>
+        <div className={`stepper-step ${currentStep >= 4 ? 'active' : ''} ${currentStep > 4 ? 'completed' : ''}`} onClick={() => validateStep(1) && validateStep(2) && validateStep(3) && setCurrentStep(4)}>
           <div className="step-circle">{currentStep > 4 ? '✓' : '4'}</div>
           <span className="step-label">Documentos</span>
         </div>
 
-        <div className={`stepper-step ${currentStep >= 5 ? 'active' : ''}`} onClick={() => validateStep(4) && setCurrentStep(5)}>
+        <div className={`stepper-step ${currentStep >= 5 ? 'active' : ''}`} onClick={() => validateStep(1) && validateStep(2) && validateStep(3) && validateStep(4) && setCurrentStep(5)}>
           <div className="step-circle">5</div>
           <span className="step-label">Revisão</span>
         </div>

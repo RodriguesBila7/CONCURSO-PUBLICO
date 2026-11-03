@@ -414,14 +414,34 @@ export default function App() {
         />
       );
     } else if (cleanPath === '/portal-recrutamento/candidatura' || cleanPath === '/candidatura') {
-      portalContent = (
-        <CandidaturaModule
-          navigate={navigate}
-          selectedVagaPrevia={selectedVagaParaCandidatura}
-          currentUser={currentUser}
-          onNotify={showToast}
-        />
-      );
+      if (!currentUser) {
+        portalContent = (
+          <LoginModule
+            currentUser={currentUser}
+            onLoginSuccess={(u) => {
+              setCurrentUser(u);
+              if (u && (u.role === 'admin' || u.role === 'gestor' || u.role === 'admin_principal' || u.role === 'super_admin' || u.role === 'admin_juri' || u.role === 'juri' || u.role === 'usuario')) {
+                setGestorTab('dashboard');
+                navigate('/portal-gestor');
+              } else {
+                navigate('/portal-recrutamento/candidatura');
+              }
+            }}
+            onLogout={handleLogout}
+            navigate={navigate}
+            onNotify={showToast}
+          />
+        );
+      } else {
+        portalContent = (
+          <CandidaturaModule
+            navigate={navigate}
+            selectedVagaPrevia={selectedVagaParaCandidatura}
+            currentUser={currentUser}
+            onNotify={showToast}
+          />
+        );
+      }
     } else if (cleanPath === '/portal-recrutamento/consulta' || cleanPath === '/consulta') {
       portalContent = <ConsultaModule navigate={navigate} />;
     } else if (cleanPath === '/portal-recrutamento/login' || cleanPath === '/login') {
@@ -430,7 +450,7 @@ export default function App() {
           currentUser={currentUser}
           onLoginSuccess={(u) => {
             setCurrentUser(u);
-            if (u && (u.role === 'admin' || u.role === 'gestor')) {
+            if (u && (u.role === 'admin' || u.role === 'gestor' || u.role === 'admin_principal' || u.role === 'super_admin' || u.role === 'admin_juri' || u.role === 'juri' || u.role === 'usuario')) {
               setGestorTab('dashboard');
               navigate('/portal-gestor');
             }
