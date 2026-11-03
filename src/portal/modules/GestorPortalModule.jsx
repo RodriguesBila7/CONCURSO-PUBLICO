@@ -4553,21 +4553,9 @@ export default function GestorPortalModule({
           {/* TOPO INSTITUCIONAL COM VISUAL SERNIC */}
           <div className="vagas-gestor-header">
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem' }}>
-                <span className="carreira-badge-regime">
-                  <ShieldCheck size={14} />
-                  <span>Dotação Orçamental & Estatutos</span>
-                </span>
-                <span style={{ fontSize: '0.82rem', color: 'var(--portal-text-muted)' }}>
-                  Ministério da Economia e Finanças • SERNIC 2026
-                </span>
-              </div>
-              <h3 style={{ margin: '0 0 0.35rem 0', fontSize: '1.45rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>
+              <h3 style={{ margin: 0, fontSize: '1.45rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>
                 Quotas, Editais & Carreiras Oficiais Autorizadas
               </h3>
-              <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--portal-text-muted)' }}>
-                Gestão integrada do quadro de vagas, editais públicos de admissão e carreiras de investigação criminal.
-              </p>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
@@ -4630,14 +4618,13 @@ export default function GestorPortalModule({
                 return (
                   <div key={vaga.id} className="vaga-gestor-card">
                     <div className="vaga-gestor-top">
-                      <span className="vaga-edital-cod">{vaga.codigoEdital}</span>
                       <span 
                         className={`vaga-status-chip ${isPrazoSubmissaoExpirado(vaga.dataLimite) ? 'fechado' : vaga.status === 'Aberto' ? 'aberto' : 'fechado'}`}
                         style={{ cursor: 'pointer' }}
                         onClick={() => handleToggleVagaStatusGestor(vaga.id)}
                         title="Clique para alternar estado Aberto / Encerrado"
                       >
-                        {isPrazoSubmissaoExpirado(vaga.dataLimite) ? 'Prazo Expirado' : vaga.status} (Alternar)
+                        {isPrazoSubmissaoExpirado(vaga.dataLimite) ? 'Prazo Expirado' : vaga.status}
                       </span>
                     </div>
 

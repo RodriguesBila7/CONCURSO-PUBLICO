@@ -4749,27 +4749,38 @@ textarea::placeholder,
 
 .vaga-gestor-top {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   margin-bottom: 0.65rem;
 }
 
 .vaga-edital-cod {
-  font-family: monospace;
-  font-size: 0.78rem;
-  color: var(--portal-text-muted);
+  display: none;
 }
 
 .vaga-status-chip {
-  padding: 0.2rem 0.55rem;
+  padding: 0.25rem 0.65rem;
   border-radius: 9999px;
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 800;
   text-transform: uppercase;
+  letter-spacing: 0.03em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
-.vaga-status-chip.aberto { background: #dcfce7; color: #15803d; }
-.vaga-status-chip.fechado { background: #fee2e2; color: #c32026; }
+.vaga-status-chip.aberto { 
+  background: #dcfce7; 
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.vaga-status-chip.fechado { 
+  background: #fee2e2; 
+  color: #c32026;
+  border: 1px solid #fecaca;
+}
 
 .vaga-gestor-card h4 {
   font-size: 1.15rem;
@@ -9784,9 +9795,9 @@ body.portal-theme-preto .google-code-notice {
   align-items: center;
   gap: 0.65rem;
   margin: 1.25rem 0 1.5rem 0;
-  background: var(--portal-input-bg);
-  padding: 0.4rem;
-  border-radius: 12px;
+  background: var(--portal-card-bg);
+  padding: 0.35rem;
+  border-radius: 10px;
   border: 1px solid var(--portal-border);
   width: fit-content;
   max-width: 100%;
@@ -9798,30 +9809,33 @@ body.portal-theme-preto .google-code-notice {
   align-items: center;
   gap: 0.5rem;
   padding: 0.55rem 1.15rem;
-  border-radius: 9px;
-  border: none;
+  border-radius: 7px;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--portal-text-muted);
   font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.15s ease;
 }
 
 .vagas-mode-pill:hover {
   color: var(--portal-text-main);
-  background: rgba(195, 32, 38, 0.06);
+  background: var(--portal-btn-tab-bg);
 }
 
 .vagas-mode-pill.active {
-  background: linear-gradient(135deg, #0f2042 0%, #1e3a8a 100%);
+  background: #0f2042;
   color: #ffffff;
-  box-shadow: 0 3px 10px rgba(15, 32, 66, 0.25);
+  border-color: #0f2042;
+  box-shadow: 0 1px 4px rgba(15, 32, 66, 0.2);
 }
 
 .portal-theme-preto .vagas-mode-pill.active {
-  background: linear-gradient(135deg, #c32026 0%, #991b1b 100%);
-  box-shadow: 0 3px 12px rgba(195, 32, 38, 0.35);
+  background: #c32026;
+  border-color: #c32026;
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(195, 32, 38, 0.25);
 }
 
 /* Badge de Regime Institucional */
