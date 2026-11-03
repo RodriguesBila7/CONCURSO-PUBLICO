@@ -2071,20 +2071,20 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  padding: 0.55rem 1rem;
-  background-color: #16a34a;
+  padding: 0.5rem 0.95rem;
+  background-color: var(--sernic-navy, #0f2042);
   color: #ffffff;
-  border: 1px solid #15803d;
-  border-radius: 8px;
-  font-size: 0.85rem;
+  border: 1px solid var(--sernic-navy, #0f2042);
+  border-radius: 6px;
+  font-size: 0.84rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .btn-deliberacao-primary-green:hover {
-  background-color: #15803d;
-  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.25);
+  background-color: #162b55;
+  border-color: #162b55;
 }
 
 .deliberacao-parecer-pendente-banner {
@@ -4175,8 +4175,9 @@ textarea::placeholder,
 
 .deliberacao-candidato-item .item-protocolo {
   font-family: monospace;
-  font-weight: 700;
-  color: #c32026;
+  font-weight: 600;
+  font-size: 0.74rem;
+  color: var(--portal-text-muted);
 }
 
 .deliberacao-form-card {
@@ -11573,22 +11574,23 @@ html.portal-modo-simplificado * {
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* ABAS DE CATEGORIA E INDICADORES DE ACTIVIDADE (VERMELHO INSTITUCIONAL) */
+/* ABAS DE CATEGORIA LIMPAS E DIRETAS */
 .deliberacao-filter-toolbar {
-  margin-bottom: 1.5rem;
-  background: var(--portal-card-inner, #f8fafc);
-  border: 1px solid var(--portal-border, #e2e8f0);
-  border-radius: 10px;
-  padding: 0.4rem 0.5rem;
+  margin-bottom: 1.25rem;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--portal-border);
+  border-radius: 0;
+  padding: 0 0 0.5rem 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  box-shadow: none;
 }
 
 .portal-theme-preto .deliberacao-filter-toolbar {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: transparent;
+  border-color: var(--portal-border);
 }
 
 .deliberacao-filter-tabs {
@@ -11601,22 +11603,22 @@ html.portal-modo-simplificado * {
 .deliberacao-tab-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.5rem 1rem;
+  gap: 0.5rem;
+  padding: 0.45rem 0.85rem;
   border: 1px solid transparent;
   background: transparent;
-  color: var(--portal-text-muted, #64748b);
+  color: var(--portal-text-muted);
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  border-radius: 8px;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 6px;
+  transition: all 0.15s ease;
   user-select: none;
 }
 
 .deliberacao-tab-btn:hover {
-  color: var(--portal-text-main, #0f172a);
-  background: rgba(0, 0, 0, 0.04);
+  color: var(--portal-text-main);
+  background: var(--portal-btn-tab-bg);
 }
 
 .portal-theme-preto .deliberacao-tab-btn:hover {
@@ -11628,30 +11630,29 @@ html.portal-modo-simplificado * {
   background: var(--sernic-red, #c32026) !important;
   color: #ffffff !important;
   border-color: var(--sernic-red, #c32026) !important;
-  box-shadow: 0 3px 10px rgba(195, 32, 38, 0.32);
+  box-shadow: 0 1px 4px rgba(195, 32, 38, 0.2);
 }
 
 .portal-theme-preto .deliberacao-tab-btn.active {
   background: #a8171d !important;
   border-color: #a8171d !important;
   color: #ffffff !important;
-  box-shadow: 0 3px 12px rgba(195, 32, 38, 0.45);
 }
 
 .deliberacao-tab-btn .tab-count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 0.4rem;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 0.35rem;
   border-radius: 9999px;
   background: rgba(0, 0, 0, 0.06);
   border: 1px solid rgba(0, 0, 0, 0.08);
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--portal-text-muted);
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .portal-theme-preto .deliberacao-tab-btn .tab-count {
@@ -11664,7 +11665,7 @@ html.portal-modo-simplificado * {
   background: rgba(255, 255, 255, 0.25) !important;
   border-color: rgba(255, 255, 255, 0.35) !important;
   color: #ffffff !important;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 /* SIDEBAR REFINADA */
@@ -11722,35 +11723,42 @@ html.portal-modo-simplificado * {
   color: var(--portal-text-main);
 }
 
-/* APRESENTAÇÃO DIRECTA DOS DADOS (SEM CAIXAS DECORATIVAS) */
+/* APRESENTAÇÃO DIRECTA DOS DADOS (GRID LIMPO E ORGANIZADO) */
 .deliberacao-dados-strip {
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-  padding: 0.85rem 1.1rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  padding: 0.9rem 1.15rem;
   background: var(--portal-card-inner);
   border: 1px solid var(--portal-border);
   border-radius: 8px;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 900px) {
+  .deliberacao-dados-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .deliberacao-dados-strip .dado-col {
   display: flex;
-  align-items: baseline;
-  gap: 0.45rem;
-  font-size: 0.85rem;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .deliberacao-dados-strip .dado-label {
   color: var(--portal-text-muted);
-  font-weight: 600;
-  font-size: 0.8rem;
+  font-weight: 700;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .deliberacao-dados-strip .dado-val {
   color: var(--portal-text-main);
-  font-weight: 800;
+  font-weight: 700;
+  font-size: 0.95rem;
 }
 
 .deliberacao-dados-strip .dado-val-text {
@@ -11760,7 +11768,8 @@ html.portal-modo-simplificado * {
 
 .deliberacao-dados-strip .dado-sub {
   color: var(--portal-text-muted);
-  font-size: 0.78rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
 }
 
 /* OPÇÕES DE DECISÃO FORMAL LIMPAS */
@@ -11786,10 +11795,10 @@ html.portal-modo-simplificado * {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
-  padding: 0.75rem 1rem;
+  padding: 0.7rem 0.95rem;
   border: 1px solid var(--portal-border);
   border-radius: 8px;
-  background: var(--portal-card-inner);
+  background: var(--portal-card-bg);
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -11801,9 +11810,9 @@ html.portal-modo-simplificado * {
 
 .deliberacao-choice-btn.checked {
   border-color: var(--sernic-red, #c32026);
-  border-width: 1.5px;
-  background: rgba(195, 32, 38, 0.04);
-  box-shadow: 0 2px 8px rgba(195, 32, 38, 0.08);
+  border-width: 1px;
+  background: rgba(195, 32, 38, 0.03);
+  box-shadow: 0 1px 4px rgba(195, 32, 38, 0.06);
 }
 
 .deliberacao-choice-btn input[type="radio"] {

@@ -3439,7 +3439,7 @@ export default function GestorPortalModule({
                     }}
                   >
                     <CheckCircle2 size={14} />
-                    <span>Homologar e Publicar Todos (DG-DGA)</span>
+                    <span>Homologar e Publicar Todos</span>
                   </button>
                 )}
 
@@ -3630,7 +3630,9 @@ export default function GestorPortalModule({
                     >
                       <div className="item-top">
                         <span className="item-name">{c.nomeCompleto}</span>
-                        <span className="item-status-tag" style={{ color: b.color }}>{b.label}</span>
+                        {filtroDeliberacaoModo !== 'pendentes' && (
+                          <span className="item-status-tag" style={{ color: b.color }}>{b.label}</span>
+                        )}
                       </div>
 
                       <div className="item-sub">
@@ -4365,7 +4367,7 @@ export default function GestorPortalModule({
                     {/* BOTÃO DE CONFIRMAÇÃO OFICIAL */}
                     <div className="deliberacao-submit-row">
                       <div className="deliberacao-auditor-info">
-                        <span>Operador: <strong>{currentUser?.name || 'Comissão Central de Júri'}</strong> ({isJuriUser ? 'Usuário (Júri de Selecção)' : isAdminJuri ? 'Administrador do Júri' : isSuperAdmin ? 'Super Administrador (Técnico)' : 'Administrador Principal (DG-DGA)'})</span>
+                        <span>Operador: <strong>{currentUser?.name || 'Comissão Central de Júri'}</strong> ({currentUser?.cargo || (isJuriUser ? 'Júri de Selecção' : isAdminJuri ? 'Administrador do Júri' : 'Administrador Principal')})</span>
                       </div>
 
                       {(() => {
@@ -4453,8 +4455,8 @@ export default function GestorPortalModule({
                               className="btn-deliberacao-submit"
                               style={{ backgroundColor: '#c32026' }}
                             >
-                              <Award size={16} />
-                              <span>Homologar e Publicar Decisão Oficial (DG-DGA)</span>
+                              <CheckCircle2 size={16} />
+                              <span>Homologar e Publicar Decisão</span>
                             </button>
                           </div>
                         );
