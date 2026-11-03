@@ -3442,20 +3442,6 @@ export default function GestorPortalModule({
                     <span>Homologar e Publicar Todos</span>
                   </button>
                 )}
-
-                <button
-                  type="button"
-                  className="btn-deliberacao-secondary"
-                  title="Repor todos os candidatos de teste na fase inicial com confirmação por senha"
-                  onClick={() => {
-                    setSenhaResetGeral('');
-                    setErroResetGeral('');
-                    setIsModalResetGeralOpen(true);
-                  }}
-                >
-                  <RefreshCw size={14} />
-                  <span>Repor dados de teste</span>
-                </button>
               </div>
             </div>
           </div>
@@ -3753,7 +3739,6 @@ export default function GestorPortalModule({
                     <div className="dado-col">
                       <span className="dado-label">Média de Ingresso:</span>
                       <strong className="dado-val">{deliberandoCandidato.habilitacoes?.mediaFinal || '14.0'} val.</strong>
-                      <span className="dado-sub">({deliberandoCandidato.habilitacoes?.curso || 'Habilitações'})</span>
                     </div>
 
                     <div className="dado-col">
@@ -3922,7 +3907,6 @@ export default function GestorPortalModule({
                                   />
                                   <div className="choice-info">
                                     <strong>Aprovado na Análise Documental</strong>
-                                    <span>Documentação em conformidade. Candidato avança para a 2ª Fase (Convocatória).</span>
                                   </div>
                                 </label>
 
@@ -3939,7 +3923,6 @@ export default function GestorPortalModule({
                                   />
                                   <div className="choice-info">
                                     <strong>Reprovado na Análise Documental</strong>
-                                    <span>Documentos incompletos ou inconformes com os requisitos do Edital.</span>
                                   </div>
                                 </label>
                               </div>
@@ -3965,7 +3948,6 @@ export default function GestorPortalModule({
                                   />
                                   <div className="choice-info">
                                     <strong>Sim, haverá Exame Escrito</strong>
-                                    <span>Candidato realizará prova escrita e avança para a 3ª Fase (Teste Escrito).</span>
                                   </div>
                                 </label>
 
@@ -3983,7 +3965,6 @@ export default function GestorPortalModule({
                                   />
                                   <div className="choice-info">
                                     <strong>Não, avança diretamente para a Entrevista Profissional</strong>
-                                    <span>Dispensado de prova escrita. Candidato avança diretamente para a 4ª Fase (Entrevista).</span>
                                   </div>
                                 </label>
                               </div>
@@ -4228,7 +4209,6 @@ export default function GestorPortalModule({
                                   />
                                   <div className="choice-info">
                                     <strong>Admitido (Vaga Efetiva)</strong>
-                                    <span>{parseFloat(notaFinal) < 10.0 ? 'Bloqueado: requer nota mínima de 10.0 valores.' : 'Aprovado para preenchimento de vaga imediata.'}</span>
                                   </div>
                                 </label>
 
@@ -4248,7 +4228,6 @@ export default function GestorPortalModule({
                                   />
                                   <div className="choice-info">
                                     <strong>Suplente (Lista de Reserva)</strong>
-                                    <span>{parseFloat(notaFinal) < 10.0 ? 'Bloqueado: requer nota mínima de 10.0 valores.' : 'Aprovado para bolsa de reserva de recrutamento.'}</span>
                                   </div>
                                 </label>
 
@@ -4267,7 +4246,6 @@ export default function GestorPortalModule({
                                   />
                                   <div className="choice-info">
                                     <strong>Reprovado na Entrevista</strong>
-                                    <span>Reprovação eliminatória por classificação &lt; 10 valores ou inaptidão técnica.</span>
                                   </div>
                                 </label>
                               </div>
@@ -4367,7 +4345,7 @@ export default function GestorPortalModule({
                     {/* BOTÃO DE CONFIRMAÇÃO OFICIAL */}
                     <div className="deliberacao-submit-row">
                       <div className="deliberacao-auditor-info">
-                        <span>Operador: <strong>{currentUser?.name || 'Comissão Central de Júri'}</strong> ({currentUser?.cargo || (isJuriUser ? 'Júri de Selecção' : isAdminJuri ? 'Administrador do Júri' : 'Administrador Principal')})</span>
+                        <span>Operador: <strong>{currentUser?.name || 'Comissão Central de Júri'}</strong></span>
                       </div>
 
                       {(() => {

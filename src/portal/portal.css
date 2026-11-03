@@ -11793,9 +11793,9 @@ html.portal-modo-simplificado * {
 
 .deliberacao-choice-btn {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.75rem;
-  padding: 0.7rem 0.95rem;
+  padding: 0.65rem 0.95rem;
   border: 1px solid var(--portal-border);
   border-radius: 8px;
   background: var(--portal-card-bg);
@@ -11816,7 +11816,7 @@ html.portal-modo-simplificado * {
 }
 
 .deliberacao-choice-btn input[type="radio"] {
-  margin-top: 0.2rem;
+  margin: 0;
   accent-color: var(--sernic-red, #c32026);
   cursor: pointer;
 }
@@ -11830,6 +11830,7 @@ html.portal-modo-simplificado * {
 .deliberacao-choice-btn .choice-info strong {
   font-size: 0.88rem;
   color: var(--portal-text-main);
+  line-height: 1.2;
 }
 
 .deliberacao-choice-btn .choice-info span {
