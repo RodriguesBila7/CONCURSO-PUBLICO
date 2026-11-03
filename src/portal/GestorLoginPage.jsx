@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ShieldCheck,
   User,
   Lock,
   Eye,
@@ -239,9 +238,7 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
         </aside>
 
         <main className="gestor-login-card">
-          <div className="gestor-login-badge"><ShieldCheck size={15} /> Área restrita</div>
-          <h2>Iniciar sessão como gestor</h2>
-          <p className="gestor-login-sub">Utilize as credenciais institucionais atribuídas pela DRH.</p>
+          <h2>Iniciar sessão</h2>
 
           <form onSubmit={handleSubmit} noValidate>
             <div className="form-group">
@@ -307,18 +304,17 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
               <span>{isSubmitting ? 'A verificar credenciais...' : 'Entrar na Área de Gestão'}</span>
             </button>
 
-            {/* ATALHOS DE ACESSO RÁPIDO AOS 3 PERFIS OFICIAIS */}
+            {/* ATALHOS DE ACESSO RÁPIDO AOS PERFIS OFICIAIS */}
             <div className="gestor-quick-creds-box">
               <div className="gestor-quick-creds-title">
-                <ShieldCheck size={14} />
-                <span>Perfis Oficiais Homologados (Clique para preencher):</span>
+                <span>Perfis homologados:</span>
               </div>
               <div className="gestor-quick-chips-grid">
                 <button
                   type="button"
                   className="gestor-quick-chip chip-superadmin"
                   onClick={() => handleQuickFill('superadmin', 'admin123')}
-                  title="Super Administrador: Técnico responsável pela infraestrutura e segurança do sistema"
+                  title="Super Administrador (Técnico)"
                 >
                   <span>Super Administrador (Técnico)</span>
                 </button>
@@ -326,7 +322,7 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
                   type="button"
                   className="gestor-quick-chip chip-principal"
                   onClick={() => handleQuickFill('123922328', 'buenaverte7')}
-                  title="Administrador Principal (DG-DGA): Director Geral e Director Geral Adjunto"
+                  title="Administrador Principal (DG-DGA)"
                 >
                   <span>Administrador Principal (DG-DGA)</span>
                 </button>
@@ -334,7 +330,7 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
                   type="button"
                   className="gestor-quick-chip chip-admin-juri"
                   onClick={() => handleQuickFill('admin_juri', 'admin123')}
-                  title="Administrador do Júri: Homologação final e blindagem definitiva dos resultados do concurso"
+                  title="Administrador do Júri"
                 >
                   <span>Administrador do Júri</span>
                 </button>
@@ -342,7 +338,7 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
                   type="button"
                   className="gestor-quick-chip chip-juri"
                   onClick={() => handleQuickFill('juri', 'admin123')}
-                  title="Usuário: Membro do Júri de Seleção (5 dias para verificação/retificação antes da homologação final)"
+                  title="Usuário (Júri de Seleção)"
                 >
                   <span>Usuário (Júri de Seleção)</span>
                 </button>
@@ -350,16 +346,12 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
             </div>
           </form>
 
-          <p className="gestor-login-nota">
-            Todas as tentativas de acesso são registadas. A sessão termina após 1 hora de inactividade.
-          </p>
-
           <div className="gestor-login-links">
             <button type="button" onClick={() => navigate('/')}>
               <ArrowLeft size={15} /> Página inicial
             </button>
             <button type="button" onClick={() => navigate('/portal-recrutamento')}>
-              Sou candidato: ir ao Portal de Recrutamento
+              Portal de Recrutamento
             </button>
           </div>
         </main>
