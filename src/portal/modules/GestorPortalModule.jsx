@@ -6673,9 +6673,6 @@ export default function GestorPortalModule({
                       <h4 className="dossier-sec-title" style={{ margin: 0, padding: 0, border: 'none' }}>
                         Validação Facial Inteligente & Verificação de Iluminação (SERNIC VisionAI)
                       </h4>
-                      <p className="biometric-audit-sub">
-                        Auditoria de biometria facial, enquadramento ICAO 9303 e luminância em tempo real
-                      </p>
                     </div>
                   </div>
                   <div className="biometric-score-badge">
@@ -6706,15 +6703,10 @@ export default function GestorPortalModule({
                   {/* INDICADORES INTELIGENTES DE ILUMINAÇÃO & ROSTO */}
                   <div className="biometric-metrics-list">
                     <div className="biometric-metric-row">
-                      <div className="metric-info">
-                        <span className="metric-name">
-                          <Sun size={14} color="#f59e0b" />
-                          Iluminação & Contraste
-                        </span>
-                        <span className="metric-desc">
-                          {selectedDossier.validacaoFacial?.iluminacao || 'Excelente (Luz Difusa Equilibrada)'}
-                        </span>
-                      </div>
+                      <span className="metric-name">
+                        <Sun size={14} color="#f59e0b" />
+                        Iluminação & Contraste
+                      </span>
                       <div className="metric-status success">
                         <CheckCircle2 size={15} />
                         <span>{selectedDossier.validacaoFacial?.iluminacaoScore || 97}% Ideal</span>
@@ -6722,15 +6714,10 @@ export default function GestorPortalModule({
                     </div>
 
                     <div className="biometric-metric-row">
-                      <div className="metric-info">
-                        <span className="metric-name">
-                          <ShieldCheck size={14} color="#16a34a" />
-                          Enquadramento Facial
-                        </span>
-                        <span className="metric-desc">
-                          {selectedDossier.validacaoFacial?.rostoEnquadrado !== false ? 'Rosto e ombros 100% centralizados (Padrão ICAO 9303)' : 'Desalinhado'}
-                        </span>
-                      </div>
+                      <span className="metric-name">
+                        <ShieldCheck size={14} color="#16a34a" />
+                        Enquadramento Facial
+                      </span>
                       <div className="metric-status success">
                         <CheckCircle2 size={15} />
                         <span>100% Aprovado</span>
@@ -6738,15 +6725,10 @@ export default function GestorPortalModule({
                     </div>
 
                     <div className="biometric-metric-row">
-                      <div className="metric-info">
-                        <span className="metric-name">
-                          <Palette size={14} color="#2563eb" />
-                          Fundo da Fotografia
-                        </span>
-                        <span className="metric-desc">
-                          {selectedDossier.validacaoFacial?.fundoNeutro !== false ? 'Fundo neutro claro / branco homologado' : 'Requer revisão'}
-                        </span>
-                      </div>
+                      <span className="metric-name">
+                        <Palette size={14} color="#2563eb" />
+                        Fundo da Fotografia
+                      </span>
                       <div className="metric-status success">
                         <CheckCircle2 size={15} />
                         <span>Homologado</span>
@@ -6754,15 +6736,10 @@ export default function GestorPortalModule({
                     </div>
 
                     <div className="biometric-metric-row">
-                      <div className="metric-info">
-                        <span className="metric-name">
-                          <Eye size={14} color="#0284c7" />
-                          Foco, Olhos e Expressão
-                        </span>
-                        <span className="metric-desc">
-                          Olhos abertos, expressão neutra sem oclusão ou reflexos
-                        </span>
-                      </div>
+                      <span className="metric-name">
+                        <Eye size={14} color="#0284c7" />
+                        Foco, Olhos e Expressão
+                      </span>
                       <div className="metric-status success">
                         <CheckCircle2 size={15} />
                         <span>Conforme</span>
