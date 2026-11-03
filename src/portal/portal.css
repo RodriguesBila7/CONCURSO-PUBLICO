@@ -4592,6 +4592,108 @@ textarea::placeholder,
   margin: 0;
 }
 
+/* ABAS DE FILTRAGEM POR PERFIL NO LIVRO DE AUDITORIA */
+.auditoria-filter-toolbar {
+  margin-bottom: 1.5rem;
+  background: transparent;
+  border-bottom: 1.5px solid var(--portal-border);
+  padding: 0 0 0.85rem 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.portal-theme-preto .auditoria-filter-toolbar {
+  border-color: var(--portal-border);
+}
+
+.auditoria-filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.auditoria-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  min-width: 125px;
+  padding: 0.65rem 1.25rem;
+  border: 1.5px solid var(--portal-border);
+  background: var(--portal-card-bg, #ffffff);
+  color: var(--portal-text-main);
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+  user-select: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.portal-theme-preto .auditoria-tab-btn {
+  background: var(--portal-card-bg, #1e293b);
+  border-color: var(--portal-border, #334155);
+  color: #e2e8f0;
+}
+
+.auditoria-tab-btn:hover {
+  color: var(--portal-text-main);
+  background: var(--portal-btn-tab-bg, #f1f5f9);
+  border-color: #94a3b8;
+}
+
+.portal-theme-preto .auditoria-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #64748b;
+  color: #f8fafc;
+}
+
+.auditoria-tab-btn.active {
+  background: var(--sernic-red, #c32026) !important;
+  color: #ffffff !important;
+  border-color: var(--sernic-red, #c32026) !important;
+  box-shadow: 0 2px 6px rgba(195, 32, 38, 0.25);
+}
+
+.portal-theme-preto .auditoria-tab-btn.active {
+  background: #b91c1c !important;
+  border-color: #b91c1c !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(185, 28, 28, 0.35);
+}
+
+.auditoria-tab-btn .tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 0.45rem;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.07);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--portal-text-main);
+  transition: all 0.15s ease;
+}
+
+.portal-theme-preto .auditoria-tab-btn .tab-count {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #f1f5f9;
+}
+
+.auditoria-tab-btn.active .tab-count {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  color: #ffffff !important;
+  font-weight: 800;
+}
+
 .pautas-cards-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));

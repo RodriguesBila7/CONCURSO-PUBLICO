@@ -448,6 +448,7 @@ export default function GestorPortalModule({
   const [paginaAuditoria, setPaginaAuditoria] = useState(1);
   const [itensPorPaginaAuditoria, setItensPorPaginaAuditoria] = useState(10);
   const [buscaAuditoria, setBuscaAuditoria] = useState('');
+  const [filtroPerfilAuditoria, setFiltroPerfilAuditoria] = useState('todos');
 
   // Handlers de filtros com reinicialização automática para a 1ª página
   const handleBuscaInscritoChange = (val) => {
@@ -1260,19 +1261,107 @@ export default function GestorPortalModule({
     }
   }, [totalPaginasInscritos, paginaInscritos]);
 
-  // Paginação e Filtragem do Livro de Auditoria
+  // Mapeamento inteligente de registos de auditoria para os perfis oficiais do sistema
+  const getPerfilFromOperador = useCallback((operadorStr, item = {}) => {
+    const op = String(operadorStr || '').toLowerCase();
+    const acao = String(item.acao || '').toLowerCase();
+    const motivo = String(item.motivo || '').toLowerCase();
+
+    // 1. Super Administrador (Técnico de Sistemas)
+    if (
+      op.includes('super administrador') || 
+      op.includes('técnico de sistemas') || 
+      op.includes('tecnico de sistemas') ||
+      op.includes('superadmin') ||
+      op.includes('técnico do sistema') ||
+      op.includes('tecnico do sistema') ||
+      acao.includes('remoção de perfil') ||
+      acao.includes('remocao de perfil') ||
+      acao.includes('eliminação permanente') ||
+      acao.includes('eliminacao permanente') ||
+      motivo.includes('perfil do técnico') ||
+      motivo.includes('perfil do tecnico')
+    ) {
+      return 'superadmin';
+    }
+
+    // 2. Administrador Principal (DG-DGA)
+    if (
+      op.includes('dg-dga') || 
+      op.includes('director geral') || 
+      op.includes('administrador principal') ||
+      op.includes('recursos humanos') ||
+      op.includes('drh') ||
+      motivo.includes('dg-dga') ||
+      motivo.includes('administrador principal')
+    ) {
+      return 'dg-dga';
+    }
+
+    // 3. Administrador do Júri
+    if (
+      op.includes('administrador do júri') || 
+      op.includes('administrador do juri') ||
+      op.includes('admin do júri') ||
+      op.includes('admin do juri') ||
+      op.includes('machava') ||
+      acao.includes('homologação final') ||
+      acao.includes('homologacao final') ||
+      motivo.includes('administrador do júri') ||
+      motivo.includes('administrador do juri') ||
+      motivo.includes('homologação final') ||
+      motivo.includes('blindados')
+    ) {
+      return 'admin-juri';
+    }
+
+    // 4. Júri de Selecção (Membros / Usuários)
+    return 'juri-usuario';
+  }, []);
+
+  // Contadores oficiais por perfil para as abas de auditoria
+  const contadoresAuditoria = useMemo(() => {
+    const list = auditoria || [];
+    const counts = {
+      todos: list.length,
+      'dg-dga': 0,
+      'admin-juri': 0,
+      'juri-usuario': 0,
+      superadmin: 0
+    };
+    list.forEach(item => {
+      const p = getPerfilFromOperador(item.operador, item);
+      if (counts[p] !== undefined) {
+        counts[p] += 1;
+      }
+    });
+    return counts;
+  }, [auditoria, getPerfilFromOperador]);
+
+  // Paginação e Filtragem do Livro de Auditoria com isolamento por perfil
   const filteredAuditoria = useMemo(() => {
-    if (!buscaAuditoria.trim()) return auditoria || [];
-    const q = buscaAuditoria.toLowerCase();
-    return (auditoria || []).filter(item => 
-      (item.id && String(item.id).toLowerCase().includes(q)) ||
-      (item.operador && String(item.operador).toLowerCase().includes(q)) ||
-      (item.acao && String(item.acao).toLowerCase().includes(q)) ||
-      (item.candidato && String(item.candidato).toLowerCase().includes(q)) ||
-      (item.motivo && String(item.motivo).toLowerCase().includes(q)) ||
-      (item.dataHora && String(item.dataHora).toLowerCase().includes(q))
-    );
-  }, [auditoria, buscaAuditoria]);
+    let list = auditoria || [];
+
+    // Isolamento estrito por perfil
+    if (filtroPerfilAuditoria !== 'todos') {
+      list = list.filter(item => getPerfilFromOperador(item.operador, item) === filtroPerfilAuditoria);
+    }
+
+    // Pesquisa textual dentro das actividades do perfil
+    if (buscaAuditoria.trim()) {
+      const q = buscaAuditoria.toLowerCase();
+      list = list.filter(item => 
+        (item.id && String(item.id).toLowerCase().includes(q)) ||
+        (item.operador && String(item.operador).toLowerCase().includes(q)) ||
+        (item.acao && String(item.acao).toLowerCase().includes(q)) ||
+        (item.candidato && String(item.candidato).toLowerCase().includes(q)) ||
+        (item.motivo && String(item.motivo).toLowerCase().includes(q)) ||
+        (item.dataHora && String(item.dataHora).toLowerCase().includes(q))
+      );
+    }
+
+    return list;
+  }, [auditoria, filtroPerfilAuditoria, buscaAuditoria, getPerfilFromOperador]);
 
   const totalPaginasAuditoria = Math.max(1, Math.ceil(filteredAuditoria.length / itensPorPaginaAuditoria));
 
@@ -4843,8 +4932,9 @@ export default function GestorPortalModule({
         <div className="gestor-tab-content fadeIn">
           <div className="auditoria-header-bar">
             <div>
-              <h3>Histórico e Registo de Atividades</h3>
-              <p>Todas as decisões, avaliações e publicações ficam guardadas com data, hora e responsável.</p>
+              <h3 style={{ margin: 0, fontSize: '1.45rem', fontWeight: 800, color: 'var(--portal-text-main)' }}>
+                Histórico e Registo de Atividades
+              </h3>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -4878,6 +4968,71 @@ export default function GestorPortalModule({
               >
                 <Printer size={15} />
                 <span>Imprimir Livro de Atas</span>
+              </button>
+            </div>
+          </div>
+
+          {/* ABAS DE FILTRAGEM POR PERFIL OFICIAL (ORGANIZAÇÃO E ISOLAMENTO DE ATIVIDADES) */}
+          <div className="auditoria-filter-toolbar">
+            <div className="auditoria-filter-tabs">
+              <button
+                type="button"
+                className={`auditoria-tab-btn ${filtroPerfilAuditoria === 'todos' ? 'active' : ''}`}
+                onClick={() => {
+                  setFiltroPerfilAuditoria('todos');
+                  setPaginaAuditoria(1);
+                }}
+              >
+                <span>Todos os Perfis</span>
+                <span className="tab-count">{contadoresAuditoria.todos}</span>
+              </button>
+
+              <button
+                type="button"
+                className={`auditoria-tab-btn ${filtroPerfilAuditoria === 'dg-dga' ? 'active' : ''}`}
+                onClick={() => {
+                  setFiltroPerfilAuditoria('dg-dga');
+                  setPaginaAuditoria(1);
+                }}
+              >
+                <span>DG-DGA (Direcção Geral)</span>
+                <span className="tab-count">{contadoresAuditoria['dg-dga']}</span>
+              </button>
+
+              <button
+                type="button"
+                className={`auditoria-tab-btn ${filtroPerfilAuditoria === 'admin-juri' ? 'active' : ''}`}
+                onClick={() => {
+                  setFiltroPerfilAuditoria('admin-juri');
+                  setPaginaAuditoria(1);
+                }}
+              >
+                <span>Administrador do Júri</span>
+                <span className="tab-count">{contadoresAuditoria['admin-juri']}</span>
+              </button>
+
+              <button
+                type="button"
+                className={`auditoria-tab-btn ${filtroPerfilAuditoria === 'juri-usuario' ? 'active' : ''}`}
+                onClick={() => {
+                  setFiltroPerfilAuditoria('juri-usuario');
+                  setPaginaAuditoria(1);
+                }}
+              >
+                <span>Júri de Selecção</span>
+                <span className="tab-count">{contadoresAuditoria['juri-usuario']}</span>
+              </button>
+
+              <button
+                type="button"
+                className={`auditoria-tab-btn ${filtroPerfilAuditoria === 'superadmin' ? 'active' : ''}`}
+                onClick={() => {
+                  setFiltroPerfilAuditoria('superadmin');
+                  setPaginaAuditoria(1);
+                }}
+              >
+                <span>Super Administrador (Técnico)</span>
+                <span className="tab-count">{contadoresAuditoria.superadmin}</span>
               </button>
             </div>
           </div>
