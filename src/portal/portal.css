@@ -10932,7 +10932,11 @@ html.portal-modo-simplificado * {
 .portal-theme-claro input:-webkit-autofill,
 .portal-theme-claro input:-webkit-autofill:hover, 
 .portal-theme-claro input:-webkit-autofill:focus,
-.portal-theme-claro input:-webkit-autofill:active {
+.portal-theme-claro input:-webkit-autofill:active,
+[data-theme="claro"] input:-webkit-autofill,
+[data-theme="claro"] input:-webkit-autofill:hover,
+[data-theme="claro"] input:-webkit-autofill:focus,
+[data-theme="claro"] input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
   -webkit-text-fill-color: #0f172a !important;
   caret-color: #0f172a !important;
@@ -10943,7 +10947,11 @@ html.portal-modo-simplificado * {
 .portal-theme-preto input:-webkit-autofill,
 .portal-theme-preto input:-webkit-autofill:hover, 
 .portal-theme-preto input:-webkit-autofill:focus,
-.portal-theme-preto input:-webkit-autofill:active {
+.portal-theme-preto input:-webkit-autofill:active,
+[data-theme="preto"] input:-webkit-autofill,
+[data-theme="preto"] input:-webkit-autofill:hover,
+[data-theme="preto"] input:-webkit-autofill:focus,
+[data-theme="preto"] input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 1000px #121a28 inset !important;
   -webkit-text-fill-color: #f8fafc !important;
   caret-color: #f8fafc !important;
@@ -10953,21 +10961,29 @@ html.portal-modo-simplificado * {
 
 /* Modo Claro explícito para inputs e letras na Área de Gestão e Login */
 .portal-theme-claro .gestor-login-card,
-.portal-theme-claro .auth-wrapper-card {
+[data-theme="claro"] .gestor-login-card,
+.portal-theme-claro .auth-wrapper-card,
+[data-theme="claro"] .auth-wrapper-card {
   background: #ffffff !important;
   color: #0f172a !important;
 }
 
 .portal-theme-claro .gestor-login-card label,
-.portal-theme-claro .auth-form-group label {
+[data-theme="claro"] .gestor-login-card label,
+.portal-theme-claro .auth-form-group label,
+[data-theme="claro"] .auth-form-group label {
   color: #1e293b !important;
   font-weight: 700 !important;
 }
 
 .portal-theme-claro .auth-form-input,
+[data-theme="claro"] .auth-form-input,
 .portal-theme-claro .gestor-login-card .auth-form-input,
+[data-theme="claro"] .gestor-login-card .auth-form-input,
 .portal-theme-claro #gestor-identifier,
-.portal-theme-claro #gestor-password {
+[data-theme="claro"] #gestor-identifier,
+.portal-theme-claro #gestor-password,
+[data-theme="claro"] #gestor-password {
   background-color: #ffffff !important;
   background: #ffffff !important;
   color: #0f172a !important;
@@ -10977,9 +10993,13 @@ html.portal-modo-simplificado * {
 }
 
 .portal-theme-claro .auth-form-input:focus,
+[data-theme="claro"] .auth-form-input:focus,
 .portal-theme-claro .gestor-login-card .auth-form-input:focus,
+[data-theme="claro"] .gestor-login-card .auth-form-input:focus,
 .portal-theme-claro #gestor-identifier:focus,
-.portal-theme-claro #gestor-password:focus {
+[data-theme="claro"] #gestor-identifier:focus,
+.portal-theme-claro #gestor-password:focus,
+[data-theme="claro"] #gestor-password:focus {
   background-color: #ffffff !important;
   background: #ffffff !important;
   color: #0f172a !important;
@@ -10989,25 +11009,33 @@ html.portal-modo-simplificado * {
 }
 
 .portal-theme-claro .auth-form-input::placeholder,
-.portal-theme-claro .gestor-login-card .auth-form-input::placeholder {
+[data-theme="claro"] .auth-form-input::placeholder,
+.portal-theme-claro .gestor-login-card .auth-form-input::placeholder,
+[data-theme="claro"] .gestor-login-card .auth-form-input::placeholder {
   color: #94a3b8 !important;
   -webkit-text-fill-color: #94a3b8 !important;
   opacity: 1 !important;
 }
 
-.portal-theme-claro .auth-input-icon {
+.portal-theme-claro .auth-input-icon,
+[data-theme="claro"] .auth-input-icon {
   color: #64748b !important;
 }
 
-.portal-theme-claro .gestor-login-eye {
+.portal-theme-claro .gestor-login-eye,
+[data-theme="claro"] .gestor-login-eye {
   color: #64748b !important;
 }
 
 /* Modo Escuro explícito para inputs e letras na Área de Gestão e Login */
 .portal-theme-preto .auth-form-input,
+[data-theme="preto"] .auth-form-input,
 .portal-theme-preto .gestor-login-card .auth-form-input,
+[data-theme="preto"] .gestor-login-card .auth-form-input,
 .portal-theme-preto #gestor-identifier,
-.portal-theme-preto #gestor-password {
+[data-theme="preto"] #gestor-identifier,
+.portal-theme-preto #gestor-password,
+[data-theme="preto"] #gestor-password {
   background-color: #121a28 !important;
   background: #121a28 !important;
   color: #f8fafc !important;
@@ -11016,9 +11044,13 @@ html.portal-modo-simplificado * {
 }
 
 .portal-theme-preto .auth-form-input:focus,
+[data-theme="preto"] .auth-form-input:focus,
 .portal-theme-preto .gestor-login-card .auth-form-input:focus,
+[data-theme="preto"] .gestor-login-card .auth-form-input:focus,
 .portal-theme-preto #gestor-identifier:focus,
-.portal-theme-preto #gestor-password:focus {
+[data-theme="preto"] #gestor-identifier:focus,
+.portal-theme-preto #gestor-password:focus,
+[data-theme="preto"] #gestor-password:focus {
   background-color: #121a28 !important;
   background: #121a28 !important;
   color: #ffffff !important;
@@ -11028,17 +11060,21 @@ html.portal-modo-simplificado * {
 }
 
 .portal-theme-preto .auth-form-input::placeholder,
-.portal-theme-preto .gestor-login-card .auth-form-input::placeholder {
+[data-theme="preto"] .auth-form-input::placeholder,
+.portal-theme-preto .gestor-login-card .auth-form-input::placeholder,
+[data-theme="preto"] .gestor-login-card .auth-form-input::placeholder {
   color: #64748b !important;
   -webkit-text-fill-color: #64748b !important;
   opacity: 1 !important;
 }
 
-.portal-theme-preto .auth-input-icon {
+.portal-theme-preto .auth-input-icon,
+[data-theme="preto"] .auth-input-icon {
   color: #94a3b8 !important;
 }
 
-.portal-theme-preto .gestor-login-eye {
+.portal-theme-preto .gestor-login-eye,
+[data-theme="preto"] .gestor-login-eye {
   color: #94a3b8 !important;
 }
 

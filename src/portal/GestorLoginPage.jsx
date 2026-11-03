@@ -171,8 +171,23 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
     setError('');
   };
 
+  const isDark = theme === 'preto';
+  const inputThemeStyle = isDark
+    ? {
+        backgroundColor: '#121a28',
+        color: '#f8fafc',
+        borderColor: '#2a3b52',
+        WebkitTextFillColor: '#f8fafc'
+      }
+    : {
+        backgroundColor: '#ffffff',
+        color: '#0f172a',
+        borderColor: '#cbd5e1',
+        WebkitTextFillColor: '#0f172a'
+      };
+
   return (
-    <div className={`portal-container portal-theme-${theme} gestor-login-page`}>
+    <div className={`portal-container portal-theme-${theme} gestor-login-page`} data-theme={theme}>
       {/* BOTÃO DE ALTERNÂNCIA DE TEMA (MODO CLARO / ESCURO) */}
       <div style={{ position: 'absolute', top: '1.25rem', right: '1.5rem', zIndex: 40 }}>
         <button
@@ -230,9 +245,13 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
 
           <form onSubmit={handleSubmit} noValidate>
             <div className="form-group">
-              <label htmlFor="gestor-identifier">Utilizador (NUIT ou e-mail institucional)</label>
+              <label htmlFor="gestor-identifier" style={{ color: isDark ? '#e2e8f0' : '#1e293b' }}>
+                Utilizador (NUIT ou e-mail institucional)
+              </label>
               <div className="auth-input-group">
-                <span className="auth-input-icon"><User size={18} /></span>
+                <span className="auth-input-icon" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
+                  <User size={18} />
+                </span>
                 <input
                   id="gestor-identifier"
                   type="text"
@@ -241,15 +260,20 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
                   placeholder="Ex: drh@sernic.gov.mz"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
+                  style={inputThemeStyle}
                   autoFocus
                 />
               </div>
             </div>
 
             <div className="form-group">
-              <label htmlFor="gestor-password">Senha</label>
+              <label htmlFor="gestor-password" style={{ color: isDark ? '#e2e8f0' : '#1e293b' }}>
+                Senha
+              </label>
               <div className="auth-input-group">
-                <span className="auth-input-icon"><Lock size={18} /></span>
+                <span className="auth-input-icon" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
+                  <Lock size={18} />
+                </span>
                 <input
                   id="gestor-password"
                   type={showPassword ? 'text' : 'password'}
@@ -258,12 +282,14 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
                   placeholder="Introduza a senha"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  style={inputThemeStyle}
                 />
                 <button
                   type="button"
                   className="gestor-login-eye"
                   onClick={() => setShowPassword(v => !v)}
                   aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                  style={{ color: isDark ? '#94a3b8' : '#64748b' }}
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
