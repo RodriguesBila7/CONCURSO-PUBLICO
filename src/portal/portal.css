@@ -10713,6 +10713,8 @@ html.portal-modo-simplificado * {
   padding: 2.2rem 1.5rem;
   width: 100%;
   box-sizing: border-box;
+  position: relative;
+  z-index: 2;
 }
 
 .gestor-login-shell {
@@ -10725,7 +10727,10 @@ html.portal-modo-simplificado * {
   overflow: hidden;
   border: 1px solid var(--portal-border);
   box-shadow: 0 12px 40px rgba(15, 23, 42, 0.16);
-  background: var(--portal-card-bg);
+  background: #ffffff;
+  position: relative;
+  z-index: 2;
+  opacity: 1;
 }
 
 .gestor-login-brand {
@@ -10739,6 +10744,9 @@ html.portal-modo-simplificado * {
   text-align: center;
   gap: 0.85rem;
   border-right: 4px solid var(--sernic-red);
+  position: relative;
+  z-index: 3;
+  opacity: 1;
 }
 
 .gestor-login-logo {
@@ -10811,6 +10819,10 @@ html.portal-modo-simplificado * {
   flex-direction: column;
   justify-content: center;
   gap: 0.5rem;
+  background: #ffffff;
+  position: relative;
+  z-index: 3;
+  opacity: 1;
 }
 
 .gestor-login-badge {
@@ -11030,20 +11042,29 @@ html.portal-modo-simplificado * {
   color: #94a3b8 !important;
 }
 
-/* Modo Escuro na Área de Gestão e Júri */
+/* Modo Escuro na Área de Gestão e Júri - 100% Opaco sem transparência */
 .portal-theme-preto .gestor-login-shell {
-  background: #162032;
-  border-color: #26364d;
+  background: #162032 !important;
+  border-color: #26364d !important;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+  position: relative;
+  z-index: 2;
+  opacity: 1 !important;
 }
 
 .portal-theme-preto .gestor-login-brand {
-  background: #0d1728;
+  background: #0d1728 !important;
   border-right: 4px solid var(--sernic-red);
+  position: relative;
+  z-index: 3;
+  opacity: 1 !important;
 }
 
 .portal-theme-preto .gestor-login-card {
-  background: #162032;
+  background: #162032 !important;
+  position: relative;
+  z-index: 3;
+  opacity: 1 !important;
 }
 
 .gestor-quick-creds-box {

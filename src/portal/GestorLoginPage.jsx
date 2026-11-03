@@ -201,10 +201,7 @@ export default function GestorLoginPage({ navigate, onLoginSuccess }) {
         </button>
       </div>
 
-      {/* MARCAS DE ÁGUA OFICIAIS DO LOGÓTIPO SERNIC NO FUNDO */}
-      <div className="portal-page-watermark-bg" aria-hidden="true">
-        <img src={sernicLogo} alt="" className="portal-page-watermark-img" />
-      </div>
+      {/* MARCAS DE ÁGUA OFICIAIS DO LOGÓTIPO SERNIC NO FUNDO (LATERAIS) */}
       <div className="portal-watermark-lateral left" aria-hidden="true">
         <img src={sernicLogo} alt="" />
       </div>
