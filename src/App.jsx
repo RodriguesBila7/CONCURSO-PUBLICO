@@ -118,6 +118,7 @@ export default function App() {
     u.role === 'gestor' || 
     u.role === 'super_admin' || 
     u.role === 'admin_principal' || 
+    u.role === 'admin_juri' || 
     u.role === 'juri' || 
     u.role === 'usuario'
   ));
