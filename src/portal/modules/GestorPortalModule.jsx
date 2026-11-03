@@ -2618,10 +2618,6 @@ export default function GestorPortalModule({
                 <ShieldCheck size={16} />
                 <span>ÁREA ADMINISTRATIVA RESTRITA • COMISSÃO NACIONAL DE RECRUTAMENTO</span>
               </div>
-              <div className="gestor-session-user">
-                <div className="gestor-user-dot active" />
-                <span>Sessão: <strong>{currentUser?.name || 'Dr. Alberto Chissano'}</strong> ({currentUser?.cargo || 'Presidente do Júri'})</span>
-              </div>
             </div>
 
             <div className="gestor-hero-content-flex">
@@ -2629,10 +2625,6 @@ export default function GestorPortalModule({
                 <h2>
                   Plataforma de Gestão & Triagem do Concurso Público
                 </h2>
-                <p>
-                  Serviço Nacional de Investigação Criminal • Direcção Geral • Direcção de Recursos Humanos.
-                  Avaliação de candidaturas, conferência de documentos e publicação dos resultados oficiais.
-                </p>
               </div>
 
               <div className="gestor-hero-quick-actions">
@@ -2778,7 +2770,6 @@ export default function GestorPortalModule({
                   <Briefcase size={18} color="#c32026" />
                   Concorrência por Carreira / Aviso de Abertura
                 </h3>
-                <span className="gestor-panel-tag">Vagas vs Inscritos</span>
               </div>
               <div className="gestor-panel-body">
                 {INITIAL_VAGAS.map(vaga => {
@@ -2814,7 +2805,6 @@ export default function GestorPortalModule({
                   <MapPin size={18} color="#c32026" />
                   Distribuição Territorial de Candidaturas
                 </h3>
-                <span className="gestor-panel-tag">12 Direcções Oficiais</span>
               </div>
               <div className="gestor-panel-body">
                 <div className="gestor-prov-grid">
@@ -3135,9 +3125,6 @@ export default function GestorPortalModule({
                   <RefreshCw size={15} />
                   <span>Actualizar do servidor</span>
                 </button>
-                <span className={`gestor-sync-pill on-card ${estadoServidor.estado}`} role="status" title={estadoServidor.detalhe || ''}>
-                  {ROTULO_SYNC[estadoServidor.estado] || 'Base local sincronizada'}
-                </span>
               </div>
             </div>
           </div>
@@ -6924,7 +6911,6 @@ export default function GestorPortalModule({
                         <div className="timeline-content">
                           <span className="timeline-date">{h.data}</span>
                           <strong className="timeline-stage">{h.etapa}</strong>
-                          <p className="timeline-desc">{h.descricao}</p>
                         </div>
                       </div>
                     ))}
@@ -6976,15 +6962,6 @@ export default function GestorPortalModule({
             {/* RODAPÉ DO DOSSIER */}
             <div className="dossier-modal-footer">
               <div style={{ display: 'flex', gap: '0.65rem' }}>
-                <button
-                  type="button"
-                  className="gestor-btn-outline"
-                  onClick={() => window.print()}
-                >
-                  <Printer size={15} />
-                  <span>Imprimir Ficha Completa</span>
-                </button>
-
                 <button
                   type="button"
                   className="gestor-btn-outline"

@@ -2732,8 +2732,8 @@ textarea::placeholder,
   background: var(--portal-card-bg);
   border: 1px solid var(--portal-border);
   border-radius: var(--radius-lg);
-  padding: 1.85rem 2.2rem 1.75rem 2.2rem;
-  margin-bottom: 2rem;
+  padding: 1.35rem 1.75rem;
+  margin-bottom: 1.5rem;
   box-shadow: 0 4px 20px -4px rgba(15, 23, 42, 0.06);
   position: relative;
   overflow: hidden;
@@ -2795,12 +2795,12 @@ textarea::placeholder,
 
 .gestor-hero-titles h2 {
   font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 1.95rem;
+  font-size: 1.75rem;
   font-weight: 800;
   color: var(--portal-text-main);
-  margin: 0 0 0.5rem 0;
+  margin: 0;
   letter-spacing: -0.025em;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .gestor-hero-titles p {
@@ -5766,36 +5766,38 @@ textarea::placeholder,
 
 .timeline-item {
   display: flex;
-  gap: 0.85rem;
+  align-items: flex-start;
+  gap: 0.75rem;
   position: relative;
 }
 
 .timeline-marker {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: #c32026;
-  margin-top: 0.35rem;
+  margin-top: 0.45rem;
   flex-shrink: 0;
 }
 
+.timeline-content {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
 .timeline-date {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: #c32026;
 }
 
 .timeline-stage {
-  display: block;
-  font-size: 0.86rem;
-  font-weight: 800;
+  display: inline-block;
+  font-size: 0.88rem;
+  font-weight: 700;
   color: var(--portal-text-main);
-}
-
-.timeline-desc {
-  font-size: 0.8rem;
-  color: var(--portal-text-muted);
-  margin: 0.15rem 0 0 0;
 }
 
 .dossier-modal-footer {

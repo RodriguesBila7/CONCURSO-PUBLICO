@@ -142,9 +142,6 @@ export default function PortalLayout({
             <span className="portal-strip-badge">
               {isGestorRoute ? 'SERNIC • ÁREA DE GESTÃO E JÚRI 2026' : 'SERNIC • CONCURSO PÚBLICO 2026'}
             </span>
-            <span style={{ fontSize: '0.75rem', opacity: 0.85 }}>
-              {isGestorRoute ? 'Plataforma Oficial da Comissão de Avaliação' : 'Portal Oficial de Inscrições'}
-            </span>
           </div>
         </div>
       </div>
@@ -313,20 +310,18 @@ export default function PortalLayout({
               <img src={sernicLogo} alt="" />
             </div>
 
-            {/* Cartão de Contexto do Perfil */}
-          <div className="portal-sidebar-context">
-            <div className={`portal-sidebar-context-icon ${isGestorRoute ? 'is-gestor' : 'is-candidato'}`}>
-              {isGestorRoute ? <ShieldCheck size={22} /> : <UserCheck size={22} />}
+            {/* Cartão de Contexto do Perfil (Apenas Candidato) */}
+          {!isGestorRoute && (
+            <div className="portal-sidebar-context">
+              <div className="portal-sidebar-context-icon is-candidato">
+                <UserCheck size={22} />
+              </div>
+              <div className="portal-sidebar-context-info">
+                <span className="portal-sidebar-context-badge">PORTAL CANDIDATURAS</span>
+                <h3 className="portal-sidebar-context-title">Menu do Candidato</h3>
+              </div>
             </div>
-            <div className="portal-sidebar-context-info">
-              <span className="portal-sidebar-context-badge">
-                {isGestorRoute ? 'JÚRI & AVALIAÇÃO' : 'PORTAL CANDIDATURAS'}
-              </span>
-              <h3 className="portal-sidebar-context-title">
-                {isGestorRoute ? 'Painel de Gestor' : 'Menu do Candidato'}
-              </h3>
-            </div>
-          </div>
+          )}
 
           {/* MENU EXCLUSIVO DO CANDIDATO */}
           {!isGestorRoute && (
@@ -410,8 +405,6 @@ export default function PortalLayout({
           {/* MENU EXCLUSIVO DO GESTOR (SOMENTE QUANDO ENTRA COMO GESTOR) */}
           {isGestorRoute && (
             <nav className="portal-sidebar-nav" aria-label="Menu de Navegação do Gestor">
-              <div className="portal-sidebar-group-title">MÓDULOS DE GESTÃO DO JÚRI</div>
-
               <button
                 type="button"
                 className={`portal-sidebar-btn ${gestorTab === 'dashboard' ? 'active' : ''}`}
