@@ -3894,7 +3894,7 @@ export default function GestorPortalModule({
                             <div className="deliberacao-section-block">
                               <label className="deliberacao-section-label">1ª Fase: Decisão da Análise Documental</label>
                               <div className="deliberacao-clean-choices">
-                                <label className={`deliberacao-choice-btn ${(novoEstado.includes('Aprovad') || novoEstado.includes('Admitid')) ? 'checked' : ''}`}>
+                                <label className={`deliberacao-choice-btn is-approved ${(novoEstado.includes('Aprovad') || novoEstado.includes('Admitid')) ? 'checked' : ''}`}>
                                   <input
                                     type="radio"
                                     name="estadoDeliberacao"
@@ -3910,7 +3910,7 @@ export default function GestorPortalModule({
                                   </div>
                                 </label>
 
-                                <label className={`deliberacao-choice-btn ${(novoEstado.includes('Reprovad') || novoEstado.includes('Excluíd')) ? 'checked' : ''}`}>
+                                <label className={`deliberacao-choice-btn is-rejected ${(novoEstado.includes('Reprovad') || novoEstado.includes('Excluíd')) ? 'checked' : ''}`}>
                                   <input
                                     type="radio"
                                     name="estadoDeliberacao"
@@ -3934,7 +3934,7 @@ export default function GestorPortalModule({
                             <div className="deliberacao-section-block">
                               <label className="deliberacao-section-label">2ª Fase: Haverá Exame Escrito para este Candidato / Carreira?</label>
                               <div className="deliberacao-clean-choices">
-                                <label className={`deliberacao-choice-btn ${haveraExameEscrito === 'sim' ? 'checked' : ''}`}>
+                                <label className={`deliberacao-choice-btn is-approved ${haveraExameEscrito === 'sim' ? 'checked' : ''}`}>
                                   <input
                                     type="radio"
                                     name="haveraExameEscrito"
@@ -3951,7 +3951,7 @@ export default function GestorPortalModule({
                                   </div>
                                 </label>
 
-                                <label className={`deliberacao-choice-btn ${haveraExameEscrito === 'nao' ? 'checked' : ''}`}>
+                                <label className={`deliberacao-choice-btn is-approved ${haveraExameEscrito === 'nao' ? 'checked' : ''}`}>
                                   <input
                                     type="radio"
                                     name="haveraExameEscrito"
@@ -4194,7 +4194,7 @@ export default function GestorPortalModule({
 
                               <div className="deliberacao-clean-choices" style={{ marginTop: '1rem' }}>
                                 {/* ADMITIR EFETIVO */}
-                                <label className={`deliberacao-choice-btn ${(novoEstado === 'Admitido' || novoEstado === 'Admitida') ? 'checked' : ''} ${parseFloat(notaFinal) < 10.0 ? 'disabled-locked' : ''}`}>
+                                <label className={`deliberacao-choice-btn is-approved ${(novoEstado === 'Admitido' || novoEstado === 'Admitida') ? 'checked' : ''} ${parseFloat(notaFinal) < 10.0 ? 'disabled-locked' : ''}`}>
                                   <input
                                     type="radio"
                                     name="estadoDeliberacao"
@@ -4213,7 +4213,7 @@ export default function GestorPortalModule({
                                 </label>
 
                                 {/* SUPLENTE */}
-                                <label className={`deliberacao-choice-btn ${(novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)') ? 'checked' : ''} ${parseFloat(notaFinal) < 10.0 ? 'disabled-locked' : ''}`}>
+                                <label className={`deliberacao-choice-btn is-suplente ${(novoEstado === 'Aprovado (Suplente)' || novoEstado === 'Aprovada (Suplente)') ? 'checked' : ''} ${parseFloat(notaFinal) < 10.0 ? 'disabled-locked' : ''}`}>
                                   <input
                                     type="radio"
                                     name="estadoDeliberacao"
@@ -4232,7 +4232,7 @@ export default function GestorPortalModule({
                                 </label>
 
                                 {/* REPROVADO */}
-                                <label className={`deliberacao-choice-btn ${(novoEstado.includes('Reprovad') || novoEstado.includes('Excluíd')) ? 'checked' : ''}`}>
+                                <label className={`deliberacao-choice-btn is-rejected ${(novoEstado.includes('Reprovad') || novoEstado.includes('Excluíd')) ? 'checked' : ''}`}>
                                   <input
                                     type="radio"
                                     name="estadoDeliberacao"

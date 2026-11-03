@@ -11574,14 +11574,14 @@ html.portal-modo-simplificado * {
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* ABAS DE CATEGORIA LIMPAS E DIRETAS */
+/* ABAS DE CATEGORIA LIMPAS, AMPLAS E ESTÁVEIS */
 .deliberacao-filter-toolbar {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
   background: transparent;
   border: none;
-  border-bottom: 1px solid var(--portal-border);
+  border-bottom: 1.5px solid var(--portal-border);
   border-radius: 0;
-  padding: 0 0 0.5rem 0;
+  padding: 0 0 0.85rem 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -11596,76 +11596,88 @@ html.portal-modo-simplificado * {
 .deliberacao-filter-tabs {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.65rem;
   flex-wrap: wrap;
 }
 
 .deliberacao-tab-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.45rem 0.85rem;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--portal-text-muted);
-  font-size: 0.85rem;
-  font-weight: 600;
+  justify-content: center;
+  gap: 0.65rem;
+  min-width: 125px;
+  padding: 0.65rem 1.25rem;
+  border: 1.5px solid var(--portal-border);
+  background: var(--portal-card-bg, #ffffff);
+  color: var(--portal-text-main);
+  font-size: 0.88rem;
+  font-weight: 700;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 8px;
   transition: all 0.15s ease;
   user-select: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.portal-theme-preto .deliberacao-tab-btn {
+  background: var(--portal-card-bg, #1e293b);
+  border-color: var(--portal-border, #334155);
+  color: #e2e8f0;
 }
 
 .deliberacao-tab-btn:hover {
   color: var(--portal-text-main);
-  background: var(--portal-btn-tab-bg);
+  background: var(--portal-btn-tab-bg, #f1f5f9);
+  border-color: #94a3b8;
 }
 
 .portal-theme-preto .deliberacao-tab-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #64748b;
+  color: #f8fafc;
 }
 
 .deliberacao-tab-btn.active {
   background: var(--sernic-red, #c32026) !important;
   color: #ffffff !important;
   border-color: var(--sernic-red, #c32026) !important;
-  box-shadow: 0 1px 4px rgba(195, 32, 38, 0.2);
+  box-shadow: 0 2px 6px rgba(195, 32, 38, 0.25);
 }
 
 .portal-theme-preto .deliberacao-tab-btn.active {
-  background: #a8171d !important;
-  border-color: #a8171d !important;
+  background: #b91c1c !important;
+  border-color: #b91c1c !important;
   color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(185, 28, 28, 0.35);
 }
 
 .deliberacao-tab-btn .tab-count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 0.35rem;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 0.45rem;
   border-radius: 9999px;
-  background: rgba(0, 0, 0, 0.06);
+  background: rgba(0, 0, 0, 0.07);
   border: 1px solid rgba(0, 0, 0, 0.08);
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--portal-text-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: var(--portal-text-main);
   transition: all 0.15s ease;
 }
 
 .portal-theme-preto .deliberacao-tab-btn .tab-count {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.14);
-  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #f1f5f9;
 }
 
 .deliberacao-tab-btn.active .tab-count {
   background: rgba(255, 255, 255, 0.25) !important;
   border-color: rgba(255, 255, 255, 0.35) !important;
   color: #ffffff !important;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 /* SIDEBAR REFINADA */
@@ -11795,30 +11807,108 @@ html.portal-modo-simplificado * {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.65rem 0.95rem;
-  border: 1px solid var(--portal-border);
+  padding: 0.75rem 1.1rem;
+  border: 1.5px solid var(--portal-border);
   border-radius: 8px;
   background: var(--portal-card-bg);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s ease;
 }
 
 .deliberacao-choice-btn:hover {
   background: var(--portal-btn-tab-bg);
-  border-color: #cbd5e1;
+  border-color: #94a3b8;
 }
 
 .deliberacao-choice-btn.checked {
   border-color: var(--sernic-red, #c32026);
-  border-width: 1px;
-  background: rgba(195, 32, 38, 0.03);
-  box-shadow: 0 1px 4px rgba(195, 32, 38, 0.06);
+  border-width: 1.5px;
+  background: rgba(195, 32, 38, 0.04);
+  box-shadow: 0 1px 4px rgba(195, 32, 38, 0.08);
+}
+
+/* VERDE CLARO AO CLICAR NO APROVADO */
+.deliberacao-choice-btn.is-approved.checked {
+  border-color: #16a34a !important;
+  background-color: #dcfce7 !important; /* verde claro amigável e legível */
+  box-shadow: 0 1px 6px rgba(22, 163, 74, 0.2) !important;
+}
+
+.portal-theme-preto .deliberacao-choice-btn.is-approved.checked {
+  border-color: #22c55e !important;
+  background-color: rgba(34, 197, 94, 0.18) !important;
+  box-shadow: 0 1px 6px rgba(34, 197, 94, 0.25) !important;
+}
+
+.deliberacao-choice-btn.is-approved.checked .choice-info strong {
+  color: #15803d !important;
+  font-weight: 800;
+}
+
+.portal-theme-preto .deliberacao-choice-btn.is-approved.checked .choice-info strong {
+  color: #4ade80 !important;
+}
+
+.deliberacao-choice-btn.is-approved.checked input[type="radio"] {
+  accent-color: #16a34a !important;
+}
+
+/* VERMELHO CLARO SUAVE AO CLICAR NO REPROVADO */
+.deliberacao-choice-btn.is-rejected.checked {
+  border-color: #dc2626 !important;
+  background-color: #fee2e2 !important;
+  box-shadow: 0 1px 6px rgba(220, 38, 38, 0.16) !important;
+}
+
+.portal-theme-preto .deliberacao-choice-btn.is-rejected.checked {
+  border-color: #ef4444 !important;
+  background-color: rgba(239, 68, 68, 0.18) !important;
+}
+
+.deliberacao-choice-btn.is-rejected.checked .choice-info strong {
+  color: #b91c1c !important;
+  font-weight: 800;
+}
+
+.portal-theme-preto .deliberacao-choice-btn.is-rejected.checked .choice-info strong {
+  color: #f87171 !important;
+}
+
+.deliberacao-choice-btn.is-rejected.checked input[type="radio"] {
+  accent-color: #dc2626 !important;
+}
+
+/* ÂMBAR CLARO PARA SUPLENTE */
+.deliberacao-choice-btn.is-suplente.checked {
+  border-color: #d97706 !important;
+  background-color: #fef3c7 !important;
+  box-shadow: 0 1px 6px rgba(217, 119, 6, 0.16) !important;
+}
+
+.portal-theme-preto .deliberacao-choice-btn.is-suplente.checked {
+  border-color: #f59e0b !important;
+  background-color: rgba(245, 158, 11, 0.18) !important;
+}
+
+.deliberacao-choice-btn.is-suplente.checked .choice-info strong {
+  color: #b45309 !important;
+  font-weight: 800;
+}
+
+.portal-theme-preto .deliberacao-choice-btn.is-suplente.checked .choice-info strong {
+  color: #fbbf24 !important;
+}
+
+.deliberacao-choice-btn.is-suplente.checked input[type="radio"] {
+  accent-color: #d97706 !important;
 }
 
 .deliberacao-choice-btn input[type="radio"] {
   margin: 0;
   accent-color: var(--sernic-red, #c32026);
   cursor: pointer;
+  width: 17px;
+  height: 17px;
 }
 
 .deliberacao-choice-btn .choice-info {
